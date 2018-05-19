@@ -205,3 +205,61 @@ void SortMerge(vector<T>& arr)
 	T* assist = new T[arr.size()];
 	DoSortMerge(arr, assist, 0, arr.size() - 1);
 }
+
+template<typename T>
+void DownFilter(vector<T>& arr, int len, int index)
+{
+	int parent = index;
+	int left = 2 * parent + 1;
+	int right = 2 * parent + 2;
+	while (left < len)
+	{
+		// 存在左右子节点
+		if (right < len)
+		{
+			int max = arr[left] > arr[right] ? left : right;
+			// 子节点中的最大值大于父节点
+			if (arr[max] > arr[parent])
+			{
+				Swap(arr[max], arr[parent]);
+				parent = max;
+				left = 2 * parent + 1;
+				right = 2 * parent + 2;
+			}
+			// 父节点大于子节点
+			else
+			{
+				break;
+			}	
+		}
+		// 只存在左子节点
+		else
+		{
+			if (arr[left] > arr[parent])
+			{
+				Swap(arr[left], arr[parent]);
+			}
+			break;
+		}
+	}
+}
+
+// 堆排序
+template<typename T>
+void SortHeap(vector<T>& arr)
+{
+	int len =  arr.size();
+	// 建堆
+	for (int i = len / 2 - 1; i >= 0; --i)
+	{
+		DownFilter(arr, len, i);
+	}
+	// 进行n-1次筛选
+	for (int index = len - 1; index >= 0; --index)
+	{
+		// 交换堆顶最大元素到最后的位置(已有序集合递增)
+		Swap(arr[index], arr[0]);
+		// 排除堆中的最大值(待排序集合递减),确定当前堆顶元素的最终位置
+		DownFilter(arr, index, 0);
+	}
+}
