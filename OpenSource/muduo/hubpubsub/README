@@ -1,5 +1,5 @@
 
-![hubpubsub images](https://github.com/96189/xteam/raw/master/ReadmeImages/hubpubsub.png)
+![hubpubsub images](https://github.com/96189/xteam/blob/master/ReadmeImages/hubpubsub.png)
 
 hub
     topic_object对象内部由set存储所有订阅该topic的sub的tcp connection,当pub发布对应的topic到hub时,遍历该set的tcp connection,将topic对应的content
