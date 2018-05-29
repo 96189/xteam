@@ -1,6 +1,5 @@
 
-
-![image](https://github.com/96189/xteam/raw/master/ReadmeImages/hubpubsub.png)
+![hubpubsub images](https://github.com/96189/xteam/raw/master/ReadmeImages/hubpubsub.png)
 
 hub
     topic_object对象内部由set存储所有订阅该topic的sub的tcp connection,当pub发布对应的topic到hub时,遍历该set的tcp connection,将topic对应的content
@@ -9,7 +8,7 @@ hub
 sub
     sub连接建立后发起订阅操作,send message到hub
 pub
-    pub连接建立后发起发布操作,send message高hub
+    pub连接建立后发起发布操作,send message到hub
     
 1、sub和pub启动可以无关顺序？
     topic_object内部存储lastPubTime_,若pub先启动,则会初始化该值.sub启动时若该变量有效则直接推送.
