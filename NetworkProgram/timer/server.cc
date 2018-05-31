@@ -109,13 +109,15 @@ int UnifyEvent(int g_epollfd, epoll_event *events, int max_event_num)
     }
     return nEvents;
 }
-void SetConnData2Cache(int conn, char *buffer)
+void SetConnData2Cache(int conn, char *buffer, int len)
 {
-    g_users_map[conn]->buf_.assign(buffer, buffer + strlen(buffer));
+    g_users_map[conn]->buf_.assign(buffer, buffer + len);
 }
 void SendCacheData2Conn(int conn)
 {
-    send(conn, &g_users_map[conn]->buf_[0], g_users_map[conn]->buf_.size(), 0);
+    int len = g_users_map[conn]->buf_.size();
+    int nsize = send(conn, &g_users_map[conn]->buf_[0], len, 0);
+    assert(len == nsize);
 }
 void ResetConnCache(int conn)
 {
@@ -125,9 +127,9 @@ void ResetConnCache(int conn)
 void ProcAccept(int listenfd)
 {
     struct sockaddr_in client_address;
-    socklen_t client_addrlength = sizeof(client_address);
-    int connfd = accept(listenfd, (struct sockaddr *)&client_address, &client_addrlength);
+    int connfd = CNET::tcp_accept(listenfd, &client_address);
     assert(connfd > -1);
+
     setnonblocking(connfd);
     UpdateEvents(g_epollfd, connfd, EPOLLIN, EPOLL_CTL_ADD);
 
@@ -182,11 +184,11 @@ void ProcRead(int sockfd)
             delta = TIMEOUT;
             if (g_option.echo)
             {
-                Echo(sockfd, buffer);
+                Echo(sockfd, buffer, ret);
             }
             else if (g_option.chat)
             {
-                Chat(sockfd, buffer);
+                Chat(sockfd, buffer, ret);
             }
         }
 
@@ -232,9 +234,9 @@ void HandleOutput(int sockfd, uint32_t events)
 }
 
 // 业务代码
-void Echo(int sockfd, char *buffer)
+void Echo(int sockfd, char *buffer, int len)
 {
-    SetConnData2Cache(sockfd, buffer);
+    SetConnData2Cache(sockfd, buffer, len);
 
     uint32_t events = 0;
     DisableInput(events);
@@ -242,7 +244,7 @@ void Echo(int sockfd, char *buffer)
     UpdateEvents(g_epollfd, sockfd, events, EPOLL_CTL_MOD);
 }
 
-void Chat(int sockfd, char *buffer)
+void Chat(int sockfd, char *buffer, int len)
 {
     for (ClientMap::iterator it = g_users_map.begin(); it != g_users_map.end(); ++it)
     {
@@ -250,7 +252,7 @@ void Chat(int sockfd, char *buffer)
         {
             continue;
         }
-        SetConnData2Cache(it->first, buffer);
+        SetConnData2Cache(it->first, buffer, len);
 
         uint32_t events = 0;
         DisableInput(events);
@@ -262,12 +264,11 @@ void Chat(int sockfd, char *buffer)
 void TransFile(int sockfd, char *buffer)
 {
     buffer[strlen(buffer) - 1] = '\0';
-    std::vector<std::string> req;
+    std::vector<std::string> req; 
     split_str(buffer, " ", req);
     if (req[0] == "get")
     {
         std::string filepath = std::string("./") + req[1];
-        // printf("dir/file:%s\n", filepath.c_str());
         SendFile(sockfd, filepath);
     }
     uint32_t events = 0;
@@ -290,6 +291,6 @@ void SendFile(int connfd, std::string filename)
     char buffer[filesize] = {'\0'};
     int size = read(filefd, buffer, filesize);
     assert(size != -1);
-    SetConnData2Cache(connfd, buffer);
+    SetConnData2Cache(connfd, buffer, size);
     close(filefd);
 }

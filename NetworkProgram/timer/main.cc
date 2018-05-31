@@ -59,22 +59,25 @@ int main(int argc, char *argv[])
     int ret = ParseCommandLine(argc, argv, optString, &g_option);
     assert(ret);
 
-    struct sockaddr_in address;
-    bzero(&address, sizeof(address));
-    address.sin_family = AF_INET;
-    inet_pton(AF_INET, g_option.ip, &address.sin_addr);
-    address.sin_port = htons(g_option.port);
-
-    g_listenfd = socket(PF_INET, SOCK_STREAM, 0);
+    g_listenfd = CNET::tcp_bind(g_option.ip, g_option.port);
     assert(g_listenfd > 0);
 
-    int reuse_addr = 1;
-    setsockopt(g_listenfd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
-    ret = bind(g_listenfd, (struct sockaddr *)&address, sizeof(address));
-    assert(ret != -1);
+    // struct sockaddr_in address;
+    // bzero(&address, sizeof(address));
+    // address.sin_family = AF_INET;
+    // inet_pton(AF_INET, g_option.ip, &address.sin_addr);
+    // address.sin_port = htons(g_option.port);
 
-    ret = listen(g_listenfd, 5);
-    assert(ret != -1);
+    // g_listenfd = socket(PF_INET, SOCK_STREAM, 0);
+    // assert(g_listenfd > 0);
+
+    // int reuse_addr = 1;
+    // setsockopt(g_listenfd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
+    // ret = bind(g_listenfd, (struct sockaddr *)&address, sizeof(address));
+    // assert(ret != -1);
+
+    // ret = listen(g_listenfd, 5);
+    // assert(ret != -1);
 
     g_epollfd = epoll_create(5);
     assert(g_epollfd != -1);

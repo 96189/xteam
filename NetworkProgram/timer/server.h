@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 #include <errno.h>
+#include "net.h"
 
 #define MAX_EVENT_NUM 1024
 #define TIMEOUT 60
@@ -59,7 +60,7 @@ int UnifyEvent(int g_epollfd, epoll_event *events, int max_event_num);
 // epoll_ctl add del modify
 void UpdateEvents(int epfd, int fd, int event, int op);
 // 设置栈缓冲区的数据到conn的缓冲区中
-void SetConnData2Cache(int conn, char *buffer);
+void SetConnData2Cache(int conn, char *buffer, int len);
 // 发送conn的缓冲区的数据
 void SendCacheData2Conn(int conn);
 // 清空连接缓冲区
@@ -74,9 +75,9 @@ void HandleInput(int sockfd, uint32_t events);
 // 处理可写事件
 void HandleOutput(int sockfd, uint32_t events);
 // echo业务逻辑
-void Echo(int sockfd, char *buffer);
+void Echo(int sockfd, char *buffer, int len);
 // Chat业务逻辑
-void Chat(int sockfd, char *buffer);
+void Chat(int sockfd, char *buffer, int len);
 // TransFile业务逻辑
 void TransFile(int sockfd, char *buffer);
 void SendFile(int connfd, std::string filename);
