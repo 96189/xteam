@@ -31,3 +31,9 @@ client_data
 
 ClientMap管理连接
 
+自定义协议替换掉简单的字节流后无法用nc测试
+需要编译client.cc后测试
+g++ client.cc net.cc chatMessage.pb.cc -g -std=c++0x -o client -lprotobuf -luuid -lpthread
+编译filename.proto文件
+protoc -I=$SRC_DIR --cpp_out=$DST_DIR $SRC_DIR/filename.proto
+std::thread 需要c++0x选项
