@@ -66,10 +66,10 @@ Node* FindJoinCircleStart(Node* head)
 	return joinPoint;
 }
 
-Node* CreateList()
+Node* CreateList(int n)
 {
-	Node* head = new Node(0);
-	for (int i = 0; i < 9; ++i)
+	Node* head = new Node(n);
+	for (int i = 1; i < n; ++i)
 	{
 		Node* pCur = new Node(i);
 		pCur->next_ = head->next_;
@@ -79,7 +79,7 @@ Node* CreateList()
 }
 void IteratorList(Node* head)
 {
-	Node* pCur = head->next_;
+	Node* pCur = head;
 	while (pCur != NULL)
 	{
 		printf("%d\n", pCur->val_);
@@ -102,15 +102,44 @@ void MakeCircle(Node* head)
 	pCur->next_ = point;
 
 }	
+Node* Reverse(Node* pNode)
+{
+	Node* prev = pNode;
+	Node* pCur = prev->next_;
 
+	// 第一个节点作最后一个节点
+	prev->next_ = NULL;
+	
+	Node* pNext = NULL;
+	while (pCur != NULL)
+	{
+		// 保存下一个要处理的节点
+		pNext = pCur->next_;
+		// 改变当前节点的指向
+		pCur->next_ = prev;
+
+		// 3个节点步进
+		prev = pCur;
+		pCur = pNext;
+		// pNext可能为NULL
+		if (pNext)
+		{
+			pNext = pNext->next_;
+		}
+	}
+
+	return prev;
+}
 int main(int argc, char* argv[])
 {
-	Node* h = CreateList();
+	Node* h = CreateList(10);
 	IteratorList(h);
-	MakeCircle(h);
-	Node* meetPoint;
-	printf("IsCircle %d\n", IsCircle(h, &meetPoint));
-	Node* joinPoint = FindJoinCircleStart(h);
-	printf("joinPoint:%d\n", joinPoint->val_);
+	// MakeCircle(h);
+	// Node* meetPoint;
+	// printf("IsCircle %d\n", IsCircle(h, &meetPoint));
+	// Node* joinPoint = FindJoinCircleStart(h);
+	// printf("joinPoint:%d\n", joinPoint->val_);
+	Node* newh = Reverse(h);
+	IteratorList(newh);
 	return 0;
 }
