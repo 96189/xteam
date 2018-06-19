@@ -13,6 +13,7 @@ class TreeNode
     ElemType obj_;
     // 当前节点的高度
     // 平衡因子需要根据当前节点的两个子树高度差实时计算,不保存在节点结构中
+    // 树状态维护
     int height_;
     // 树结构维护
     TreeNode *parent_;
@@ -22,16 +23,14 @@ class TreeNode
   public:
     // NULL节点高度为0 叶子节点高度为1
     TreeNode()
+        : obj_(ElemType()), height_(1), parent_(NULL), left_(NULL), right_(NULL)
     {
-        obj_ = ElemType();
-        height_ = 1;
-        parent_ = left_ = right_ = NULL;
+
     }
     TreeNode(const ElemType &value)
+        : obj_(value), height_(1), parent_(NULL), left_(NULL), right_(NULL)
     {
-        obj_ = value;
-        height_ = 1;
-        parent_ = left_ = right_ = NULL;
+
     }
 };
 
