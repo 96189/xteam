@@ -21,6 +21,10 @@ public:
         obj_ = value;
         left_ = right_ = NULL;
     }
+    ~TreeNode()
+    {
+        left_ = right_ = NULL;
+    }
 };
 
 // void BuildTree(TreeNode* root, std::vector<ElemType>& vec)
@@ -106,10 +110,16 @@ bool Delete(TreeNode* pNode, const ElemType& value)
     TreeNode* pCur = Search(pNode, value, &parent);
     if (pCur)
     {
-        // 叶子节点
+        // 叶子节点或者根节点
         if (!pCur->left_ && !pCur->right_)
         {
-            if (parent->left_ == pCur)
+            // 根节点
+            if (!parent)
+            {
+                delete pCur;
+                pCur = NULL;
+            }
+            else if (parent->left_ == pCur)
             {
                 delete pCur;
                 parent->left_ = NULL;
@@ -123,53 +133,50 @@ bool Delete(TreeNode* pNode, const ElemType& value)
         // 非叶子节点
         else 
         {
-            // 二叉搜索的性质 => 优先处理左 然后处理右
-            // 存在左子树 
-            // 左子树最大的节点与之互换 删除左子树中最大的节点
-            if (pCur->left_)
+            // 只存在左子树
+            if (pCur->left_ && !pCur->right_)
             {
-                // 转移待删除节点到pMax节点
-                TreeNode* parent = pCur;
-                TreeNode* pMax = BSTMaxTreeNode(pCur->left_, &parent);
-                assert(pMax);
-                pCur->obj_ = pMax->obj_;
-                // 删除pMax节点
-                // pMax节点为叶子节点,需要维护父节点的右孩子指针
-                if (!pMax->right_ && !pMax->left_)
-                {
-                    delete pMax;
-                    pMax = NULL;
-                    if (parent != pCur)
-                    {
-                        parent->right_ = NULL;
-                    }
-                    // 待删除节点的直接左孩子是被选中的节点
-                    else if (parent == pCur)
-                    {
-                        parent->left_ = NULL;
-                    }
-                }
-                // pMax节点为非叶子节点
-                else
-                {
-                    pMax->obj_ = pMax->left_->obj_;
-                    delete pMax->left_;
-                    pMax->left_ = NULL;
-                }
+                TreeNode* pRelease = pCur->left_;
+                pCur->obj_ = pRelease->obj_;
+                pCur->left_ = pRelease->left_;
+                pCur->right_ = pRelease->right_;
+                delete pRelease;
+                pRelease = NULL;
             }
-            // 不存在左子树
-            // 存在右子树 右子树最小的节点与之互换 删除右子树中最大的节点
-            else if (pCur->right_)
+            // 只存在右子树
+            else if (pCur->right_ && !pCur->left_)
             {
-                TreeNode* release = pCur->right_;
-                // 转移待删除节点到右子树根节点
-                pCur->obj_ = release->obj_;
-                // 待删除节点左右孩子分别指向右子树根节点的左右孩子
-                pCur->right_ = release->right_;
-                pCur->left_ = release->left_;
-                // 删除被转移后的待删除节点
-                delete release;
-                release = NULL;
+                TreeNode* pRelease = pCur->right_;
+                pCur->obj_ = pRelease->obj_;
+                pCur->left_ = pRelease->left_;
+                pCur->right_ = pRelease->right_;
+                delete pRelease;
+                pRelease = NULL;
+            }
+            // 左右子树都存在
+            else 
+            {
+                // 左子树中找最大值 或者 右子树中找最小值
+                // 节点转移后删除
+                TreeNode* rMin = pCur->right_;
+                parent = pCur;
+                while (rMin->left_)
+                {
+                    parent = rMin;
+                    rMin = rMin->left_;
+                }
+                TreeNode* pRelease = rMin;
+                pCur->obj_ = rMin->obj_;
+                if (parent->left_ == rMin)
+                {
+                    parent->left_ = rMin->right_;
+                }
+                else 
+                {
+                    parent->right_ = rMin->right_;
+                }
+                delete pRelease;
+                pRelease = NULL;
             }
         }
         flag = true;
