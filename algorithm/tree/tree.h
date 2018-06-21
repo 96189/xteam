@@ -163,8 +163,11 @@ bool Delete(TreeNode* pNode, const ElemType& value)
             {
                 TreeNode* release = pCur->right_;
                 // 转移待删除节点到右子树根节点
-                pCur->obj_ = pCur->right_->obj_;
-                pCur->right_ = pCur->right_->right_;
+                pCur->obj_ = release->obj_;
+                // 待删除节点左右孩子分别指向右子树根节点的左右孩子
+                pCur->right_ = release->right_;
+                pCur->left_ = release->left_;
+                // 删除被转移后的待删除节点
                 delete release;
                 release = NULL;
             }
