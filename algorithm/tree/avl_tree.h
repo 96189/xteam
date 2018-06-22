@@ -49,6 +49,23 @@ void MidTraver(TreeNode *pNode)
     MidTraver(pNode->right_);
     // back
 }
+
+bool IsBalance(TreeNode *pNode);
+// 中序遍历检查树平衡
+void MidTraverCheckBalance(TreeNode *pNode)
+{
+    if (!pNode)
+    {
+        return;
+    }
+    // go
+    MidTraver(pNode->left_);
+    // solve
+    assert(IsBalance(pNode));
+    // go
+    MidTraver(pNode->right_);
+    // back    
+}
 void MidTraverSave(TreeNode *pNode, std::list<TreeNode *> &l)
 {
     if (!pNode)
@@ -247,4 +264,197 @@ TreeNode *Insert(TreeNode *pNode, const ElemType &value)
     // 重设插入节点后本节点的高度
     pNode->height_ = std::max<int>(GetBalance(pNode->left_), GetBalance(pNode->right_)) + 1;
     return pNode;
+}
+
+TreeNode* Search(TreeNode* pNode, const ElemType& value)
+{
+    // 出口条件
+    if (!pNode || pNode->obj_ == value)
+    {
+        return pNode;
+    }
+    TreeNode* pCur = NULL;
+    if (value <= pNode->obj_)
+    {
+        pCur = Search(pNode->left_, value);
+    }
+    else
+    {
+        pCur = Search(pNode->right_, value);
+    }
+    return pCur;
+}
+
+// // 迭代删除如何调整平衡?
+// bool Delete(TreeNode* pNode, const ElemType& value)
+// {
+//     bool flag = false;
+//     TreeNode* pCur = Search(pNode, value);  
+//     if (pCur)
+//     {  
+//         flag = true;
+//         // 调整平衡 ???
+
+//         TreeNode* parent = pCur->parent_;
+//         // 叶子节点或者根节点
+//         if (!pCur->left_ && !pCur->right_)
+//         {
+//             // 根节点
+//             if (!parent)
+//             {
+//                 delete pCur;
+//                 pCur = NULL;
+//             }
+//             else if (parent->left_ == pCur)
+//             {
+//                 delete pCur;
+//                 parent->left_ = NULL;
+//             }
+//             else if (parent->right_ == pCur)
+//             {
+//                 delete pCur;
+//                 parent->right_ = NULL;
+//             }
+//         }
+//         // 非叶子节点
+//         else 
+//         {
+//             // 只存在左子树
+//             if (pCur->left_ && !pCur->right_)
+//             {
+//                 TreeNode* pRelease = pCur->left_;
+//                 pCur->obj_ = pRelease->obj_;
+//                 pCur->left_ = pRelease->left_;
+//                 pCur->right_ = pRelease->right_;
+//                 delete pRelease;
+//                 pRelease = NULL;
+//             }
+//             // 只存在右子树
+//             else if (pCur->right_ && !pCur->left_)
+//             {
+//                 TreeNode* pRelease = pCur->right_;
+//                 pCur->obj_ = pRelease->obj_;
+//                 pCur->left_ = pRelease->left_;
+//                 pCur->right_ = pRelease->right_;
+//                 delete pRelease;
+//                 pRelease = NULL;
+//             }
+//             // 左右子树都存在
+//             else 
+//             {
+//                 // 寻找左子树最大或者右子树最小的值来替换当前需要删除的值
+//                 // rMin表示右边最小的值
+//                 TreeNode* rMin = pCur->right_;
+//                 parent = pCur;
+//                 while (rMin->left_)
+//                 {
+//                     parent = rMin;
+//                     rMin = rMin->left_;
+//                 }
+//                 TreeNode* pRelease = rMin;
+//                 pCur->obj_ = pRelease->obj_;
+//                 // pCur的直接右孩子存在左孩子
+//                 if (parent->left_ == rMin)
+//                 {
+//                     parent->left_ = rMin->right_; 
+//                 }
+//                 // pCur的直接右孩子不存在左孩子,则最小的值就是pCur的直接右孩子
+//                 else 
+//                 {
+//                     parent->right_ = rMin->right_;
+//                 }
+//             }
+//         }
+//     }
+//     return flag;
+// }
+TreeNode* FindLeftMax(TreeNode* pNode)
+{
+    TreeNode* lMax = pNode->left_;
+    while(lMax->right_)
+    {
+        lMax = lMax->right_;
+    }
+    return lMax;
+}
+TreeNode* FindRightMin(TreeNode* pNode)
+{
+    TreeNode* rMin = pNode->right_;
+    while (rMin->left_)
+    {
+        rMin = rMin->left_;
+    }
+    return rMin;
+}
+// 删除后树的平衡调节
+bool Delete(TreeNode* pNode, const ElemType& value)
+{
+    bool flag = false;
+    if (pNode == NULL)
+    {
+        return false;
+    }
+    if (value == pNode->obj_)
+    {
+        // 叶子节点或者根节点
+        if (!pNode->left_ && !pNode->right_)
+        {
+            if (pNode->parent_ && pNode == pNode->parent_->left_)
+            {
+                pNode->parent_->left_ = NULL;
+            }
+            else if (pNode->parent_ && pNode == pNode->parent_->right_)
+            {
+                pNode->parent_->right_ = NULL;
+            }
+            delete pNode;
+            pNode = NULL;
+            flag = true;
+        }
+        // 只存在左子树,转移待删除节点
+        else if (pNode->left_ && !pNode->right_)
+        {
+            TreeNode* lMax = FindLeftMax(pNode);
+            assert(lMax);
+            pNode->obj_ = lMax->obj_;
+            // Delete(pNode->left_, lMax->obj_);
+            flag = Delete(lMax, lMax->obj_);
+        }
+        // 只存在右子树,转移待删除节点
+        else if (pNode->right_ && !pNode->left_)
+        {
+            TreeNode* rMin = FindRightMin(pNode);
+            assert(rMin);
+            pNode->obj_ = rMin->obj_;
+            // Delete(pNode->right_, rMin->obj_);
+            flag = Delete(rMin, rMin->obj_);
+        }
+        // 左右子树都存在,转移待删除节点
+        else 
+        {
+            TreeNode* rMin = FindRightMin(pNode);
+            assert(rMin);
+            pNode->obj_ = rMin->obj_;
+            // Delete(pNode->right_, rMin->obj_);
+            flag = Delete(rMin, rMin->obj_);            
+        }
+    }
+    else if (value < pNode->obj_)
+    {
+        flag = Delete(pNode->left_, value);
+        // 删除后右边比左边高
+        // todo
+    }
+    else 
+    {
+        flag = Delete(pNode->right_, value);
+        // 删除后左边比右边高
+        // todo
+    }
+    // 更新节点高度
+    if (pNode)
+    {
+        pNode->height_ = std::max<int>(GetBalance(pNode->left_), GetBalance(pNode->right_)) + 1;
+    }
+    return flag;
 }
