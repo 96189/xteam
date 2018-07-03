@@ -39,32 +39,41 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+// SIMPLE DYNAMIC STRING
 typedef char *sds;
 
+// SDS头部定义
+// sdsMakeRoomFor alloc空间预分配减少append trim等修改字符串带来的内存重分配次数
+// buf存储二进制数据c字符串函数,buf以'\0'结尾
 /* Note: sdshdr5 is never used, we just access the flags byte directly.
  * However is here to document the layout of type 5 SDS strings. */
+// 不使用
 struct __attribute__ ((__packed__)) sdshdr5 {
     unsigned char flags; /* 3 lsb of type, and 5 msb of string length */
     char buf[];
 };
+// 2^8 = 256
 struct __attribute__ ((__packed__)) sdshdr8 {
     uint8_t len; /* used */
     uint8_t alloc; /* excluding the header and null terminator */
     unsigned char flags; /* 3 lsb of type, 5 unused bits */
     char buf[];
 };
+// 2^16 = 65536
 struct __attribute__ ((__packed__)) sdshdr16 {
     uint16_t len; /* used */
     uint16_t alloc; /* excluding the header and null terminator */
     unsigned char flags; /* 3 lsb of type, 5 unused bits */
     char buf[];
 };
+// 2^32 = 4294967296
 struct __attribute__ ((__packed__)) sdshdr32 {
     uint32_t len; /* used */
     uint32_t alloc; /* excluding the header and null terminator */
     unsigned char flags; /* 3 lsb of type, 5 unused bits */
     char buf[];
 };
+// 2^64 = 18446744073709551616L
 struct __attribute__ ((__packed__)) sdshdr64 {
     uint64_t len; /* used */
     uint64_t alloc; /* excluding the header and null terminator */
@@ -83,7 +92,11 @@ struct __attribute__ ((__packed__)) sdshdr64 {
 #define SDS_HDR(T,s) ((struct sdshdr##T *)((s)-(sizeof(struct sdshdr##T))))
 #define SDS_TYPE_5_LEN(f) ((f)>>SDS_TYPE_BITS)
 
+// 获取SDS当前实际使用的空间长度
+// O(1)
 static inline size_t sdslen(const sds s) {
+    // sds指向sdshdr的buf字段
+    // 由于sdshdr的内存布局,s[-1]取到sdshdr的flags字段
     unsigned char flags = s[-1];
     switch(flags&SDS_TYPE_MASK) {
         case SDS_TYPE_5:
@@ -100,6 +113,8 @@ static inline size_t sdslen(const sds s) {
     return 0;
 }
 
+// 获取SDS剩余可用空间长度(申请的空间长度-已使用的空间长度)
+// O(1)
 static inline size_t sdsavail(const sds s) {
     unsigned char flags = s[-1];
     switch(flags&SDS_TYPE_MASK) {
@@ -126,6 +141,7 @@ static inline size_t sdsavail(const sds s) {
     return 0;
 }
 
+// 设置SDS已使用空间长度值
 static inline void sdssetlen(sds s, size_t newlen) {
     unsigned char flags = s[-1];
     switch(flags&SDS_TYPE_MASK) {
@@ -150,6 +166,7 @@ static inline void sdssetlen(sds s, size_t newlen) {
     }
 }
 
+// 更新SDS已使用空间长度
 static inline void sdsinclen(sds s, size_t inc) {
     unsigned char flags = s[-1];
     switch(flags&SDS_TYPE_MASK) {
@@ -175,6 +192,7 @@ static inline void sdsinclen(sds s, size_t inc) {
     }
 }
 
+// 获取SDS分配的空间长度
 /* sdsalloc() = sdsavail() + sdslen() */
 static inline size_t sdsalloc(const sds s) {
     unsigned char flags = s[-1];
@@ -193,6 +211,7 @@ static inline size_t sdsalloc(const sds s) {
     return 0;
 }
 
+// 设置SDS分配的空间长度值
 static inline void sdssetalloc(sds s, size_t newlen) {
     unsigned char flags = s[-1];
     switch(flags&SDS_TYPE_MASK) {
@@ -215,15 +234,24 @@ static inline void sdssetalloc(sds s, size_t newlen) {
 }
 
 sds sdsnewlen(const void *init, size_t initlen);
+// 以指定字符串创建SDS对象
+// 内部memcpy时间复杂度O(n)
 sds sdsnew(const char *init);
+// 创建SDS空对象 O(1)
 sds sdsempty(void);
+// 创建sds副本 copy O(n)
 sds sdsdup(const sds s);
+// 释放sds free内部循环 O(n)
 void sdsfree(sds s);
+// 将sds对象扩展到指定长度 增量填充0 O(n) malloc和memset
 sds sdsgrowzero(sds s, size_t len);
 sds sdscatlen(sds s, const void *t, size_t len);
+// 拼接c字符串到sds对象后 memcpy O(n)
 sds sdscat(sds s, const char *t);
+// 拼接sds对象到sds对象 memcpy O(n)
 sds sdscatsds(sds s, const sds t);
 sds sdscpylen(sds s, const char *t, size_t len);
+// 拷贝c字符串到s对象 memcpy O(n)
 sds sdscpy(sds s, const char *t);
 
 sds sdscatvprintf(sds s, const char *fmt, va_list ap);
@@ -235,10 +263,14 @@ sds sdscatprintf(sds s, const char *fmt, ...);
 #endif
 
 sds sdscatfmt(sds s, char const *fmt, ...);
+// 移除s中出现在cset中的字符  O(n) strchr memmove
 sds sdstrim(sds s, const char *cset);
+// 保留sds对象给定区间的值 O(N) memmove
 void sdsrange(sds s, ssize_t start, ssize_t end);
 void sdsupdatelen(sds s);
+// 清空sds保存的字符串 O(1) len置0 s[0] = '\0'
 void sdsclear(sds s);
+// sds对象比较 O(n) memcmp
 int sdscmp(const sds s1, const sds s2);
 sds *sdssplitlen(const char *s, ssize_t len, const char *sep, int seplen, int *count);
 void sdsfreesplitres(sds *tokens, int count);
