@@ -32,28 +32,35 @@
 #define __ADLIST_H__
 
 /* Node, List, and Iterator are the only data structures used currently. */
-
+// 双向链表节点
 typedef struct listNode {
     struct listNode *prev;
     struct listNode *next;
     void *value;
 } listNode;
 
+// 双向链表迭代器
 typedef struct listIter {
     listNode *next;
     int direction;
 } listIter;
 
+// 双向链表结构
 typedef struct list {
     listNode *head;
     listNode *tail;
+    // 表节点复制函数
     void *(*dup)(void *ptr);
+    // 表节点释放函数
     void (*free)(void *ptr);
+    // 表节点值对比函数
     int (*match)(void *ptr, void *key);
+    // 链表长度
     unsigned long len;
 } list;
 
 /* Functions implemented as macros */
+// llen
 #define listLength(l) ((l)->len)
 #define listFirst(l) ((l)->head)
 #define listLast(l) ((l)->tail)
@@ -61,8 +68,11 @@ typedef struct list {
 #define listNextNode(n) ((n)->next)
 #define listNodeValue(n) ((n)->value)
 
+// 设置节点复制函数
 #define listSetDupMethod(l,m) ((l)->dup = (m))
+// 设置节点释放函数
 #define listSetFreeMethod(l,m) ((l)->free = (m))
+// 设置节点比较函数
 #define listSetMatchMethod(l,m) ((l)->match = (m))
 
 #define listGetDupMethod(l) ((l)->dup)
@@ -71,25 +81,47 @@ typedef struct list {
 
 /* Prototypes */
 list *listCreate(void);
+// 释放链表节点 释放链表结构 O(n)
 void listRelease(list *list);
+// 清空链表 销毁所有节点 O(n)
 void listEmpty(list *list);
+// 头插法 O(1) lpush
 list *listAddNodeHead(list *list, void *value);
+// 尾插法 O(1) rpush
 list *listAddNodeTail(list *list, void *value);
+// 在list链表的old_node的或前或后插入节点 after非0则在后插入 after为0则在前插入
+// O(1) linsert
 list *listInsertNode(list *list, listNode *old_node, void *value, int after);
+// 删除节点 O(1) lrem lpop rpop
 void listDelNode(list *list, listNode *node);
+// 创建链表迭代器(正向迭代或者反向迭代)
 listIter *listGetIterator(list *list, int direction);
+// 迭代器应用 向前或者向后指 O(1)
 listNode *listNext(listIter *iter);
+// 释放迭代器内存
 void listReleaseIterator(listIter *iter);
+// 链表复制 O(n)
 list *listDup(list *orig);
+// 在链表中搜索指定的key O(n)
 listNode *listSearchKey(list *list, void *key);
+// 索引链表正向或者反向的第n个元素 O(n)
+// index > 0正向 < 0 反向
+// 索引计数从0开始
+// lset lindex
 listNode *listIndex(list *list, long index);
+// 创建正向迭代器 O(1)
 void listRewind(list *list, listIter *li);
+// 创建反向迭代器 O(1)
 void listRewindTail(list *list, listIter *li);
+// 取出链表的表尾节点，并将它移动到表头，成为新的表头节点 O(1)
 void listRotate(list *list);
+// 连接链表o到链表l O(1)
 void listJoin(list *l, list *o);
 
 /* Directions for iterators */
+// 迭代器方向 从头到尾
 #define AL_START_HEAD 0
+// 迭代器方向 从尾到头
 #define AL_START_TAIL 1
 
 #endif /* __ADLIST_H__ */

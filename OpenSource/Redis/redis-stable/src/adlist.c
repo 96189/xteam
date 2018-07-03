@@ -44,8 +44,10 @@ list *listCreate(void)
 
     if ((list = zmalloc(sizeof(*list))) == NULL)
         return NULL;
+    // 初始化为空 头尾指向NULL 长度为0
     list->head = list->tail = NULL;
     list->len = 0;
+    // 节点复制函数 节点释放函数 节点比较函数
     list->dup = NULL;
     list->free = NULL;
     list->match = NULL;
@@ -62,7 +64,9 @@ void listEmpty(list *list)
     len = list->len;
     while(len--) {
         next = current->next;
+        // 回收节点值内存
         if (list->free) list->free(current->value);
+        // 回收节点内存
         zfree(current);
         current = next;
     }
@@ -137,12 +141,14 @@ list *listInsertNode(list *list, listNode *old_node, void *value, int after) {
     if ((node = zmalloc(sizeof(*node))) == NULL)
         return NULL;
     node->value = value;
+    // old_node后插入
     if (after) {
         node->prev = old_node;
         node->next = old_node->next;
         if (list->tail == old_node) {
             list->tail = node;
         }
+    // old_node前插入
     } else {
         node->next = old_node;
         node->prev = old_node->prev;
@@ -150,6 +156,7 @@ list *listInsertNode(list *list, listNode *old_node, void *value, int after) {
             list->head = node;
         }
     }
+    // 维护新节点的前后节点的指针
     if (node->prev != NULL) {
         node->prev->next = node;
     }
@@ -174,7 +181,9 @@ void listDelNode(list *list, listNode *node)
         node->next->prev = node->prev;
     else
         list->tail = node->prev;
+    // 释放节点值的内存
     if (list->free) list->free(node->value);
+    // 释放节点内存
     zfree(node);
     list->len--;
 }
@@ -188,8 +197,10 @@ listIter *listGetIterator(list *list, int direction)
     listIter *iter;
 
     if ((iter = zmalloc(sizeof(*iter))) == NULL) return NULL;
+    // 正向迭代
     if (direction == AL_START_HEAD)
         iter->next = list->head;
+    // 反向迭代
     else
         iter->next = list->tail;
     iter->direction = direction;
@@ -231,8 +242,10 @@ listNode *listNext(listIter *iter)
     listNode *current = iter->next;
 
     if (current != NULL) {
+        // 正向迭代器next
         if (iter->direction == AL_START_HEAD)
             iter->next = current->next;
+        // 反向迭代器prev
         else
             iter->next = current->prev;
     }
@@ -247,29 +260,37 @@ listNode *listNext(listIter *iter)
  * the original node is used as value of the copied node.
  *
  * The original list both on success or error is never modified. */
+// 复制整个链表
 list *listDup(list *orig)
 {
     list *copy;
     listIter iter;
     listNode *node;
 
+    // 创建新链表结构
     if ((copy = listCreate()) == NULL)
         return NULL;
+    // 拷贝 复制节点函数 节点释放函数 节点比较函数
     copy->dup = orig->dup;
     copy->free = orig->free;
     copy->match = orig->match;
+
+    // 获取原链表的正向迭代器
     listRewind(orig, &iter);
+    // 迭代原链表
     while((node = listNext(&iter)) != NULL) {
         void *value;
-
+        // 深拷贝
         if (copy->dup) {
             value = copy->dup(node->value);
             if (value == NULL) {
                 listRelease(copy);
                 return NULL;
             }
+        // 浅拷贝
         } else
             value = node->value;
+        // 尾插法
         if (listAddNodeTail(copy, value) == NULL) {
             listRelease(copy);
             return NULL;
@@ -292,12 +313,16 @@ listNode *listSearchKey(list *list, void *key)
     listIter iter;
     listNode *node;
 
+    // 获取链表的正向迭代器
     listRewind(list, &iter);
+    // 迭代链表
     while((node = listNext(&iter)) != NULL) {
+        // 自定义比较
         if (list->match) {
             if (list->match(node->value, key)) {
                 return node;
             }
+        // 值比较
         } else {
             if (key == node->value) {
                 return node;
@@ -316,6 +341,7 @@ listNode *listIndex(list *list, long index) {
     listNode *n;
 
     if (index < 0) {
+        // zero-based index
         index = (-index)-1;
         n = list->tail;
         while(index-- && n) n = n->prev;
