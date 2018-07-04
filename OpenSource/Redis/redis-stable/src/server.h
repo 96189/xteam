@@ -756,20 +756,33 @@ struct sharedObjectsStruct {
     sds minstring, maxstring;
 };
 
+// 跳跃表节点
 /* ZSETs use a specialized version of Skiplists */
 typedef struct zskiplistNode {
+    // sds成员对象
     sds ele;
+    // 分值(节点按照各自保存的分值从小到大排序)
     double score;
+    // 后退指针
     struct zskiplistNode *backward;
+    // 层数组(层的数量越多访问其他节点的速度越快)
+    // 层高根据幂次定律随机生成1~32之间的值
     struct zskiplistLevel {
+        // 前进指针
         struct zskiplistNode *forward;
+        // 跨度(记录前进指针所指向的节点和当前节点的距离)
+        // 方便计算当前节点的排位rank(遍历时累加访问过的所有层跨度)
         unsigned int span;
     } level[];
 } zskiplistNode;
 
+// 跳跃表
 typedef struct zskiplist {
+    // 表的头尾节点
     struct zskiplistNode *header, *tail;
+    // 表中节点的数量
     unsigned long length;
+    // 表中层数最大的节点的层数(不算header节点(32层))
     int level;
 } zskiplist;
 
@@ -1571,12 +1584,18 @@ typedef struct {
     int minex, maxex; /* are min or max exclusive? */
 } zlexrangespec;
 
+// 创建跳跃表
 zskiplist *zslCreate(void);
+// 释放跳跃表
 void zslFree(zskiplist *zsl);
+// 给定score分值和sds对象 生成一个跳跃表节点并插入跳跃表zsl
 zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele);
 unsigned char *zzlInsert(unsigned char *zl, sds ele, double score);
+// 
 int zslDelete(zskiplist *zsl, double score, sds ele, zskiplistNode **node);
+// 给定分值范围range 返回跳跃表zsl中第一个符合这个范围的节点
 zskiplistNode *zslFirstInRange(zskiplist *zsl, zrangespec *range);
+// 给定分值范围range 返回跳跃表zsl中最后一个符合这个范围的节点
 zskiplistNode *zslLastInRange(zskiplist *zsl, zrangespec *range);
 double zzlGetScore(unsigned char *sptr);
 void zzlNext(unsigned char *zl, unsigned char **eptr, unsigned char **sptr);
@@ -1587,22 +1606,31 @@ unsigned int zsetLength(const robj *zobj);
 void zsetConvert(robj *zobj, int encoding);
 void zsetConvertToZiplistIfNeeded(robj *zobj, size_t maxelelen);
 int zsetScore(robj *zobj, sds member, double *score);
+// 返回包含给定sds对象和score分值在跳跃表zsl中的排位
 unsigned long zslGetRank(zskiplist *zsl, double score, sds o);
 int zsetAdd(robj *zobj, double score, sds ele, int *flags, double *newscore);
 long zsetRank(robj *zobj, sds ele, int reverse);
 int zsetDel(robj *zobj, sds ele);
 sds ziplistGetObject(unsigned char *sptr);
+// 
 int zslValueGteMin(double value, zrangespec *spec);
+// 
 int zslValueLteMax(double value, zrangespec *spec);
+// 
 void zslFreeLexRange(zlexrangespec *spec);
+// 
 int zslParseLexRange(robj *min, robj *max, zlexrangespec *spec);
 unsigned char *zzlFirstInLexRange(unsigned char *zl, zlexrangespec *range);
 unsigned char *zzlLastInLexRange(unsigned char *zl, zlexrangespec *range);
+// 
 zskiplistNode *zslFirstInLexRange(zskiplist *zsl, zlexrangespec *range);
+// 
 zskiplistNode *zslLastInLexRange(zskiplist *zsl, zlexrangespec *range);
 int zzlLexValueGteMin(unsigned char *p, zlexrangespec *spec);
 int zzlLexValueLteMax(unsigned char *p, zlexrangespec *spec);
+// 
 int zslLexValueGteMin(sds value, zlexrangespec *spec);
+// 
 int zslLexValueLteMax(sds value, zlexrangespec *spec);
 
 /* Core functions */
