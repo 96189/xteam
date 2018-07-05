@@ -6,25 +6,25 @@
         3、减少修改字符串长度时所需的内存重新分配次数
         4、二进制安全
         5、兼容部分c函数
-***
+
 # 双向链表:
     双向链表常见的操作实现
-***
+
 # 跳跃表:
-    [skiplist论文][ftp://ftp.cs.umd.edu/pub/skipLists/skiplists.pdf]
+    [skiplist论文](ftp://ftp.cs.umd.edu/pub/skipLists/skiplists.pdf)
     平均O(logN)复杂度的证明 
     幂次定律随机生成层高
     redis跳跃表的几个特点(score可相同,后退指针)
-***
+
 # 哈希表:
     hash函数生成算法 MurmurHash2
     hash冲突解决:链地址法
     hash表的扩展与收缩
     redis的渐进式rehash算法(重新散列算法)
-***
+
 # 字典:
     redis中字段的使用哈希表实现
-***
+
 # ziplist压缩列表
     空白 ziplist 示例图
     area        |<---- ziplist header ---->|<-- end -->|
@@ -54,7 +54,7 @@
                                                             ZIPLIST_ENTRY_TAIL
                                                         
     Ziplist 是为了尽可能地节约内存而设计的特殊编码双端链表,Ziplist 允许在列表的两端进行 O(1) 复杂度的 push 和 pop 操作。
-
+    已知节点指针p,p-p->prevlensize得到前一个节点的地址,p+p所占的字节数得到后一个节点的地址.
 
 
     ziplist如何做到节省内存？
