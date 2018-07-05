@@ -56,6 +56,7 @@ void memrev16(void *p) {
 
 /* Toggle the 32 bit unsigned integer pointed by *p from little endian to
  * big endian */
+// 32为小端转大端(主机字节序转网络字节序)
 void memrev32(void *p) {
     unsigned char *x = p, t;
 
