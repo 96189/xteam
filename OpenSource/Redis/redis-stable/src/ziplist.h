@@ -34,14 +34,24 @@
 #define ZIPLIST_HEAD 0
 #define ZIPLIST_TAIL 1
 
+// 创建压缩列表
 unsigned char *ziplistNew(void);
+// 归并到新创建的压缩列表
 unsigned char *ziplistMerge(unsigned char **first, unsigned char **second);
+// 向zl的where位置添加长度为slen的s字符串
 unsigned char *ziplistPush(unsigned char *zl, unsigned char *s, unsigned int slen, int where);
+// index>0正向遍历zl
+// index<0反向遍历zl
 unsigned char *ziplistIndex(unsigned char *zl, int index);
+// 返回zl中p的后置节点
 unsigned char *ziplistNext(unsigned char *zl, unsigned char *p);
+// 返回zl中p的前置节点
 unsigned char *ziplistPrev(unsigned char *zl, unsigned char *p);
+// 获取p位置存储的字符串sval和字符串长度slen或者整数lval
 unsigned int ziplistGet(unsigned char *p, unsigned char **sval, unsigned int *slen, long long *lval);
+// 在zl的p位置插入长度为slen的字符串s
 unsigned char *ziplistInsert(unsigned char *zl, unsigned char *p, unsigned char *s, unsigned int slen);
+// 
 unsigned char *ziplistDelete(unsigned char *zl, unsigned char **p);
 unsigned char *ziplistDeleteRange(unsigned char *zl, int index, unsigned int num);
 unsigned int ziplistCompare(unsigned char *p, unsigned char *s, unsigned int slen);
