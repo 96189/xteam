@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <stdio.h>
-
+#include <vector>
 typedef int ElemType;
 
 class TreeNode
@@ -239,4 +239,61 @@ int Depth(TreeNode* pNode)
         return 0;
     }
     return (Depth(pNode->left_) > Depth(pNode->right_) ? (Depth(pNode->left_) + 1) : (Depth(pNode->right_) + 1));
+}
+
+// 中序遍历非递归
+void MidTraverIteration(TreeNode* pNode)
+{
+    std::vector<TreeNode*> stack;
+    while (pNode || !stack.empty())
+    {
+        // 迭代某一棵子树(或左子树或右子树)
+        while (pNode)
+        {
+            stack.push_back(pNode);
+            pNode = pNode->left_;
+        }
+        if (!stack.empty())
+        {
+            TreeNode* pPop = stack.back();
+            assert(pPop);
+            stack.erase(stack.begin() + stack.size() - 1);
+            printf("%d -> ", pPop->obj_);
+            // 切换到右子树
+            pNode = pPop->right_;
+        }
+    }
+    printf("\n");
+}
+
+// 前序遍历非递归
+void FirstTraverIteration(TreeNode* pNode)
+{
+    std::vector<TreeNode*> stack;
+    stack.push_back(pNode);
+    while (!stack.empty())
+    {
+        TreeNode *pPop = stack.back();
+        assert(pPop);
+        stack.erase(stack.begin() + stack.size() - 1);
+        printf("%d -> ", pPop->obj_);
+
+        if (pPop->right_)
+        {
+            stack.push_back(pPop->right_);
+        }
+        if (pPop->left_)
+        {
+            stack.push_back(pPop->left_);
+        }
+    }
+    printf("\n");
+}
+
+// 后序遍历非递归
+void LastTraverIteration(TreeNode* pNode)
+{
+    std::vector<TreeNode*> stack;
+
+    printf("\n");
 }

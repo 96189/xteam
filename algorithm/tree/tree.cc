@@ -12,7 +12,8 @@ void BuildTree(TreeNode** root, std::vector<ElemType>& vec)
 
 int main(int argc, char* argv[])
 {
-    int arr[] = { -2, -1, -3, -5, -9, -8, 1, 3, 5, 7, 9, 2, 4, 6, 8, 0 };
+    // int arr[] = { -2, -1, -3, -5, -9, -8, 1, 3, 5, 7, 9, 2, 4, 6, 8, 0 };
+    int arr[] = { 1, 3, 5, 7, 9, 2, 4, 6, 8, 0 };
     int len = sizeof(arr) / sizeof(arr[0]);
     std::vector<ElemType> data;
     data.assign(arr, arr + len);
@@ -21,10 +22,11 @@ int main(int argc, char* argv[])
     BuildTree(&root, data);
     assert(NULL != root);
 
+    printf("root:%d\n", root->obj_);
     // FirstTraver(root);
     // printf("\n");
-    MidTraver(root);
-    printf("\n");
+    // MidTraver(root);
+    // printf("\n");
     // LastTraver(root);
     // printf("\n");
 
@@ -46,20 +48,28 @@ int main(int argc, char* argv[])
     // assert(parent->obj_ == 7);
 
     // 9 8 0 1
-    while (root)
-    {
-        int index = rand() % len;
-        printf("delete %d\n", arr[index]);
-        bool flag = Delete(root, arr[index]);
-        if (flag)
-        {
-            MidTraver(root);
-            printf("\n");
-        }
-        if (!root->left_ && !root->right_)
-        {
-            break;
-        }
-    }
+    // while (root)
+    // {
+    //     int index = rand() % len;
+    //     printf("delete %d\n", arr[index]);
+    //     bool flag = Delete(root, arr[index]);
+    //     if (flag)
+    //     {
+    //         MidTraver(root);
+    //         printf("\n");
+    //     }
+    //     if (!root->left_ && !root->right_)
+    //     {
+    //         break;
+    //     }
+    // }
+    // MidTraverIteration(root);
+    // FirstTraver(root);
+    // printf("\n");
+    // FirstTraverIteration(root);
+
+    LastTraver(root);
+    printf("\n");
+    LastTraverIteration(root);
     return 0;
 }
