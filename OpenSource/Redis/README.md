@@ -26,4 +26,35 @@
     redis中字段的使用哈希表实现
 ***
 # ziplist压缩列表
+空白 ziplist 示例图
+area        |<---- ziplist header ---->|<-- end -->|
+size          4 bytes   4 bytes 2 bytes  1 byte
+            +---------+--------+-------+-----------+
+component   | zlbytes | zltail | zllen | zlend     |
+            |         |        |       |           |
+value       |  1011   |  1010  |   0   | 1111 1111 |
+            +---------+--------+-------+-----------+
+                                       ^
+                                       |
+                               ZIPLIST_ENTRY_HEAD
+                                       &
+address                        ZIPLIST_ENTRY_TAIL
+                                       &
+                               ZIPLIST_ENTRY_END
+非空 ziplist 示例图
+area        |<---- ziplist header ---->|<----------- entries ------------->|<-end->|
+size          4 bytes  4 bytes  2 bytes    ?        ?        ?        ?     1 byte
+            +---------+--------+-------+--------+--------+--------+--------+-------+
+component   | zlbytes | zltail | zllen | entry1 | entry2 |  ...   | entryN | zlend |
+            +---------+--------+-------+--------+--------+--------+--------+-------+
+                                       ^                          ^        ^
+address                                |                          |        |
+                                ZIPLIST_ENTRY_HEAD                |   ZIPLIST_ENTRY_END
+                                                                  |
+                                                        ZIPLIST_ENTRY_TAIL
+                                                        
+Ziplist 是为了尽可能地节约内存而设计的特殊编码双端链表,Ziplist 允许在列表的两端进行 O(1) 复杂度的 push 和 pop 操作。
+
+
+
     ziplist如何做到节省内存？
