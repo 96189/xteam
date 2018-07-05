@@ -11,7 +11,7 @@
     双向链表常见的操作实现
 ***
 # 跳跃表:
-    [skiplist论文](ftp://ftp.cs.umd.edu/pub/skipLists/skiplists.pdf)
+    [skiplist论文][ftp://ftp.cs.umd.edu/pub/skipLists/skiplists.pdf]
     平均O(logN)复杂度的证明 
     幂次定律随机生成层高
     redis跳跃表的几个特点(score可相同,后退指针)
