@@ -59,11 +59,11 @@ void MidTraverCheckBalance(TreeNode *pNode)
         return;
     }
     // go
-    MidTraver(pNode->left_);
+    MidTraverCheckBalance(pNode->left_);
     // solve
     assert(IsBalance(pNode));
     // go
-    MidTraver(pNode->right_);
+    MidTraverCheckBalance(pNode->right_);
     // back    
 }
 void MidTraverSave(TreeNode *pNode, std::list<TreeNode *> &l)
@@ -107,7 +107,7 @@ bool IsBalance(TreeNode *pNode)
 {
     return (GetTreeBalance(pNode) < 2);
 }
-int GetBalance(TreeNode *pNode)
+int GetHeight(TreeNode *pNode)
 {
     return (NULL == pNode) ? 0 : pNode->height_;
 }
@@ -140,8 +140,8 @@ TreeNode *RotateLL(TreeNode *pNode)
     // 维护B右孩子指针
     pRecord->right_ = pNode;
     // 重设调整后的节点高度
-    pNode->height_ = std::max<int>(GetBalance(pNode->left_), GetBalance(pNode->right_)) + 1;
-    pRecord->height_ = std::max<int>(GetBalance(pRecord->left_), GetBalance(pRecord->right_)) + 1;
+    pNode->height_ = std::max<int>(GetHeight(pNode->left_), GetHeight(pNode->right_)) + 1;
+    pRecord->height_ = std::max<int>(GetHeight(pRecord->left_), GetHeight(pRecord->right_)) + 1;
     return pRecord;
 }
 
@@ -172,8 +172,8 @@ TreeNode *RotateRR(TreeNode *pNode)
     // B的左孩子指针
     pRecord->left_ = pNode;
     // 重设调整后的节点高度
-    pNode->height_ = std::max<int>(GetBalance(pNode->left_), GetBalance(pNode->right_)) + 1;
-    pRecord->height_ = std::max<int>(GetBalance(pRecord->left_), GetBalance(pRecord->right_)) + 1;
+    pNode->height_ = std::max<int>(GetHeight(pNode->left_), GetHeight(pNode->right_)) + 1;
+    pRecord->height_ = std::max<int>(GetHeight(pRecord->left_), GetHeight(pRecord->right_)) + 1;
     return pRecord;
 }
 // LR
@@ -192,7 +192,34 @@ TreeNode *RotateRL(TreeNode *pNode)
     // 向左边旋转
     return RotateRR(pNode);
 }
-
+// 左边高于右边
+void ReBalanceLeft(TreeNode* pNode)
+{
+    TreeNode* l = pNode->left_;
+    // 右边高于左边
+    if (GetHeight(l->left_) - GetHeight(l->right_) == -1)
+    {   
+        RotateLR(pNode);
+    }
+    else 
+    {
+        RotateLL(pNode);
+    }
+}
+// 右边高于左边
+void ReBalanceRight(TreeNode* pNode)
+{
+    TreeNode* r = pNode->right_;
+    // 左边高于右边
+    if (GetHeight(r->right_) - GetHeight(r->left_) == -1)
+    {
+        RotateRL(pNode);
+    }
+    else 
+    {
+        RotateRR(pNode);
+    }
+}
 //
 TreeNode *Insert(TreeNode *pNode, const ElemType &value)
 {
@@ -230,6 +257,10 @@ TreeNode *Insert(TreeNode *pNode, const ElemType &value)
                 // nothing
             }
         }
+        // if (GetHeight(pNode->left_) - GetHeight(pNode->right_) >= 2)
+        // {
+        //     ReBalanceLeft(pNode->left_);
+        // }
     }
     else if (value > pNode->obj_)
     {
@@ -255,6 +286,10 @@ TreeNode *Insert(TreeNode *pNode, const ElemType &value)
                 // nothing
             }
         }
+        // if (GetHeight(pNode->right_->right_) - GetHeight(pNode->right_->left_) >= 2)
+        // {
+        //     ReBalanceRight(pNode->right_);
+        // }
     }
     else
     {
@@ -262,7 +297,7 @@ TreeNode *Insert(TreeNode *pNode, const ElemType &value)
     }
     // back
     // 重设插入节点后本节点的高度
-    pNode->height_ = std::max<int>(GetBalance(pNode->left_), GetBalance(pNode->right_)) + 1;
+    pNode->height_ = std::max<int>(GetHeight(pNode->left_), GetHeight(pNode->right_)) + 1;
     return pNode;
 }
 
@@ -386,6 +421,7 @@ TreeNode* FindRightMin(TreeNode* pNode)
     }
     return rMin;
 }
+
 // 删除后树的平衡调节
 bool Delete(TreeNode* pNode, const ElemType& value)
 {
@@ -454,7 +490,7 @@ bool Delete(TreeNode* pNode, const ElemType& value)
     // 更新节点高度
     if (pNode)
     {
-        pNode->height_ = std::max<int>(GetBalance(pNode->left_), GetBalance(pNode->right_)) + 1;
+        pNode->height_ = std::max<int>(GetHeight(pNode->left_), GetHeight(pNode->right_)) + 1;
     }
     return flag;
 }

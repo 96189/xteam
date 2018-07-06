@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     assert(NULL != root);
 
     PrinTreeDetail(root);
-
+    MidTraverCheckBalance(root);
     MidTraver(root);
     printf("\n");
     
@@ -51,21 +51,21 @@ int main(int argc, char *argv[])
     // assert(Delete(root, 8) == true);
     // assert(Delete(root, 19) == false);
 
-    while (root)
-    {
-        int index = rand() % len;
-        printf("delete %d\n", arr[index]);
-        bool flag = Delete(root, arr[index]);
-        if (flag)
-        {
-            PrinTreeDetail(root);
-            MidTraverCheckBalance(root);
-            printf("\n");
-        }
-        if (!root->left_ && !root->right_)
-        {
-            break;
-        }
-    }
+    // while (root)
+    // {
+    //     int index = rand() % len;
+    //     printf("delete %d\n", arr[index]);
+    //     bool flag = Delete(root, arr[index]);
+    //     if (flag)
+    //     {
+    //         PrinTreeDetail(root);
+    //         MidTraverCheckBalance(root);
+    //         printf("\n");
+    //     }
+    //     if (!root->left_ && !root->right_)
+    //     {
+    //         break;
+    //     }
+    // }
     return 0;
 }
