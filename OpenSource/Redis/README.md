@@ -66,9 +66,12 @@
     ziplist如何做到节省内存？
     
 # redis对象
+    redis对象系统使用void decrRefCount(robj *o)接口实现了基于引用计数的内存回收机制,使用void incrRefCount(robj *o)接口通过引用计数实现了对象共享机制.
+
 ## 字符串对象
 ### 底层数据结构
     sds
+    可存储整数字符串 浮点型字符串 普通字符串
     
 ## 列表对象
 ### 底层数据结构
@@ -76,17 +79,17 @@
     
 ## 集合对象
 ### 底层数据结构
-    dict
+    hash table
     intset
     
 ## 哈希对象
 ### 底层数据结构
-    dict
+    hash table
     ziplist
     
 ## 有序集合对象
 ### 底层数据结构
-    dict+skiplist
+    hash table+skiplist
     ziplist
     
 ## Module对象
