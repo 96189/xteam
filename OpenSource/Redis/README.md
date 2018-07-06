@@ -1,5 +1,6 @@
 
-# sds字符串对象
+# 底层数据结构
+## sds字符串对象
     sds对象设计的几个优点
         1、常数复杂度获取长度
         2、杜绝缓冲区溢出
@@ -7,28 +8,30 @@
         4、二进制安全
         5、兼容部分c函数
 
-# 双向链表
+## 双向链表
     双向链表常见的操作实现
     
-# Quicklist
+## Quicklist
     ziplist和双向链表的结合(列表对象实际使用的数据结构)
     
-# 跳跃表
+## 跳跃表
     [skiplist论文](ftp://ftp.cs.umd.edu/pub/skipLists/skiplists.pdf)
     平均O(logN)复杂度的证明 
     幂次定律随机生成层高
     redis跳跃表的几个特点(score可相同,后退指针)
 
-# 哈希表
+## 哈希表
     hash函数生成算法 MurmurHash2
     hash冲突解决:链地址法
     hash表的扩展与收缩
     redis的渐进式rehash算法(重新散列算法)
 
-# 字典
+## 字典
     redis中字段的使用哈希表实现
 
-# ziplist压缩列表
+## 整数集合
+
+## ziplist压缩列表
     空白 ziplist 示例图
     area        |<---- ziplist header ---->|<-- end -->|
     size          4 bytes   4 bytes 2 bytes  1 byte
@@ -61,6 +64,35 @@
 
 
     ziplist如何做到节省内存？
+    
+# redis对象
+## 字符串对象
+### 底层数据结构
+    sds
+    
+## 列表对象
+### 底层数据结构
+    quicklist
+    
+## 集合对象
+### 底层数据结构
+    dict
+    intset
+    
+## 哈希对象
+### 底层数据结构
+    dict
+    ziplist
+    
+## 有序集合对象
+### 底层数据结构
+    dict+skiplist
+    ziplist
+    
+## Module对象
+### 底层数据结构
+
+
 # 缓存置换算法
 ## LRU
 
