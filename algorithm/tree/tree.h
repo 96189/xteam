@@ -242,6 +242,7 @@ int Depth(TreeNode* pNode)
 }
 
 // 中序遍历非递归
+// 左 -> 根 -> 右
 void MidTraverIteration(TreeNode* pNode)
 {
     std::vector<TreeNode*> stack;
@@ -267,6 +268,7 @@ void MidTraverIteration(TreeNode* pNode)
 }
 
 // 前序遍历非递归
+// 根 -> 左 -> 右
 void FirstTraverIteration(TreeNode* pNode)
 {
     std::vector<TreeNode*> stack;
@@ -291,9 +293,41 @@ void FirstTraverIteration(TreeNode* pNode)
 }
 
 // 后序遍历非递归
+// 左 -> 右 -> 根
 void LastTraverIteration(TreeNode* pNode)
 {
     std::vector<TreeNode*> stack;
+    TreeNode* preVisit = NULL;
+    while (pNode || !stack.empty())
+    {
+        while (pNode)
+        {
+            stack.push_back(pNode);
+            pNode = pNode->left_;
+        }
 
+        while (!stack.empty())
+        {
+            TreeNode* pPop = stack.back();
+            assert(pPop);
+
+            // 待删除节点不存在右子树或者右子树已经访问过
+            // 删除待删除节点 更新上一次访问过的节点
+            if (!pPop->right_ || pPop->right_ == preVisit)
+            {
+                // 确认可以弹出
+                stack.erase(stack.begin() + stack.size() - 1);
+                printf("%d -> ", pPop->obj_);
+                preVisit = pPop;
+            }
+            // 存在右子树且右子树没有被访问过,切换到右子树
+            // 保证右子树没访问之前不能访问根节点
+            else 
+            {
+                pNode = pPop->right_;
+                break;
+            }
+        }
+    }
     printf("\n");
 }
