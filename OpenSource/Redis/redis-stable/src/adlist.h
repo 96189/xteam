@@ -33,6 +33,8 @@
 
 /* Node, List, and Iterator are the only data structures used currently. */
 // 双向链表节点
+// 32位:sizeof(listNode) = 12
+// 64位:sizeof(listNode) = 24
 typedef struct listNode {
     struct listNode *prev;
     struct listNode *next;
@@ -46,6 +48,8 @@ typedef struct listIter {
 } listIter;
 
 // 双向链表结构
+// 32位:sizeof(list) = 24
+// 64位:sizeof(list) = 48
 typedef struct list {
     listNode *head;
     listNode *tail;
@@ -55,7 +59,7 @@ typedef struct list {
     void (*free)(void *ptr);
     // 表节点值对比函数
     int (*match)(void *ptr, void *key);
-    // 链表长度
+    // 链表长度32位4Byte 64位8Byte
     unsigned long len;
 } list;
 

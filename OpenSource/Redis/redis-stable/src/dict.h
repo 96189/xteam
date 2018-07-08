@@ -45,6 +45,7 @@
 #define DICT_NOTUSED(V) ((void) V)
 
 // 哈希表节点
+// 64位: 24Byte
 typedef struct dictEntry {
     // 键
     void *key;
@@ -60,6 +61,7 @@ typedef struct dictEntry {
     struct dictEntry *next;
 } dictEntry;
 
+// // 64位: 48Byte
 typedef struct dictType {
     // 计算hash值
     uint64_t (*hashFunction)(const void *key);
@@ -78,6 +80,7 @@ typedef struct dictType {
 /* This is our hash table structure. Every dictionary has two of this as we
  * implement incremental rehashing, for the old to the new table. */
 // 哈希表结构
+// 64位: 32Byte
 typedef struct dictht {
     // 表项数组
     dictEntry **table;
@@ -93,6 +96,7 @@ typedef struct dictht {
 // 哈希表的负载因子
 // load_factor = ht[0].used / ht[0].size
 // 哈希表的扩展和收缩通过渐进式rehash完成
+// 64位: 32+32*2=96Byte
 typedef struct dict {
     // 键值操作函数集合
     dictType *type;

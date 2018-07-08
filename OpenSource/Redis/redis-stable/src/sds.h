@@ -67,11 +67,12 @@ struct __attribute__ ((__packed__)) sdshdr16 {
     char buf[];
 };
 // 2^32 = 4294967296
+// sizeof(sdshdr32) = 12
 struct __attribute__ ((__packed__)) sdshdr32 {
     uint32_t len; /* used */
     uint32_t alloc; /* excluding the header and null terminator */
     unsigned char flags; /* 3 lsb of type, 5 unused bits */
-    char buf[];
+    char buf[]; // 结构体末尾,柔性数组,变长结构,不占用内存
 };
 // 2^64 = 18446744073709551616L
 struct __attribute__ ((__packed__)) sdshdr64 {
