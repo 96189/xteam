@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <vector>
+#include <list>
 typedef int ElemType;
 
 class TreeNode
@@ -328,6 +329,61 @@ void LastTraverIteration(TreeNode* pNode)
                 break;
             }
         }
+    }
+    printf("\n");
+}
+
+// 广度优先遍历
+// 层/宽度遍历 -> 队列
+void BFIteration(TreeNode* pNode)
+{
+    assert(pNode);
+    TreeNode* pCur = NULL;
+    std::list<TreeNode*> visited_queue;
+    std::list<TreeNode*> unvisited_queue;
+    unvisited_queue.push_back(pNode);
+    while (!unvisited_queue.empty())
+    {
+        pCur = unvisited_queue.front();
+        unvisited_queue.pop_front();
+        assert(pCur);
+        if (pCur->left_)
+        {
+            unvisited_queue.push_back(pCur->left_);
+        }
+        if (pCur->right_)
+        {
+            unvisited_queue.push_back(pCur->right_);
+        }
+        visited_queue.push_back(pCur);
+        printf("%d -> ", pCur->obj_);
+    }
+    printf("\n");
+}
+
+// 深度优先遍历
+// -> 栈
+void DFIteration(TreeNode* pNode)
+{
+    assert(pNode);
+    TreeNode* pCur = NULL;
+    std::vector<TreeNode*> unvisited_stack;
+    unvisited_stack.push_back(pNode);
+
+    while (!unvisited_stack.empty())
+    {
+        pCur = unvisited_stack.back();
+        unvisited_stack.erase(unvisited_stack.begin() + unvisited_stack.size() - 1);
+        assert(pCur);
+        if (pCur->right_)
+        {
+            unvisited_stack.push_back(pCur->right_);
+        }
+        if (pCur->left_)
+        {
+            unvisited_stack.push_back(pCur->left_);
+        }
+        printf("%d -> ", pCur->obj_);
     }
     printf("\n");
 }

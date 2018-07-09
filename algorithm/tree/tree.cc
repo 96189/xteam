@@ -13,7 +13,8 @@ void BuildTree(TreeNode** root, std::vector<ElemType>& vec)
 int main(int argc, char* argv[])
 {
     // int arr[] = { -2, -1, -3, -5, -9, -8, 1, 3, 5, 7, 9, 2, 4, 6, 8, 0 };
-    int arr[] = { 1, 3, 5, 7, 9, 2, 4, 6, 8, 0 };
+    // int arr[] = { 1, 3, 5, 7, 9, 2, 4, 6, 8, 0 };
+    int arr[] = { 5, 6, 4, 7, 3, 8, 2, 9, 0, 1};
     int len = sizeof(arr) / sizeof(arr[0]);
     std::vector<ElemType> data;
     data.assign(arr, arr + len);
@@ -23,6 +24,7 @@ int main(int argc, char* argv[])
     assert(NULL != root);
 
     printf("root:%d\n", root->obj_);
+
     // FirstTraver(root);
     // printf("\n");
     // MidTraver(root);
@@ -67,9 +69,12 @@ int main(int argc, char* argv[])
     // FirstTraver(root);
     // printf("\n");
     // FirstTraverIteration(root);
+    
+    // LastTraver(root);
+    // printf("\n");
+    // LastTraverIteration(root);
 
-    LastTraver(root);
-    printf("\n");
-    LastTraverIteration(root);
+    BFIteration(root);
+    DFIteration(root);
     return 0;
 }
