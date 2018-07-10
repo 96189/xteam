@@ -261,6 +261,7 @@ intset *intsetAdd(intset *is, int64_t value, uint8_t *success) {
          * This call will populate "pos" with the right position to insert
          * the value when it cannot be found. */
         // 待插入整数已存在整数集合 获取可插入的位置
+        // 已存在则不插入
         if (intsetSearch(is,value,&pos)) {
             if (success) *success = 0;
             return is;

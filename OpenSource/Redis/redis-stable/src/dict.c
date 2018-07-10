@@ -336,6 +336,7 @@ int dictAdd(dict *d, void *key, void *val)
  *
  * If key was added, the hash entry is returned to be manipulated by the caller.
  */
+// 已存在则不插入 existing保存节点位置
 dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing)
 {
     long index;
