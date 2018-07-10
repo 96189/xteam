@@ -387,3 +387,77 @@ void DFIteration(TreeNode* pNode)
     }
     printf("\n");
 }
+
+#define TOTAIL 1
+#define TOHEAD 0
+int Index(int data[], int start, int end, int val, int direction)
+{
+    if (direction == TOTAIL)
+    {
+        for (int idx = start; idx <= end; ++idx)
+        {
+            if (data[idx] == val)
+            {
+                return idx;
+            }
+        }
+    }
+    else if (direction == TOHEAD)
+    {
+        for (int idx = end; idx >= 0; --idx)
+        {
+            if (data[idx] == val)
+            {
+                return idx;
+            }
+        }
+    }
+    return -1;
+}
+
+// 根据树的前序和中序遍历序列建立二叉树
+// first  [fstart, fend]
+// middle [mstart, mend]
+TreeNode* FMOrderBuildTree(int first[], int fstart, int fend, int middle[], int mstart, int mend)
+{
+    assert(first && middle);
+    if (fstart > fend || mstart > mend)
+    {
+        return NULL;
+    }
+    
+    TreeNode* pNode = new TreeNode(first[fstart]);
+    assert(pNode);
+
+    // 在中序序列中找到前序节点的值
+    int idx = Index(middle, mstart, mend, first[fstart], TOTAIL);
+    assert(idx != -1);
+
+    // 依次将先序序列和中序序列分成左右子树,分别构建左右子树,限定边界条件
+    // 遍历[fstart, fend]在[mstart, mend]中搜索
+    pNode->left_ = FMOrderBuildTree(first, fstart+1, fstart+idx-mstart, middle, mstart, idx-1);
+    pNode->right_ = FMOrderBuildTree(first, fstart+idx-mstart+1, fend, middle, idx+1, mend);
+    return pNode;
+}
+
+// 根据树的中序和后续遍历序列建立二叉树
+TreeNode* MLOrderBuikdTree(int middle[], int mstart, int mend, int last[], int lstart, int lend)
+{
+    assert(middle && last);
+    if (mstart > mend || lstart > lend)
+    {
+        return NULL;
+    }
+    TreeNode* pNode = new TreeNode(last[lend]);
+    assert(pNode);
+
+    // 在中序序列中找出后续节点的值
+    int idx = Index(middle, mstart, mend, last[lend], TOHEAD);
+    assert(idx != -1);
+
+    // 依次将中序序列和后序序列分成左右子树,分别构建左子树右子树,限定边界条件
+    // 遍历lend->lstart在[mstart,mend]中搜索 
+    pNode->left_ = MLOrderBuikdTree(middle, mstart, idx-1, last, lstart, lstart+idx-mstart-1);
+    pNode->right_ = MLOrderBuikdTree(middle, idx+1, mend, last, lstart+idx-mstart, lend-1);
+    return pNode;
+}
