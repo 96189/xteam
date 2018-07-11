@@ -893,7 +893,11 @@ unsigned char *__ziplistInsert(unsigned char *zl, unsigned char *p, unsigned cha
     int forcelarge = 0;
     // 若插入位置p不在压缩列表的尾端,则需要校验p节点的header能否编码新节点的长度
     // reqlen累加了新节点值的长度 编码前置节点的长度大小 编码当前节点值的大小
-    // 编码reqlen所需要的字节数 和 编码p所需要的字节数 求差
+    // nextdiff 保存了新旧编码之间的字节大小差
+    // nextdiff的可能值为
+    // 1-5=-4       新插入的值需1字节可编码 p位置编码前置节点需要5字节 现在新值是p位置旧值的前置节点 因此旧值编码新值需要收缩4字节 
+    // 1-1=0 5-5=0             1                             1                                 因此编码刚刚好
+    // 5-1=4                   5                             1                                 因此旧值编码新值需要扩展4字节
     nextdiff = (p[0] != ZIP_END) ? zipPrevLenByteDiff(p,reqlen) : 0;
     // todo 
     if (nextdiff == -4 && reqlen < 4) {
@@ -914,6 +918,7 @@ unsigned char *__ziplistInsert(unsigned char *zl, unsigned char *p, unsigned cha
     if (p[0] != ZIP_END) {
         /* Subtract one because of the ZIP_END bytes */
         // 移动现有元素 腾出空间
+        // nextdiff表示收缩或者扩展p原来节点的头部以便以合适的内存空间编码新值
         memmove(p+reqlen,p-nextdiff,curlen-offset-1+nextdiff);
 
         /* Encode this entry's raw length in the next entry. */
