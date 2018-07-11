@@ -612,12 +612,16 @@ struct evictionPoolEntry; /* Defined in evict.c */
 /* Redis database representation. There are multiple databases identified
  * by integers from 0 (the default database) up to the max configured
  * database. The database number is the 'id' field in the structure. */
+// 数据库数据结构表示
 typedef struct redisDb {
+    // 键空间 保存数据库中所有的键值对(添加、删除、更新、取值等基本操作)
     dict *dict;                 /* The keyspace for this DB */
+    // 过期字典 数据库中所有键的过期时间
     dict *expires;              /* Timeout of keys with a timeout set */
     dict *blocking_keys;        /* Keys with clients waiting for data (BLPOP)*/
     dict *ready_keys;           /* Blocked keys that received a PUSH */
     dict *watched_keys;         /* WATCHED keys for MULTI/EXEC CAS */
+    // 数据库编号 [0,15]
     int id;                     /* Database ID */
     long long avg_ttl;          /* Average TTL, just for stats */
 } redisDb;
@@ -680,6 +684,7 @@ typedef struct readyList {
 typedef struct client {
     uint64_t id;            /* Client incremental unique ID. */
     int fd;                 /* Client socket. */
+    // 客户端当前正在使用的数据库
     redisDb *db;            /* Pointer to currently SELECTed DB. */
     robj *name;             /* As set by CLIENT SETNAME. */
     sds querybuf;           /* Buffer we use to accumulate client queries. */
@@ -894,7 +899,8 @@ struct redisServer {
     char *configfile;           /* Absolute config file path, or NULL */
     char *executable;           /* Absolute executable file path. */
     char **exec_argv;           /* Executable argv vector (copy). */
-    int hz;                     /* serverCron() calls frequency in hertz */
+    int hz;                     /* serverCron() calls frequency in hertz(赫兹) */
+    // 数据库数组,保存[0,dbnum-1]号数据库,默认dbnum=16
     redisDb *db;
     dict *commands;             /* Command table */
     dict *orig_commands;        /* Command table before command renaming. */
@@ -1000,6 +1006,7 @@ struct redisServer {
     int active_defrag_cycle_min;       /* minimal effort for defrag in CPU percentage */
     int active_defrag_cycle_max;       /* maximal effort for defrag in CPU percentage */
     size_t client_max_querybuf_len; /* Limit for client query buffer length */
+    // 配置db数组的数据库个数
     int dbnum;                      /* Total number of configured DBs */
     int supervised;                 /* 1 if supervised, 0 otherwise. */
     int supervised_mode;            /* See SUPERVISED_* */
@@ -1743,6 +1750,7 @@ int rewriteConfig(char *path);
 /* db.c -- Keyspace access API */
 int removeExpire(redisDb *db, robj *key);
 void propagateExpire(redisDb *db, robj *key, int lazy);
+// 过期键的惰性删除策略
 int expireIfNeeded(redisDb *db, robj *key);
 long long getExpire(redisDb *db, robj *key);
 void setExpire(client *c, redisDb *db, robj *key, long long when);
@@ -1756,19 +1764,30 @@ robj *objectCommandLookup(client *c, robj *key);
 robj *objectCommandLookupOrReply(client *c, robj *key, robj *reply);
 #define LOOKUP_NONE 0
 #define LOOKUP_NOTOUCH (1<<0)
+// 向数据库db的键空间中添加对象key/val
 void dbAdd(redisDb *db, robj *key, robj *val);
+// 对数据库db的键空间key的old_value值对象用val值对象覆盖
 void dbOverwrite(redisDb *db, robj *key, robj *val);
+// 向数据库db的键空间dict设置key/val 并将key从db的expires字典中删除,使期声明持久
+// 唯一对外提供的set key接口
 void setKey(redisDb *db, robj *key, robj *val);
+// 数据库db的键空间dict中是否存在key
 int dbExists(redisDb *db, robj *key);
+// 随机获取数据库db中键空间dict的某个未过期的键
 robj *dbRandomKey(redisDb *db);
+// 删除数据库db中expires字典中的key对象 删除数据库db的键空间dict的key对象
 int dbSyncDelete(redisDb *db, robj *key);
+// 删除数据库db中的key
 int dbDelete(redisDb *db, robj *key);
+// 
 robj *dbUnshareStringValue(redisDb *db, robj *key, robj *o);
 
 #define EMPTYDB_NO_FLAGS 0      /* No flags. */
 #define EMPTYDB_ASYNC (1<<0)    /* Reclaim memory in another thread. */
+// 清空第dbnum号数据库的数据 若dbnum=-1则刷新所有db数据
 long long emptyDb(int dbnum, int flags, void(callback)(void*));
 
+// 转换当前客户端指向的db
 int selectDb(client *c, int id);
 void signalModifiedKey(redisDb *db, robj *key);
 void signalFlushedDb(int dbid);
@@ -1832,6 +1851,7 @@ int getTimeoutFromObjectOrReply(client *c, robj *object, mstime_t *timeout, int 
 void disconnectAllBlockedClients(void);
 
 /* expire.c -- Handling of expired keys */
+// 过期键的定期删除策略
 void activeExpireCycle(int type);
 void expireSlaveKeys(void);
 void rememberSlaveKeyWithExpire(redisDb *db, robj *key);

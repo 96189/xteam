@@ -103,3 +103,7 @@
 
 
 # Scan命令
+
+# Redis过期键的删除策略
+## 惰性删除策略(expireIfNeeded)
+## 定期删除策略(activeExpireCycle)
