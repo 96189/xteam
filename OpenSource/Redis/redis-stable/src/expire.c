@@ -402,6 +402,8 @@ void flushSlaveKeysWithExpireList(void) {
  *
  * unit is either UNIT_SECONDS or UNIT_MILLISECONDS, and is only used for
  * the argv[2] parameter. The basetime is always specified in milliseconds. */
+// 给key设置过期时间
+// 底层是设置redisDb的expires哈希表
 void expireGenericCommand(client *c, long long basetime, int unit) {
     robj *key = c->argv[1], *param = c->argv[2];
     long long when; /* unix time in milliseconds when the key will expire. */
@@ -409,10 +411,13 @@ void expireGenericCommand(client *c, long long basetime, int unit) {
     if (getLongLongFromObjectOrReply(c, param, &when, NULL) != C_OK)
         return;
 
+    // 秒转毫秒
     if (unit == UNIT_SECONDS) when *= 1000;
+    // 转绝对时间
     when += basetime;
 
     /* No key, return zero. */
+    // 检查key在数据库中的存在性
     if (lookupKeyWrite(c->db,key) == NULL) {
         addReply(c,shared.czero);
         return;
@@ -424,9 +429,11 @@ void expireGenericCommand(client *c, long long basetime, int unit) {
      *
      * Instead we take the other branch of the IF statement setting an expire
      * (possibly in the past) and wait for an explicit DEL from the master. */
+    // 过期 且其他条件
     if (when <= mstime() && !server.loading && !server.masterhost) {
         robj *aux;
 
+        // 执行同步删除或者异步删除
         int deleted = server.lazyfree_lazy_expire ? dbAsyncDelete(c->db,key) :
                                                     dbSyncDelete(c->db,key);
         serverAssertWithInfo(c,key,deleted);
@@ -440,6 +447,7 @@ void expireGenericCommand(client *c, long long basetime, int unit) {
         addReply(c, shared.cone);
         return;
     } else {
+        // 设置过期时间
         setExpire(c,c->db,key,when);
         addReply(c,shared.cone);
         signalModifiedKey(c->db,key);
@@ -450,26 +458,31 @@ void expireGenericCommand(client *c, long long basetime, int unit) {
 }
 
 /* EXPIRE key seconds */
+// 给key设置过期时间 参数为相对时间的秒数
 void expireCommand(client *c) {
     expireGenericCommand(c,mstime(),UNIT_SECONDS);
 }
 
 /* EXPIREAT key time */
+// 给key设置过期时间 参数为绝对时间的时间戳秒数
 void expireatCommand(client *c) {
     expireGenericCommand(c,0,UNIT_SECONDS);
 }
 
 /* PEXPIRE key milliseconds */
+// 给key设置过期时间 参数为相对时间的毫秒数
 void pexpireCommand(client *c) {
     expireGenericCommand(c,mstime(),UNIT_MILLISECONDS);
 }
 
 /* PEXPIREAT key ms_time */
+// 给key设置过期时间 参数为绝对时间的时间戳毫秒数
 void pexpireatCommand(client *c) {
     expireGenericCommand(c,0,UNIT_MILLISECONDS);
 }
 
 /* Implements TTL and PTTL */
+// 参数output_ms表示是否以ms返回结果 1是 0否
 void ttlGenericCommand(client *c, int output_ms) {
     long long expire, ttl = -1;
 
@@ -480,14 +493,17 @@ void ttlGenericCommand(client *c, int output_ms) {
     }
     /* The key exists. Return -1 if it has no expire, or the actual
      * TTL value otherwise. */
+    // 查询db的expires字典并取出key的expire值
     expire = getExpire(c->db,c->argv[1]);
     if (expire != -1) {
+        // 过期时间和当前时间计算的差值为ttl
         ttl = expire-mstime();
         if (ttl < 0) ttl = 0;
     }
     if (ttl == -1) {
         addReplyLongLong(c,-1);
     } else {
+        // 由output_ms决定输出ttl的单位
         addReplyLongLong(c,output_ms ? ttl : ((ttl+500)/1000));
     }
 }
@@ -503,6 +519,8 @@ void pttlCommand(client *c) {
 }
 
 /* PERSIST key */
+// 移除给定key的生存时间
+// 底层是设置redisDb的expires哈希表
 void persistCommand(client *c) {
     if (lookupKeyWrite(c->db,c->argv[1])) {
         if (removeExpire(c->db,c->argv[1])) {
