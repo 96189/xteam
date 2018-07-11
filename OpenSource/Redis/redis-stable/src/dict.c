@@ -336,7 +336,8 @@ int dictAdd(dict *d, void *key, void *val)
  *
  * If key was added, the hash entry is returned to be manipulated by the caller.
  */
-// 已存在则不插入 existing保存节点位置
+// existing保存节点位置
+// 已存在则不插入 返回NULL  否则申请值对象内存,设置key并返回
 dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing)
 {
     long index;
@@ -367,7 +368,7 @@ dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing)
 }
 
 /* Add or Overwrite:
- * Add an element, discarding the old value if the key already exists.
+ * Add an element, discarding(丢弃) the old value if the key already exists.
  * Return 1 if the key was added from scratch, 0 if there was already an
  * element with such key and dictReplace() just performed a value update
  * operation. */
@@ -377,14 +378,16 @@ int dictReplace(dict *d, void *key, void *val)
 
     /* Try to add the element. If the key
      * does not exists dictAdd will suceed. */
-    // 已存在返回NULL
+    // entry=NULL key对应的值对象已经存在于existing位置
+    // 否则key不存在 entry为新节点的地址
     entry = dictAddRaw(d,key,&existing);
-    // 第一次添加该键
+    // entry是新值对象
     if (entry) {
         dictSetVal(d, entry, val);
         return 1;
     }
 
+    // key对应的val已存在覆盖
     /* Set the new value and free the old one. Note that it is important
      * to do that in this order, as the value may just be exactly the same
      * as the previous one. In this context, think to reference counting,
