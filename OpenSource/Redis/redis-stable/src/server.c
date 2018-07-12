@@ -934,17 +934,18 @@ void updateCachedTime(void) {
 }
 
 /* This is our timer interrupt, called server.hz times per second.
+ * 这是 Redis 的时间中断器，每秒调用 server.hz 次
  * Here is where we do a number of things that need to be done asynchronously.
  * For instance:
  *
  * - Active expired keys collection (it is also performed in a lazy way on
- *   lookup).
- * - Software watchdog.
- * - Update some statistic.
- * - Incremental rehashing of the DBs hash tables.
- * - Triggering BGSAVE / AOF rewrite, and handling of terminated children.
- * - Clients timeout of different kinds.
- * - Replication reconnection.
+ *   lookup). 主动清除过期键
+ * - Software watchdog. 更新软件 watchdog 的信息
+ * - Update some statistic. 更新统计信息
+ * - Incremental rehashing of the DBs hash tables.  对数据库进行渐增式 Rehash
+ * - Triggering BGSAVE / AOF rewrite, and handling of terminated children. 触发 BGSAVE 或者 AOF 重写，并处理之后由 BGSAVE 和 AOF 重写引发的子进程停止
+ * - Clients timeout of different kinds. 处理客户端超时
+ * - Replication reconnection. 复制重连
  * - Many more...
  *
  * Everything directly called here will be called server.hz times per second,
@@ -1043,6 +1044,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     }
 
     /* Check if a background saving or AOF rewrite in progress terminated. */
+    // 当前BGSAVE或者BGREWRITEAOF正在执行
     if (server.rdb_child_pid != -1 || server.aof_child_pid != -1 ||
         ldbPendingChildren())
     {
@@ -1077,9 +1079,11 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
             updateDictResizePolicy();
             closeChildInfoPipe();
         }
+    // 当前没有执行BGSAVE或者BGREWRITEAOF
     } else {
         /* If there is not a background saving/rewrite in progress check if
          * we have to save/rewrite now. */
+         // 遍历所有保存条件,检查是否需要执行bgsave命令
          for (j = 0; j < server.saveparamslen; j++) {
             struct saveparam *sp = server.saveparams+j;
 
@@ -1097,6 +1101,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
                     sp->changes, (int)sp->seconds);
                 rdbSaveInfo rsi, *rsiptr;
                 rsiptr = rdbPopulateSaveInfo(&rsi);
+                // 执行bgsave
                 rdbSaveBackground(server.rdb_filename,rsiptr);
                 break;
             }
@@ -3550,10 +3555,13 @@ int checkForSentinelMode(int argc, char **argv) {
 /* Function called at startup to load RDB or AOF file in memory. */
 void loadDataFromDisk(void) {
     long long start = ustime();
+    // 若已配置aof 优先从aof恢复
     if (server.aof_state == AOF_ON) {
         if (loadAppendOnlyFile(server.aof_filename) == C_OK)
             serverLog(LL_NOTICE,"DB loaded from append only file: %.3f seconds",(float)(ustime()-start)/1000000);
+    // 未配置aof则从rdb文件恢复
     } else {
+        // rdb文件元数据
         rdbSaveInfo rsi = RDB_SAVE_INFO_INIT;
         if (rdbLoad(server.rdb_filename,&rsi) == C_OK) {
             serverLog(LL_NOTICE,"DB loaded from disk: %.3f seconds",
@@ -3700,7 +3708,7 @@ int redisIsSupervised(int mode) {
     return 0;
 }
 
-
+// redis server启动流程
 int main(int argc, char **argv) {
     struct timeval tv;
     int j;
@@ -3867,6 +3875,7 @@ int main(int argc, char **argv) {
         linuxMemoryWarnings();
     #endif
         moduleLoadFromQueue();
+        // 从本地文件恢复数据库
         loadDataFromDisk();
         if (server.cluster_enabled) {
             if (verifyClusterConfigWithData() == C_ERR) {

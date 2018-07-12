@@ -107,3 +107,18 @@
 # Redis过期键的删除策略
 ## 惰性删除策略(expireIfNeeded)
 ## 定期删除策略(activeExpireCycle)
+
+# Redis持久化(persistence)
+    Redis 的持久化运作方式 https://redis.io/topics/persistence
+    http://oldblog.antirez.com/post/redis-persistence-demystified.html
+
+## redis持久化(存储)策略
+### RDB(Redis Database)
+    时间点快照存储
+    save
+    bgsave
+    数据库启动载入rdb文件 rdbLoad
+    定时bgsave机制 serverCron
+### AOF(Append Only File)
+    写操作记录日志
+    
