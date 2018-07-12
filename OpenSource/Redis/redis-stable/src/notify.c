@@ -89,9 +89,11 @@ sds keyspaceEventsFlagsToString(int flags) {
  *
  * notifyKeyspaceEvent(char *event, robj *key, int dbid);
  *
- * 'event' is a C string representing the event name.
- * 'key' is a Redis object representing the key name.
- * 'dbid' is the database ID where the key lives.  */
+ * 'event' is a C string representing the event name.(事件名称)
+ * 'key' is a Redis object representing the key name.(产生事件的键))
+ * 'dbid' is the database ID where the key lives.(产生事件的数据库编号)  */
+// 事件通知
+// type 通知类型
 void notifyKeyspaceEvent(int type, char *event, robj *key, int dbid) {
     sds chan;
     robj *chanobj, *eventobj;
@@ -105,30 +107,37 @@ void notifyKeyspaceEvent(int type, char *event, robj *key, int dbid) {
      moduleNotifyKeyspaceEvent(type, event, key, dbid);
     
     /* If notifications for this class of events are off, return ASAP. */
+    // 检查配置文件是否配置了当前类型的通知
     if (!(server.notify_keyspace_events & type)) return;
 
     eventobj = createStringObject(event,strlen(event));
 
     /* __keyspace@<db>__:<key> <event> notifications. */
+    // 发送键空间通知(某个键执行了什么命令))
     if (server.notify_keyspace_events & NOTIFY_KEYSPACE) {
+        // 构建频道名字
         chan = sdsnewlen("__keyspace@",11);
         len = ll2string(buf,sizeof(buf),dbid);
         chan = sdscatlen(chan, buf, len);
         chan = sdscatlen(chan, "__:", 3);
         chan = sdscatsds(chan, key->ptr);
         chanobj = createObject(OBJ_STRING, chan);
+        // 发送通知
         pubsubPublishMessage(chanobj, eventobj);
         decrRefCount(chanobj);
     }
 
     /* __keyevent@<db>__:<event> <key> notifications. */
+    // 发送键事件通知(某个命令被什么键执行了)
     if (server.notify_keyspace_events & NOTIFY_KEYEVENT) {
+        // 构建频道名字
         chan = sdsnewlen("__keyevent@",11);
         if (len == -1) len = ll2string(buf,sizeof(buf),dbid);
         chan = sdscatlen(chan, buf, len);
         chan = sdscatlen(chan, "__:", 3);
         chan = sdscatsds(chan, eventobj->ptr);
         chanobj = createObject(OBJ_STRING, chan);
+        // 发送通知
         pubsubPublishMessage(chanobj, key);
         decrRefCount(chanobj);
     }
