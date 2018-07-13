@@ -1548,10 +1548,13 @@ void stopLoading(void);
 int rdbSaveRio(rio *rdb, int *error, int flags, rdbSaveInfo *rsi);
 
 /* AOF persistence */
+// 将aof缓冲区的内容写入到aof文件中
 void flushAppendOnlyFile(int force);
+// 将命令记录到aof缓冲区中
 void feedAppendOnlyFile(struct redisCommand *cmd, int dictid, robj **argv, int argc);
 void aofRemoveTempFile(pid_t childpid);
 int rewriteAppendOnlyFileBackground(void);
+// aof文件读取与数据库还原
 int loadAppendOnlyFile(char *filename);
 void stopAppendOnly(void);
 int startAppendOnly(void);
