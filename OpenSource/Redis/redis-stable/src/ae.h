@@ -39,7 +39,9 @@
 #define AE_ERR -1
 
 #define AE_NONE 0       /* No events registered. */
+// 客户端对套接字执行write close connect时,服务端变为可读
 #define AE_READABLE 1   /* Fire when descriptor is readable. */
+// 客户端对套接字执行read,服务端变为可写
 #define AE_WRITABLE 2   /* Fire when descriptor is writable. */
 #define AE_BARRIER 4    /* With WRITABLE, never fire the event if the
                            READABLE event already fired in the same event
@@ -69,20 +71,27 @@ typedef void aeBeforeSleepProc(struct aeEventLoop *eventLoop);
 
 /* File event structure */
 typedef struct aeFileEvent {
+    // 事件类型
     int mask; /* one of AE_(READABLE|WRITABLE|BARRIER) */
+    // 可读事件处理器(多态接口)
     aeFileProc *rfileProc;
+    // 可写事件处理器(多态接口)
     aeFileProc *wfileProc;
     void *clientData;
 } aeFileEvent;
 
 /* Time event structure */
 typedef struct aeTimeEvent {
+    // 全局唯一标识
     long long id; /* time event identifier. */
     long when_sec; /* seconds */
     long when_ms; /* milliseconds */
+    // 事件事件处理器
     aeTimeProc *timeProc;
+    // 事件事件析构函数
     aeEventFinalizerProc *finalizerProc;
     void *clientData;
+    // 事件链式结构
     struct aeTimeEvent *prev;
     struct aeTimeEvent *next;
 } aeTimeEvent;

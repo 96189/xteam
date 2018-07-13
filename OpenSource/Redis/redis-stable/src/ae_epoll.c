@@ -105,6 +105,10 @@ static void aeApiDelEvent(aeEventLoop *eventLoop, int fd, int delmask) {
     }
 }
 
+// 阻塞
+// 等待所有在监听集合eventLoop->apidata->events中的事件
+// 至少有一个事件发生 则返回
+// 若无任何事件发生 则超时返回
 static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
     aeApiState *state = eventLoop->apidata;
     int retval, numevents = 0;
