@@ -863,7 +863,9 @@ void clientsCron(void) {
         /* The following functions do different service checks on the client.
          * The protocol is that they return non-zero if the client was
          * terminated. */
+        // 释放超时客户端
         if (clientsCronHandleTimeout(c,now)) continue;
+        // 缩小客户端输入缓冲区
         if (clientsCronResizeQueryBuffer(c)) continue;
     }
 }
@@ -875,6 +877,7 @@ void databasesCron(void) {
     /* Expire keys by random sampling. Not required for slaves
      * as master will synthesize DELs for us. */
     if (server.active_expire_enabled && server.masterhost == NULL) {
+        // 主动删除过期键
         activeExpireCycle(ACTIVE_EXPIRE_CYCLE_SLOW);
     } else if (server.masterhost != NULL) {
         expireSlaveKeys();
@@ -887,6 +890,7 @@ void databasesCron(void) {
     /* Perform hash tables rehashing if needed, but only if there are no
      * other processes saving the DB on disk. Otherwise rehashing is bad
      * as will cause a lot of copy-on-write of memory pages. */
+    // 确保当前没有在执行RDB或者AOF操作
     if (server.rdb_child_pid == -1 && server.aof_child_pid == -1) {
         /* We use global counters so if we stop the computation at a given
          * DB we'll be able to start from the successive in the next
@@ -900,6 +904,7 @@ void databasesCron(void) {
         if (dbs_per_call > server.dbnum) dbs_per_call = server.dbnum;
 
         /* Resize */
+        // 尝试缩小字典
         for (j = 0; j < dbs_per_call; j++) {
             tryResizeHashTables(resize_db % server.dbnum);
             resize_db++;
@@ -934,7 +939,7 @@ void updateCachedTime(void) {
 }
 
 /* This is our timer interrupt, called server.hz times per second.
- * 这是 Redis 的时间中断器，每秒调用 server.hz 次
+ * 这是 Redis 的时间中断器，每秒调用 server.hz 次 默认是1秒执行10次
  * Here is where we do a number of things that need to be done asynchronously.
  * For instance:
  *
@@ -952,7 +957,7 @@ void updateCachedTime(void) {
  * so in order to throttle execution of things we want to do less frequently
  * a macro is used: run_with_period(milliseconds) { .... }
  */
-
+// 默认执行10次/s 可配置
 int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     int j;
     UNUSED(eventLoop);
@@ -964,12 +969,18 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     if (server.watchdog_period) watchdogScheduleSignal(server.watchdog_period);
 
     /* Update the time cache. */
+    // 更新redisServer的unixtime和mstime
     updateCachedTime();
 
+    // 100ms执行一次
     run_with_period(100) {
+        // 瞬时指标抽样测算
+        // 测算命令被执行的次数
         trackInstantaneousMetric(STATS_METRIC_COMMAND,server.stat_numcommands);
+        // 测算网络瞬时流入流量
         trackInstantaneousMetric(STATS_METRIC_NET_INPUT,
                 server.stat_net_input_bytes);
+        // 测算网络瞬时流出流量
         trackInstantaneousMetric(STATS_METRIC_NET_OUTPUT,
                 server.stat_net_output_bytes);
     }
@@ -985,10 +996,12 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
      *
      * Note that you can change the resolution altering the
      * LRU_CLOCK_RESOLUTION define. */
+    // 更新服务器lruclock该值和键的lru计算差值可算出键的idel时间
     unsigned long lruclock = getLRUClock();
     atomicSet(server.lruclock,lruclock);
 
     /* Record the max memory used since the server was started. */
+    // 更新内存峰值
     if (zmalloc_used_memory() > server.stat_peak_memory)
         server.stat_peak_memory = zmalloc_used_memory();
 
@@ -997,6 +1010,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
 
     /* We received a SIGTERM, shutting down here in a safe way, as it is
      * not ok doing so inside the signal handler. */
+    // 处理SIGTERM信号,该信号发生时,设置server.shutdown_asap标记,在这里安全的关闭
     if (server.shutdown_asap) {
         if (prepareForShutdown(SHUTDOWN_NOFLAGS) == C_OK) exit(0);
         serverLog(LL_WARNING,"SIGTERM received but errors trying to shut down the server, check the logs for more information");
@@ -1004,6 +1018,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     }
 
     /* Show some info about non-empty databases */
+    // 每5000ms运行一次，定时报告数据库中键的情况
     run_with_period(5000) {
         for (j = 0; j < server.dbnum; j++) {
             long long size, used, vkeys;
@@ -1019,6 +1034,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     }
 
     /* Show information about connected clients */
+    // 每5000ms运行一次 报告连接数
     if (!server.sentinel_mode) {
         run_with_period(5000) {
             serverLog(LL_VERBOSE,
@@ -1030,13 +1046,17 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     }
 
     /* We need to do a few operations on clients asynchronously. */
+    // 管理客户端资源 释放超时客户端 缩小客户端的输入缓冲区
     clientsCron();
 
     /* Handle background operations on Redis databases. */
+    // 管理数据库资源 主动删除过期键 尝试收缩字典 以及rehash
     databasesCron();
 
     /* Start a scheduled AOF rewrite if this was requested by the user while
-     * a BGSAVE was in progress. */
+     * a BGSAVE was in progress. */、
+    // aof_rewrite_scheduled为1表示有BGREWRITEAOF被延迟
+    // 执行aof重写
     if (server.rdb_child_pid == -1 && server.aof_child_pid == -1 &&
         server.aof_rewrite_scheduled)
     {
@@ -1044,13 +1064,14 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     }
 
     /* Check if a background saving or AOF rewrite in progress terminated. */
-    // 当前BGSAVE或者BGREWRITEAOF正在执行
+    // 当前BGSAVE或者BGREWRITEAOF正在执行 或者 
     if (server.rdb_child_pid != -1 || server.aof_child_pid != -1 ||
         ldbPendingChildren())
     {
         int statloc;
         pid_t pid;
 
+        // 检查子进程是否有信号发来服务进程
         if ((pid = wait3(&statloc,WNOHANG,NULL)) != 0) {
             int exitcode = WEXITSTATUS(statloc);
             int bysignal = 0;
@@ -1063,9 +1084,11 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
                     strerror(errno),
                     (int) server.rdb_child_pid,
                     (int) server.aof_child_pid);
+            // RDB操作完成
             } else if (pid == server.rdb_child_pid) {
                 backgroundSaveDoneHandler(exitcode,bysignal);
                 if (!bysignal && exitcode == 0) receiveChildInfo();
+            // AOF重写操作完成
             } else if (pid == server.aof_child_pid) {
                 backgroundRewriteDoneHandler(exitcode,bysignal);
                 if (!bysignal && exitcode == 0) receiveChildInfo();
@@ -1076,6 +1099,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
                         (long)pid);
                 }
             }
+            // 开启字典rehash
             updateDictResizePolicy();
             closeChildInfoPipe();
         }
@@ -1119,6 +1143,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
             long long growth = (server.aof_current_size*100/base) - 100;
             if (growth >= server.aof_rewrite_perc) {
                 serverLog(LL_NOTICE,"Starting automatic rewriting of AOF on %lld%% growth",growth);
+                // 执行bgrewriteaof
                 rewriteAppendOnlyFileBackground();
             }
          }
@@ -1133,6 +1158,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
      * clear the AOF error in case of success to make the DB writable again,
      * however to try every second is enough in case of 'hz' is set to
      * an higher frequency. */
+    // 每1000ms执行一次
     run_with_period(1000) {
         if (server.aof_last_write_status == C_ERR)
             flushAppendOnlyFile(0);
@@ -1180,7 +1206,8 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
         if (rdbSaveBackground(server.rdb_filename,rsiptr) == C_OK)
             server.rdb_bgsave_scheduled = 0;
     }
-
+    
+    // 更新serverCron执行次数
     server.cronloops++;
     return 1000/server.hz;
 }

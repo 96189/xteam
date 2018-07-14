@@ -683,29 +683,40 @@ typedef struct readyList {
  * Clients are taken in a linked list. */
 typedef struct client {
     uint64_t id;            /* Client incremental unique ID. */
+    // 套接字描述符 -1表示伪客户端(伪客户端用于aof文件命令回放以及执行lua脚本)
     int fd;                 /* Client socket. */
     // 客户端当前正在使用的数据库
     redisDb *db;            /* Pointer to currently SELECTed DB. */
+    // CLIENT SETNAME name为当前客户端设置名字
     robj *name;             /* As set by CLIENT SETNAME. */
+    // 输入缓冲区 PROTO_MAX_QUERYBUF_LEN限制了不能超过1G
     sds querybuf;           /* Buffer we use to accumulate client queries. */
     sds pending_querybuf;   /* If this is a master, this buffer represents the
                                yet not applied replication stream that we
                                are receiving from the master. */
     size_t querybuf_peak;   /* Recent (100ms or more) peak of querybuf size. */
+    // 数组元素个数
     int argc;               /* Num of arguments of current command. */
+    // 保存robj*的数组
     robj **argv;            /* Arguments of current command. */
+    // 命令实现函数(lookupCommand(argv[0])查表)
     struct redisCommand *cmd, *lastcmd;  /* Last command executed. */
     int reqtype;            /* Request protocol type: PROTO_REQ_* */
     int multibulklen;       /* Number of multi bulk arguments left to read. */
     long bulklen;           /* Length of bulk argument in multi bulk request. */
+    // 变长的输出缓冲区
     list *reply;            /* List of reply objects to send to the client. */
     unsigned long long reply_bytes; /* Tot bytes of objects in reply list. */
     size_t sentlen;         /* Amount of bytes already sent in the current
                                buffer or object being sent. */
+    // 可计算客户端与服务器已经连接了多少秒 client list的age域
     time_t ctime;           /* Client creation time. */
     time_t lastinteraction; /* Time of the last interaction, used for timeout */
+    // 输出缓冲区第一次到达软性限制的时间
     time_t obuf_soft_limit_reached_time;
+    // 详细flag参考文件开头的宏定义
     int flags;              /* Client flags: CLIENT_* macros. */
+    // 1已通过身份验证 0未通过身份验证
     int authenticated;      /* When requirepass is non-NULL. */
     int replstate;          /* Replication state if this is a slave. */
     int repl_put_online_on_ack; /* Install slave write handler on ACK. */
@@ -724,6 +735,7 @@ typedef struct client {
     int slave_listening_port; /* As configured with: SLAVECONF listening-port */
     char slave_ip[NET_IP_STR_LEN]; /* Optionally given by REPLCONF ip-address */
     int slave_capa;         /* Slave capabilities: SLAVE_CAPA_* bitwise OR. */
+    // 事务相关
     multiState mstate;      /* MULTI/EXEC state */
     int btype;              /* Type of blocking op if CLIENT_BLOCKED. */
     blockingState bpop;     /* blocking state */
@@ -734,7 +746,8 @@ typedef struct client {
     sds peerid;             /* Cached peer ID. */
 
     /* Response buffer */
-    int bufpos;
+    // 固定大小的输出缓冲区 16k
+    int bufpos; // 当前已使用字节数
     char buf[PROTO_REPLY_CHUNK_BYTES];
 } client;
 
@@ -905,6 +918,7 @@ struct redisServer {
     dict *commands;             /* Command table */
     dict *orig_commands;        /* Command table before command renaming. */
     aeEventLoop *el;
+    // 由serverCron定期更新
     unsigned int lruclock;      /* Clock for LRU eviction */
     int shutdown_asap;          /* SHUTDOWN needed ASAP */
     int activerehashing;        /* Incremental rehash in serverCron() */
@@ -912,6 +926,7 @@ struct redisServer {
     char *requirepass;          /* Pass for AUTH command, or NULL */
     char *pidfile;              /* PID file path */
     int arch_bits;              /* 32 or 64 depending on sizeof(long) */
+    // 记录serverCron()执行的次数
     int cronloops;              /* Number of times the cron function run */
     char runid[CONFIG_RUN_ID_SIZE+1];  /* ID always different at every exec. */
     int sentinel_mode;          /* True if this instance is a Sentinel. */
@@ -935,8 +950,10 @@ struct redisServer {
     int sofd;                   /* Unix socket file descriptor */
     int cfd[CONFIG_BINDADDR_MAX];/* Cluster bus listening socket */
     int cfd_count;              /* Used slots in cfd[] */
+    // 当前已连接客户端链表
     list *clients;              /* List of active clients */
-    list *clients_to_close;     /* Clients to close asynchronously */
+    // 当前已关闭客户端链表
+    list *clients_to_close;     /* Clients to close asynchronously(异步) */
     list *clients_pending_write; /* There is to write or install handler. */
     list *slaves, *monitors;    /* List of slaves and MONITORs */
     client *current_client; /* Current client, only used on crash report */
@@ -970,6 +987,7 @@ struct redisServer {
     long long stat_active_defrag_misses;    /* number of allocations scanned but not moved */
     long long stat_active_defrag_key_hits;  /* number of keys with moved allocations */
     long long stat_active_defrag_key_misses;/* number of keys scanned and not moved */
+    // 服务器内存峰值记录 由serverCron定期更新
     size_t stat_peak_memory;        /* Max used memory record */
     long long stat_fork_time;       /* Time needed to perform latest fork() */
     double stat_fork_rate;          /* Fork rate in GB/sec. */
@@ -986,7 +1004,8 @@ struct redisServer {
     long long stat_net_output_bytes; /* Bytes written to network. */
     size_t stat_rdb_cow_bytes;      /* Copy on write bytes during RDB saving. */
     size_t stat_aof_cow_bytes;      /* Copy on write bytes during AOF rewrite. */
-    /* The following two are used to track instantaneous metrics, like
+    // serverCron函数瞬时指标抽样测算
+    /* The following two are used to track instantaneous metrics(瞬时指标), like
      * number of operations per second, network traffic. */
     struct {
         long long last_sample_time; /* Timestamp of last sample in ms */
@@ -1169,6 +1188,7 @@ struct redisServer {
     int list_max_ziplist_size;
     int list_compress_depth;
     /* time cache */
+    // 缓存当前时间 由servreCron定期缓存
     time_t unixtime;    /* Unix time sampled every cron cycle. */
     long long mstime;   /* Like 'unixtime' but with milliseconds resolution. */
     /* Pubsub */
@@ -1193,6 +1213,7 @@ struct redisServer {
     /* Scripting */
     lua_State *lua; /* The Lua interpreter. We use just one for all clients */
     client *lua_client;   /* The "fake client" to query Redis from Lua */
+    // lua脚本的伪客户端
     client *lua_caller;   /* The client running EVAL right now, or NULL */
     dict *lua_scripts;         /* A dictionary of SHA1 -> Lua scripts */
     mstime_t lua_time_limit;  /* Script timeout in milliseconds */
@@ -1239,10 +1260,15 @@ typedef struct pubsubPattern {
 typedef void redisCommandProc(client *c);
 typedef int *redisGetKeysProc(struct redisCommand *cmd, robj **argv, int argc, int *numkeys);
 struct redisCommand {
+    // 命令名
     char *name;
+    // 函数指针(多态)
     redisCommandProc *proc;
+    // 命令参数个数
     int arity;
+    // 命令属性'r''w'
     char *sflags; /* Flags as string representation, one char per flag. */
+    // 属性的二进制表示
     int flags;    /* The actual flags, obtained from the 'sflags' field. */
     /* Use a function to determine keys arguments in a command line.
      * Used for Redis Cluster redirect. */
@@ -1251,6 +1277,7 @@ struct redisCommand {
     int firstkey; /* The first argument that's a key (0 = no keys) */
     int lastkey;  /* The last argument that's a key */
     int keystep;  /* The step between first and last key */
+    // 服务器执行该命令耗费的总时长和该命令被执行的次数
     long long microseconds, calls;
 };
 
@@ -1362,6 +1389,7 @@ size_t redisPopcount(void *s, long count);
 void redisSetProcTitle(char *title);
 
 /* networking.c -- Networking and Client related operations */
+// 创建客户端接口
 client *createClient(int fd);
 void closeTimedoutClients(void);
 void freeClient(client *c);

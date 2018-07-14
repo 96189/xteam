@@ -159,4 +159,28 @@
 ### 如果处于集群模式,对集群进行定期同步和连接测试
 
 ## 事件调度和执行规则
+
+# 全局唯一id生成方法
+    事件定时器id和客户端id
+
+## 创建客户端并挂载到server的clients链表尾部的时机
+    acceptTcpHandler -> acceptCommonHandler -> createClient -> listAddNodeTail
+## redis命令的执行
+    readQueryFromClient -> processInputBuffer -> processCommand -> call
+## serverCron函数执行都做什么?
+    时间缓存避免每次调用执行系统时间函数
+    瞬时指标抽样测算 命令执行次数 网络流入流出流量
+    服务器lruclock缓存
+    更新内存峰值缓存
+    SIGTERM信号处理 安全关闭
+    数据库db中键情况上报
+    连接情况上报
+    客户端资源定时管理 断开超时连接 缩小客户端输入缓冲
+    数据库资源定时管理 主动删除过期键 尝试收缩字典
+    执行被延迟的aof重写
+    BGSAVE或者BGREWRITEAOF的善后工作
+    检查是否需要执行bgsave和bgrewriteaof
+    ...
+    ...
+    
     
