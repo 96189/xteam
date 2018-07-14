@@ -35,6 +35,7 @@
 // 整数集合作为集合键的底层实现之一
 // 有序不重复的整数数组
 // 支持int16_t int32_t int64_t整数值
+// 64位: 8Byte
 typedef struct intset {
     // 编码方式INTSET_ENC_INT16 INTSET_ENC_INT32 INTSET_ENC_INT64
     uint32_t encoding;

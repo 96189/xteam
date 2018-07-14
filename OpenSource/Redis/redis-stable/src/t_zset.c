@@ -143,14 +143,15 @@ int zslRandomLevel(void) {
  * exist (up to the caller to enforce that). The skiplist takes ownership
  * of the passed SDS string 'ele'. */
 zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {
+    // 经过节点记录辅助空间需要(8 * ZSKIPLIST_MAXLEVEL)Byte
     zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
     unsigned int rank[ZSKIPLIST_MAXLEVEL];
     int i, level;
 
     serverAssert(!isnan(score));
     x = zsl->header;
-    // 自定向下遍历level层
-    // x记录当前匹配的节点位置
+    // 自定向下遍历level层,遍历次数由zsl->level决定
+    // x记录当前匹配的节点位置,从header节点开始
     for (i = zsl->level-1; i >= 0; i--) {
         /* store rank that is crossed to reach the insert position */
         rank[i] = i == (zsl->level-1) ? 0 : rank[i+1];
@@ -163,7 +164,7 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {
             rank[i] += x->level[i].span;
             x = x->level[i].forward;
         }
-        // update数组记录沿途经过的节点
+        // update指针数组记录沿途经过的节点
         update[i] = x;
     }
     /* we assume the element is not already inside, since we allow duplicated
@@ -188,7 +189,7 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {
     x = zslCreateNode(level,score,ele);
     // x新节点 update[]数组
     for (i = 0; i < level; i++) {
-        // 新跳跃表节点x的每层的前进指针依次指向大于等于x的节点
+        // 之前经过节点的前进指针依次对新跳跃表节点x的对应层的前进指针赋值
         x->level[i].forward = update[i]->level[i].forward;
         // 将沿途记录的节点的前进指针指向新节点x
         update[i]->level[i].forward = x;
