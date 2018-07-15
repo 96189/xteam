@@ -1,5 +1,5 @@
 
-# 底层数据结构
+# 0x01 底层数据结构
 ## sds字符串对象
     sds对象设计的几个优点
         1、常数复杂度获取长度
@@ -65,8 +65,16 @@
 
     ziplist如何做到节省内存？
     
-# redis对象
+# 0x02 redis对象
     redis对象系统使用void decrRefCount(robj *o)接口实现了基于引用计数的内存回收机制,使用void incrRefCount(robj *o)接口通过引用计数实现了对象共享机制.
+    对外提供统一的对象接口
+    typedef struct redisObject {
+        unsigned type:4;
+        unsigned encoding:4;
+        unsigned lru:LRU_BITS; 
+        int refcount;
+        void *ptr;
+    } robj;
 
 ## 字符串对象
 ### 底层数据结构
@@ -96,7 +104,10 @@
 ### 底层数据结构
 
 
-# 缓存置换算法
+# 0x03 缓存淘汰算法(内存释放)
+    freeMmoryIfNeeded() //每当执行一个命令的时候，就会调用该函数来检测内存是否够用
+    https://blog.csdn.net/wuliusir/article/details/51598226
+    https://blog.csdn.net/qq_35440678/article/details/53453107
 ## LRU
 
 ## LFU
@@ -104,11 +115,13 @@
 
 # Scan命令
 
-# Redis过期键的删除策略
+# 0x04 Redis过期键(expire key)的删除策略
 ## 惰性删除策略(expireIfNeeded)
+    执行时机
 ## 定期删除策略(activeExpireCycle)
+    执行时机
 
-# Redis持久化(persistence)
+# 0x05 Redis持久化(persistence)
     Redis 的持久化运作方式 https://redis.io/topics/persistence
     http://oldblog.antirez.com/post/redis-persistence-demystified.html
 
