@@ -1374,6 +1374,7 @@ void createSharedObjects(void) {
     shared.maxstring = sdsnew("maxstring");
 }
 
+// 初始化服务器默认配置
 void initServerConfig(void) {
     int j;
 
@@ -1387,6 +1388,7 @@ void initServerConfig(void) {
     clearReplicationId2();
     server.configfile = NULL;
     server.executable = NULL;
+    // 服务器频率 serverCron函数每秒执行的次数
     server.hz = CONFIG_DEFAULT_HZ;
     server.arch_bits = (sizeof(long) == 8) ? 64 : 32;
     server.port = CONFIG_DEFAULT_SERVER_PORT;
@@ -1419,6 +1421,7 @@ void initServerConfig(void) {
     server.daemonize = CONFIG_DEFAULT_DAEMONIZE;
     server.supervised = 0;
     server.supervised_mode = SUPERVISED_NONE;
+    // AOF相关
     server.aof_state = AOF_OFF;
     server.aof_fsync = CONFIG_DEFAULT_AOF_FSYNC;
     server.aof_no_fsync_on_rewrite = CONFIG_DEFAULT_AOF_NO_FSYNC_ON_REWRITE;
@@ -1441,6 +1444,7 @@ void initServerConfig(void) {
     server.rdb_filename = zstrdup(CONFIG_DEFAULT_RDB_FILENAME);
     server.aof_filename = zstrdup(CONFIG_DEFAULT_AOF_FILENAME);
     server.requirepass = NULL;
+    // RDB相关
     server.rdb_compression = CONFIG_DEFAULT_RDB_COMPRESSION;
     server.rdb_checksum = CONFIG_DEFAULT_RDB_CHECKSUM;
     server.stop_writes_on_bgsave_err = CONFIG_DEFAULT_STOP_WRITES_ON_BGSAVE_ERROR;
@@ -1537,6 +1541,7 @@ void initServerConfig(void) {
     /* Command table -- we initiialize it here as it is part of the
      * initial configuration, since command names may be changed via
      * redis.conf using the rename-command directive. */
+    // 创建并初始化命令表
     server.commands = dictCreate(&commandTableDictType,NULL);
     server.orig_commands = dictCreate(&commandTableDictType,NULL);
     populateCommandTable();
@@ -1844,11 +1849,14 @@ void resetServerStats(void) {
     server.aof_delayed_fsync = 0;
 }
 
+// 初始化server设置redisServer数据结构
 void initServer(void) {
     int j;
 
+    // 需要忽略的信号
     signal(SIGHUP, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
+    // 安装信号处理函数
     setupSignalHandlers();
 
     if (server.syslog_enabled) {
@@ -1871,8 +1879,10 @@ void initServer(void) {
     server.clients_paused = 0;
     server.system_memory_size = zmalloc_get_memory_size();
 
+    // 创建常用的共享对象
     createSharedObjects();
     adjustOpenFilesLimit();
+    // 创建事件循环
     server.el = aeCreateEventLoop(server.maxclients+CONFIG_FDSET_INCR);
     if (server.el == NULL) {
         serverLog(LL_WARNING,
@@ -1883,11 +1893,13 @@ void initServer(void) {
     server.db = zmalloc(sizeof(redisDb)*server.dbnum);
 
     /* Open the TCP listening socket for the user commands. */
+    // 打开 TCP 监听端口,用于等待客户端的命令请求
     if (server.port != 0 &&
         listenToPort(server.port,server.ipfd,&server.ipfd_count) == C_ERR)
         exit(1);
 
     /* Open the listening Unix domain socket. */
+    // 创建本地unix本地接口
     if (server.unixsocket != NULL) {
         unlink(server.unixsocket); /* don't care if this fails */
         server.sofd = anetUnixServer(server.neterr,server.unixsocket,
@@ -1906,6 +1918,7 @@ void initServer(void) {
     }
 
     /* Create the Redis databases, and initialize other internal state. */
+    // 创建数据库结构
     for (j = 0; j < server.dbnum; j++) {
         server.db[j].dict = dictCreate(&dbDictType,NULL);
         server.db[j].expires = dictCreate(&keyptrDictType,NULL);
@@ -1916,10 +1929,13 @@ void initServer(void) {
         server.db[j].avg_ttl = 0;
     }
     evictionPoolAlloc(); /* Initialize the LRU keys pool. */
+    // 创建 PUBSUB 相关结构
     server.pubsub_channels = dictCreate(&keylistDictType,NULL);
     server.pubsub_patterns = listCreate();
     listSetFreeMethod(server.pubsub_patterns,freePubsubPattern);
     listSetMatchMethod(server.pubsub_patterns,listMatchPubsubPattern);
+    // serverCron执行次数cronloops初始化
+    // rdb aof初始化
     server.cronloops = 0;
     server.rdb_child_pid = -1;
     server.aof_child_pid = -1;
@@ -1951,6 +1967,7 @@ void initServer(void) {
     /* Create the timer callback, this is our way to process many background
      * operations incrementally, like clients timeout, eviction of unaccessed
      * expired keys and so forth. */
+    // 创建serverCron时间时间并添加到eventLoop
     if (aeCreateTimeEvent(server.el, 1, serverCron, NULL, NULL) == AE_ERR) {
         serverPanic("Can't create event loop timers.");
         exit(1);
@@ -1960,6 +1977,7 @@ void initServer(void) {
      * domain sockets. */
     // 为当前服务器 设置tcp连接应答处理器 用于接受并应答客户端发起的connect
     for (j = 0; j < server.ipfd_count; j++) {
+        // tcp连接文件事件添加到eventLoop
         if (aeCreateFileEvent(server.el, server.ipfd[j], AE_READABLE,
             acceptTcpHandler,NULL) == AE_ERR)
             {
@@ -1967,6 +1985,7 @@ void initServer(void) {
                     "Unrecoverable error creating server.ipfd file event.");
             }
     }
+    // 本地套接字文件事件添加到eventLoop
     if (server.sofd > 0 && aeCreateFileEvent(server.el,server.sofd,AE_READABLE,
         acceptUnixHandler,NULL) == AE_ERR) serverPanic("Unrecoverable error creating server.sofd file event.");
 
@@ -1981,6 +2000,7 @@ void initServer(void) {
     }
 
     /* Open the AOF file if needed. */
+    // 如果 AOF 持久化功能已经打开,打开或创建一个 AOF 文件
     if (server.aof_state == AOF_ON) {
         server.aof_fd = open(server.aof_filename,
                                O_WRONLY|O_APPEND|O_CREAT,0644);
@@ -1995,17 +2015,23 @@ void initServer(void) {
      * no explicit limit in the user provided configuration we set a limit
      * at 3 GB using maxmemory with 'noeviction' policy'. This avoids
      * useless crashes of the Redis instance for out of memory. */
+    // 对于 32 位实例来说,默认将最大可用内存限制在 3 GB
     if (server.arch_bits == 32 && server.maxmemory == 0) {
         serverLog(LL_WARNING,"Warning: 32 bit instance detected but no memory limit set. Setting 3 GB maxmemory limit with 'noeviction' policy now.");
         server.maxmemory = 3072LL*(1024*1024); /* 3 GB */
         server.maxmemory_policy = MAXMEMORY_NO_EVICTION;
     }
 
+    // 如果服务器以 cluster 模式打开,初始化 cluster
     if (server.cluster_enabled) clusterInit();
+    // 初始化复制功能有关的脚本缓存
     replicationScriptCacheInit();
+    // 初始化脚本系统
     scriptingInit(1);
+    // 初始化慢查询功能
     slowlogInit();
     latencyMonitorInit();
+    // 初始化 BIO 系统
     bioInit();
     server.initial_memory_usage = zmalloc_used_memory();
 }
@@ -3517,6 +3543,8 @@ void redisAsciiArt(void) {
     zfree(buf);
 }
 
+// SIGTERM SIGINT等信号的处理函数
+// 只置shutdown_asap标记 serverCron函数安全关闭
 static void sigShutdownHandler(int sig) {
     char *msg;
 
@@ -3774,7 +3802,9 @@ int main(int argc, char **argv) {
 #ifdef INIT_SETPROCTITLE_REPLACEMENT
     spt_init(argc, argv);
 #endif
+    // 设置或读取地域化信息
     setlocale(LC_COLLATE,"");
+    // out of memory handler
     zmalloc_set_oom_handler(redisOutOfMemoryHandler);
     srand(time(NULL)^getpid());
     gettimeofday(&tv,NULL);
@@ -3782,6 +3812,7 @@ int main(int argc, char **argv) {
     getRandomHexChars(hashseed,sizeof(hashseed));
     dictSetHashFunctionSeed((uint8_t*)hashseed);
     server.sentinel_mode = checkForSentinelMode(argc,argv);
+    // 加载server默认配置
     initServerConfig();
     moduleInitModulesSystem();
 
@@ -3870,6 +3901,7 @@ int main(int argc, char **argv) {
             exit(1);
         }
         resetServerSaveParams();
+        // 加载用户自定义配置
         loadServerConfig(configfile,options);
         sdsfree(options);
     }
@@ -3893,6 +3925,7 @@ int main(int argc, char **argv) {
     int background = server.daemonize && !server.supervised;
     if (background) daemonize();
 
+    // 初始化server设置redisServer数据结构
     initServer();
     if (background || server.pidfile) createPidFile();
     redisSetProcTitle(argv[0]);
@@ -3906,7 +3939,7 @@ int main(int argc, char **argv) {
         linuxMemoryWarnings();
     #endif
         moduleLoadFromQueue();
-        // 从本地文件恢复数据库
+        // 恢复数据库(加载aof或者rdb文件)
         loadDataFromDisk();
         if (server.cluster_enabled) {
             if (verifyClusterConfigWithData() == C_ERR) {
@@ -3931,6 +3964,7 @@ int main(int argc, char **argv) {
 
     aeSetBeforeSleepProc(server.el,beforeSleep);
     aeSetAfterSleepProc(server.el,afterSleep);
+    // 执行事件循环
     aeMain(server.el);
     aeDeleteEventLoop(server.el);
     return 0;

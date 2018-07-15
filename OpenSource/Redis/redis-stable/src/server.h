@@ -917,6 +917,7 @@ struct redisServer {
     redisDb *db;
     dict *commands;             /* Command table */
     dict *orig_commands;        /* Command table before command renaming. */
+    // eventLoop
     aeEventLoop *el;
     // 由serverCron定期更新
     unsigned int lruclock;      /* Clock for LRU eviction */
