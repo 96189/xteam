@@ -1568,6 +1568,7 @@ long zsetRank(robj *zobj, sds ele, int reverse) {
  *----------------------------------------------------------------------------*/
 
 /* This generic command implements both ZADD and ZINCRBY. */
+// flags -> ZADD_NONE ZADD_INCR
 void zaddGenericCommand(client *c, int flags) {
     static char *nanerr = "resulting score is not a number (NaN)";
     robj *key = c->argv[1];
@@ -1690,10 +1691,12 @@ cleanup:
     }
 }
 
+// ZADD key score member [[score member] [score member] ...]
 void zaddCommand(client *c) {
     zaddGenericCommand(c,ZADD_NONE);
 }
 
+// ZINCRBY key increment member
 void zincrbyCommand(client *c) {
     zaddGenericCommand(c,ZADD_INCR);
 }

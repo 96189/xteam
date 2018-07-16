@@ -951,9 +951,9 @@ struct redisServer {
     int sofd;                   /* Unix socket file descriptor */
     int cfd[CONFIG_BINDADDR_MAX];/* Cluster bus listening socket */
     int cfd_count;              /* Used slots in cfd[] */
-    // 当前已连接客户端链表
+    // 活跃客户端链表
     list *clients;              /* List of active clients */
-    // 当前已关闭客户端链表
+    // 已关闭客户端链表
     list *clients_to_close;     /* Clients to close asynchronously(异步) */
     list *clients_pending_write; /* There is to write or install handler. */
     list *slaves, *monitors;    /* List of slaves and MONITORs */
@@ -1043,7 +1043,9 @@ struct redisServer {
     off_t aof_current_size;         /* AOF current size. */
     int aof_rewrite_scheduled;      /* Rewrite once BGSAVE terminates. */
     pid_t aof_child_pid;            /* PID if rewriting process */
+    // 此缓冲用于aof重写时解决当前文件和数据库数据不一致问题
     list *aof_rewrite_buf_blocks;   /* Hold changes during an AOF rewrite. */
+    // 此缓冲用于aof开启时存储用户的操作命令
     sds aof_buf;      /* AOF buffer, written before entering the event loop */
     int aof_fd;       /* File descriptor of currently selected AOF file */
     int aof_selected_db; /* Currently selected DB in AOF */

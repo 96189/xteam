@@ -104,13 +104,51 @@
 ### 底层数据结构
 
 
-# 0x03 缓存淘汰算法(内存释放)
-    freeMmoryIfNeeded() //每当执行一个命令的时候，就会调用该函数来检测内存是否够用
-    https://blog.csdn.net/wuliusir/article/details/51598226
-    https://blog.csdn.net/qq_35440678/article/details/53453107
-## LRU
+# 0x03 缓存淘汰策略(内存释放)
+    https://redis.io/topics/lru-cache
+  
+    freeMemoryIfNeeded()      // 命令执行时,检查内存是否够用
 
-## LFU
+## LRU/LFU结合allkeys和volatile数据集淘汰缓存
+    LFU详细 http://antirez.com/news/109
+### LRU/LFU实现原理
+    typedef struct redisObject {
+        unsigned type:4;
+        unsigned encoding:4;
+        unsigned lru:LRU_BITS; /* LRU time (relative to global lru_clock) or
+                                * LFU data (least significant 8 bits frequency
+                                * and most significant 16 bits access time). */
+        int refcount;
+        void *ptr;
+    } robj;
+
+### 初始化
+    createObject(...)
+        o->lru = LRU_CLOCK()
+        o->lru = (LFUGetTimeInMinutes()<<8) | LFU_INIT_VAL
+
+### 更新
+    lookupKey(...)
+        val->lru = LRU_CLOCK()
+        updateLFU(val)
+
+### LRU/LFU算法实现
+    evictionPoolPopulate(...) // 随机采样存储数据到pool
+        LRU
+            pool中存储server的lru与样本robj的lru的时间差 升序排列
+        LFU
+            pool中存储(255-robj的频率计数器) 升序排列 保证使用频率最小的对象存储在最后以便淘汰
+
+### redis中LRU和LFU的应用
+    (LRU, LFU) * (allkeys, volatile) 共4中情况
+    allkeys-lru     db->dict
+    allkeys-lfu     db->dict
+    volatile-lru    db->expires
+    volatile-lfu    db->expires
+
+## volatile-ttl淘汰缓存
+
+## allkeys-random和volatile-random淘汰缓存
 
 
 # Scan命令

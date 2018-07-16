@@ -1181,7 +1181,7 @@ long long getExpire(redisDb *db, robj *key) {
  * When a key expires in the master, a DEL operation for this key is sent
  * to all the slaves and the AOF file if enabled.
  *
- * 将过期时间传播到附属节点和 AOF 文件。
+ * 将过期事件传播到附属节点和 AOF 文件。
  *
  * 当一个键在主节点中过期时，
  * 主节点会向所有附属节点和 AOF 文件传播一个显式的 DEL 命令

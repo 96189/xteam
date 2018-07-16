@@ -1928,6 +1928,7 @@ void initServer(void) {
         server.db[j].id = j;
         server.db[j].avg_ttl = 0;
     }
+    // 缓存淘汰策略有用到
     evictionPoolAlloc(); /* Initialize the LRU keys pool. */
     // 创建 PUBSUB 相关结构
     server.pubsub_channels = dictCreate(&keylistDictType,NULL);
