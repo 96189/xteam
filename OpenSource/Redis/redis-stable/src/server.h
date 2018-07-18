@@ -1108,17 +1108,26 @@ struct redisServer {
     char replid2[CONFIG_RUN_ID_SIZE+1]; /* replid inherited from master*/
     long long master_repl_offset;   /* My current replication offset */
     long long second_replid_offset; /* Accept offsets up to this for replid2. */
+    // 最近一次使用的数据集
     int slaveseldb;                 /* Last SELECTed DB in replication output */
+    // master对slave发送ping的频率
     int repl_ping_slave_period;     /* Master pings the slave every N seconds */
+    // 积压空间指针
     char *repl_backlog;             /* Replication backlog for partial syncs */
+    // 积压空间大小
     long long repl_backlog_size;    /* Backlog circular buffer size */
+    // 积压空间已写入的数据大小
     long long repl_backlog_histlen; /* Backlog actual data length */
+    // 下一次向积压空间写入数据的起始位置
     long long repl_backlog_idx;     /* Backlog circular buffer current offset,
                                        that is the next byte will'll write to.*/
+    // 
     long long repl_backlog_off;     /* Replication "master offset" of first
                                        byte in the replication backlog buffer.*/
+    // 积压空间有效时间
     time_t repl_backlog_time_limit; /* Time without slaves after the backlog
                                        gets released. */
+    // 距离上一次有从服务器的时间
     time_t repl_no_slaves_since;    /* We have no slaves since that time.
                                        Only valid if server.slaves len is 0. */
     int repl_min_slaves_to_write;   /* Min number of slaves to write. */
@@ -1127,23 +1136,34 @@ struct redisServer {
     int repl_diskless_sync;         /* Send RDB to slaves sockets directly. */
     int repl_diskless_sync_delay;   /* Delay to start a diskless repl BGSAVE. */
     /* Replication (slave) */
+    // master的验证密码
     char *masterauth;               /* AUTH with this password with master */
+    // master的ip
     char *masterhost;               /* Hostname of master */
+    // master的port
     int masterport;                 /* Port of master */
     int repl_timeout;               /* Timeout after N seconds of master idle */
+    // 当前server的master客户端
     client *master;     /* Client that is master for this slave */
     client *cached_master; /* Cached master to be reused for PSYNC. */
     int repl_syncio_timeout; /* Timeout for synchronous I/O calls */
+    // 当前复制的状态
     int repl_state;          /* Replication status if the instance is a slave */
+    // rdb文件大小
     off_t repl_transfer_size; /* Size of RDB to read from master during sync. */
+    // 已读rdb文件的字节数
     off_t repl_transfer_read; /* Amount of RDB read from master during sync. */
     off_t repl_transfer_last_fsync_off; /* Offset when we fsync-ed last time. */
-    int repl_transfer_s;     /* Slave -> Master SYNC socket */
+    // 当前服务器到master的网络连接套接字fd
+    int repl_transfer_s;     /* Slave -> Master SYNC socket fd */
+    // 当前传输的rdb文件fd
     int repl_transfer_fd;    /* Slave -> Master SYNC temp file descriptor */
+    // 当前服务器保存的rdb临时文件名
     char *repl_transfer_tmpfile; /* Slave-> master SYNC temp file name */
     time_t repl_transfer_lastio; /* Unix time of the latest read, for timeout */
     int repl_serve_stale_data; /* Serve stale data when link is down? */
     int repl_slave_ro;          /* Slave is read only? */
+    // 连接断开的时长
     time_t repl_down_since; /* Unix time at which link with master went down */
     int repl_disable_tcp_nodelay;   /* Disable TCP_NODELAY after SYNC? */
     int slave_priority;             /* Reported in INFO and used by Sentinel. */
