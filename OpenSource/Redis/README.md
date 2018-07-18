@@ -21,13 +21,13 @@
     redis跳跃表的几个特点(score可相同,后退指针)
 
 ## 哈希表
-    hash函数生成算法 MurmurHash2
+    hash函数生成算法 siphash https://en.wikipedia.org/wiki/SipHash
     hash冲突解决:链地址法
     hash表的扩展与收缩
     redis的渐进式rehash算法(重新散列算法)
 
 ## 字典
-    redis中字段的使用哈希表实现
+    哈希表实现字典
 
 ## 整数集合
 
@@ -150,57 +150,59 @@
 
 ## allkeys-random和volatile-random淘汰缓存
 
-
 # Scan命令
 
 # 0x04 Redis过期键(expire key)的删除策略
 ## 惰性删除策略(expireIfNeeded)
     执行时机
+        任何对key的读写操作
+
 ## 定期删除策略(activeExpireCycle)
-    执行时机
+    执行时机    
+        serverCron -> databasesCron -> activeExpireCycle
+        beforeSleep -> activeExpireCycle
 
 # 0x05 Redis持久化(persistence)
     Redis 的持久化运作方式 https://redis.io/topics/persistence
     http://oldblog.antirez.com/post/redis-persistence-demystified.html
 
-## redis持久化(存储)策略
-### RDB(Redis Database)
+## RDB(Redis Database)
     时间点快照存储
-#### save和bgsave
+### save和bgsave
     rdbSave rdbSaveBackground
-#### 数据库启动载入rdb文件 
+### rdb载入与数据还原 
     rdbLoad
-#### 定时bgsave机制 
+### 定时bgsave机制 
     serverCron
 
-### AOF(Append Only File)
+## AOF(Append Only File)
     写操作记录日志
 
-#### aof持久化功能的实现步骤
+### aof持久化功能的实现步骤(每一步执行时机)
     命令追加到aof_buf
-        lookupKeyRead/Write     ->  expireIfNeeded      ->  propagateExpire     ->  feedAppendOnlyFile
+        lookupKeyRead/Write -> expireIfNeeded -> propagateExpire -> feedAppendOnlyFile
     文件写入
-        beforeSleep  ->  flushAppendOnlyFile
+        beforeSleep -> flushAppendOnlyFile
     文件同步
         根据配置策略
             AOF_FSYNC_ALWAYS    写入后立即同步到磁盘
             AOF_FSYNC_EVERYSEC  写入后每秒同步一次
             不配置               写入文件何时同步由操作系统决定
 
-#### 在*nix操作系统,如何保证对文件的更新内容成功持久化到硬盘?
+### 在*nix操作系统,如何保证对文件的更新内容成功持久化到硬盘?
     linux同步i/o sync fsync fdatasync
 
-#### AOF文件载入与数据还原
+### AOF文件载入与数据还原
     loadAppendOnlyFile
 
-#### AOF文件重写BGREWRITEAOF
-    rewriteAppendOnlyFileBackground
+### AOF文件重写BGREWRITEAOF
+    rewriteAppendOnlyFileBackground 执行时机serverCron
     rewriteAppendOnlyFile
 
-#### AOF文件重写子进程重写父进程依然处理命令,如何解决当前数据库和aof文件数据不一致的问题?
+### AOF文件重写子进程重写父进程依然处理命令,如何解决当前数据库和aof文件数据不一致的问题?
     在子进程进行aof文件重写的过程中,父进程依然处理命令,但feedAppendOnlyFile函数会将当前执行的命令存储在重写缓冲区aof_rewrite_buf_blocks
 
-# XXX
+# 0x06 定时serverCron
 ## 时间事件的应用实例serverCron
 ### 更新服务器的各类统计信息
 ### 清理数据库中过期的键值对
@@ -209,15 +211,6 @@
 ### 如果服务器是主服务器,则对从服务器进行定期同步
 ### 如果处于集群模式,对集群进行定期同步和连接测试
 
-## 事件调度和执行规则
-
-# 全局唯一id生成方法
-    事件定时器id和客户端id
-
-## 创建客户端并挂载到server的clients链表尾部的时机
-    acceptTcpHandler -> acceptCommonHandler -> createClient -> listAddNodeTail
-## redis命令的执行
-    readQueryFromClient -> processInputBuffer -> processCommand -> call
 ## serverCron函数执行都做什么?
     时间缓存避免每次调用执行系统时间函数
     瞬时指标抽样测算 命令执行次数 网络流入流出流量
@@ -233,5 +226,46 @@
     检查是否需要执行bgsave和bgrewriteaof
     ...
     ...
+# 0x07 网络库服务器客户端
+## 事件调度和执行规则
+
+## 创建客户端并挂载到server的clients链表尾部的时机
+    acceptTcpHandler -> acceptCommonHandler -> createClient -> listAddNodeTail
+## redis命令的执行
+    readQueryFromClient -> processInputBuffer -> processCommand -> call
+
+# 0x08 主从同步
+    https://redis.io/topics/replication
+    CMD
+        SYNC
+        PSYNC
+        SLAVEOF ip port
+    主从复制流程 
+        replicationCron() -> connectWithMaster()
+                             replicationSendAck()
+                             replicationFeedSlaves("PING")
+                             ...
+        connectWithMaster() -> syncWithMaster() slave与master连接建立事件处理器
+                                                readSyncBulkPayload() 文件传输处理器
+
+    如何保证数据一致性
+        全同步
+        部分同步
+
+    http://wiki.jikexueyuan.com/project/redis/master-slave-replication.html
+    http://ningg.top/redis-lesson-8-redis-master-slave/
     
-    
+# 0x09 sentinel系统
+    sentinel选举
+    发布订阅模式
+    主观下线
+    客观下线
+    slave选择与提升为master
+
+# 0x0A 集群
+
+
+# 0x0n 全局唯一id生成方法
+    事件定时器id和客户端id以及服务id
+
+    HyperLogLog algorithm -> MurmurHash64A
