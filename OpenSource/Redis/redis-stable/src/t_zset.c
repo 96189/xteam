@@ -1568,7 +1568,9 @@ long zsetRank(robj *zobj, sds ele, int reverse) {
  *----------------------------------------------------------------------------*/
 
 /* This generic command implements both ZADD and ZINCRBY. */
-// flags -> ZADD_NONE ZADD_INCR
+// flags -> ZADD_NONE     ZADD_INCR
+// ZADD key score member [[score member] [score member] ...]
+// ZINCRBY key increment member
 void zaddGenericCommand(client *c, int flags) {
     static char *nanerr = "resulting score is not a number (NaN)";
     robj *key = c->argv[1];
@@ -1701,6 +1703,7 @@ void zincrbyCommand(client *c) {
     zaddGenericCommand(c,ZADD_INCR);
 }
 
+// ZREM key member [member ...]
 void zremCommand(client *c) {
     robj *key = c->argv[1];
     robj *zobj;
@@ -1710,8 +1713,10 @@ void zremCommand(client *c) {
         checkType(c,zobj,OBJ_ZSET)) return;
 
     for (j = 2; j < c->argc; j++) {
+        // 删除db中key的value对象集中的数据
         if (zsetDel(zobj,c->argv[j]->ptr)) deleted++;
         if (zsetLength(zobj) == 0) {
+            // 删除db中的key对象
             dbDelete(c->db,key);
             keyremoved = 1;
             break;
@@ -1832,14 +1837,19 @@ cleanup:
     if (rangetype == ZRANGE_LEX) zslFreeLexRange(&lexrange);
 }
 
+// ZREMRANGEBYRANK key start stop
+// 排名rank区间
 void zremrangebyrankCommand(client *c) {
     zremrangeGenericCommand(c,ZRANGE_RANK);
 }
 
+// ZREMRANGEBYSCORE key min max
+// 分数score区间
 void zremrangebyscoreCommand(client *c) {
     zremrangeGenericCommand(c,ZRANGE_SCORE);
 }
 
+// ZREMRANGEBYLEX key min max
 void zremrangebylexCommand(client *c) {
     zremrangeGenericCommand(c,ZRANGE_LEX);
 }
