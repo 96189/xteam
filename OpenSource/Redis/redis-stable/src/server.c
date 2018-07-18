@@ -3817,6 +3817,7 @@ int main(int argc, char **argv) {
     gettimeofday(&tv,NULL);
     char hashseed[16];
     getRandomHexChars(hashseed,sizeof(hashseed));
+    // 设置siphash函数种子
     dictSetHashFunctionSeed((uint8_t*)hashseed);
     server.sentinel_mode = checkForSentinelMode(argc,argv);
     // 加载server默认配置
