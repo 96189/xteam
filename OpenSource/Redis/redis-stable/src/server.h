@@ -741,7 +741,11 @@ typedef struct client {
     blockingState bpop;     /* blocking state */
     long long woff;         /* Last write global replication offset. */
     list *watched_keys;     /* Keys WATCHED for MULTI/EXEC CAS */
+    // 客户端感兴趣的频道(相当于集合)
+    // 键 => 频道名
+    // 值 => NULL
     dict *pubsub_channels;  /* channels a client is interested in (SUBSCRIBE) */
+    // 客户端感兴趣的模式存储在这里的链表(链表中只存储模式名)
     list *pubsub_patterns;  /* patterns a client is interested in (SUBSCRIBE) */
     sds peerid;             /* Cached peer ID. */
 
@@ -1215,7 +1219,10 @@ struct redisServer {
     time_t unixtime;    /* Unix time sampled every cron cycle. */
     long long mstime;   /* Like 'unixtime' but with milliseconds resolution. */
     /* Pubsub */
+    // 键 => 频道
+    // 值 => 订阅该频道的客户端链表
     dict *pubsub_channels;  /* Map channels to list of subscribed clients */
+    // 所有客户端订阅的模式都存储在这里的链表中(链表中存储pubsubPattern对象)
     list *pubsub_patterns;  /* A list of pubsub_patterns */
     int notify_keyspace_events; /* Events to propagate via Pub/Sub. This is an
                                    xor of NOTIFY_... flags. */
@@ -1275,8 +1282,11 @@ struct redisServer {
     pthread_mutex_t unixtime_mutex;
 };
 
+// 模式节点定义
 typedef struct pubsubPattern {
+    // 订阅当前模式的客户端
     client *client;
+    // 模式
     robj *pattern;
 } pubsubPattern;
 

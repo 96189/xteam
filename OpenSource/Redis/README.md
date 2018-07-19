@@ -269,6 +269,14 @@
 # 0x0A 集群
 
 
+# 0x0B 订阅与发布
+    频道订阅 数据结构:服务端与客户端各自维护一份频道字典 
+        服务端保存(channel_name,list_client)键值对 客户端保存(channel_name,NULL)键值对
+    模式订阅 数据结构:服务端与客户端各自维护一个模式链表 
+        服务端链表节点为[channel_pattern_name,client] 客户端链表节点为[channel_pattern_name]
+    发布
+        服务端查询自己的数据结构 频道相同或模式匹配后 发送到对应的客户端
+
 # 0x0n 全局唯一id生成方法
     事件定时器id和客户端id以及服务id
 
