@@ -64,6 +64,10 @@
 
 
     ziplist如何做到节省内存？
+        ziplist的内存是连续的
+        entry-n的内存布局:
+            1 or 5字节编码前置节点的长度 | 1 or 2 or 5字节编码当前节点值的长度 | 值
+
     
 # 0x02 redis对象
     redis对象系统使用void decrRefCount(robj *o)接口实现了基于引用计数的内存回收机制,使用void incrRefCount(robj *o)接口通过引用计数实现了对象共享机制.
@@ -73,7 +77,7 @@
         unsigned encoding:4;
         unsigned lru:LRU_BITS; 
         int refcount;
-        void *ptr;
+        void *ptr; // 具体的底层数据结构
     } robj;
 
 ## 字符串对象
@@ -83,7 +87,7 @@
     
 ## 列表对象
 ### 底层数据结构
-    quicklist
+    quicklist = list + ziplist
     
 ## 集合对象
 ### 底层数据结构

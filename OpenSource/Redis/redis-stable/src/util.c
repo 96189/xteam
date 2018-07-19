@@ -555,6 +555,7 @@ void getRandomHexChars(char *p, unsigned int len) {
          * function we just need non-colliding strings, there are no
          * cryptographic security needs. */
         FILE *fp = fopen("/dev/urandom","r");
+        // 成功在/dev/urandom字符设备文件读取1Byte数据
         if (fp && fread(seed,sizeof(seed),1,fp) == 1)
             seed_initialized = 1;
         if (fp) fclose(fp);
