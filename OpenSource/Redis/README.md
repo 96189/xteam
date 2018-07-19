@@ -277,6 +277,34 @@
     发布
         服务端查询自己的数据结构 频道相同或模式匹配后 发送到对应的客户端
 
+# 0x0C redis事务
+    事务提供一种将命令打包然后一次性有序执行的机制
+## redis实现事务的CMD
+    watch key1 key2 ...
+    unwatch
+    discard
+
+    multi
+    ...
+    exec
+## redis实现事务的数据结构
+    client
+        multiState mstate   // 事务队列
+        list *watched_keys  // key list
+    server
+        redisDb
+            dict *watched_keys  // key->client_list
+## 触发监视机制watch的时机
+    signalModifiedKey -> touchWatchedKey ->         c->flags |= CLIENT_DIRTY_CAS
+    signalFlushedDb -> touchWatchedKeysOnFlush ->   c->flags |= CLIENT_DIRTY_CAS
+    processCommand -> flagTransaction ->            c->flags |= CLIENT_DIRTY_EXEC
+
+## redis事务
+    Automicity
+    Consistency
+    Isolation
+    Durability
+
 # 0x0n 全局唯一id生成方法
     事件定时器id和客户端id以及服务id
 

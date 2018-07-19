@@ -620,6 +620,9 @@ typedef struct redisDb {
     dict *expires;              /* Timeout of keys with a timeout set */
     dict *blocking_keys;        /* Keys with clients waiting for data (BLPOP)*/
     dict *ready_keys;           /* Blocked keys that received a PUSH */
+    // 数据库中正在被watch(乐观锁)命令监视的键的字典
+    // key 数据库键
+    // value 监视该键的客户端链表
     dict *watched_keys;         /* WATCHED keys for MULTI/EXEC CAS */
     // 数据库编号 [0,15]
     int id;                     /* Database ID */
@@ -628,13 +631,18 @@ typedef struct redisDb {
 
 /* Client MULTI/EXEC state */
 typedef struct multiCmd {
+    // 参数
     robj **argv;
+    // 参数数量
     int argc;
+    // 命令指针
     struct redisCommand *cmd;
 } multiCmd;
 
 typedef struct multiState {
+    // 事务队列 fifo顺序
     multiCmd *commands;     /* Array of MULTI commands */
+    // 已入队命令计数
     int count;              /* Total number of MULTI commands */
     int minreplicas;        /* MINREPLICAS for synchronous replication */
     time_t minreplicas_timeout; /* MINREPLICAS timeout as unixtime. */
@@ -715,6 +723,9 @@ typedef struct client {
     // 输出缓冲区第一次到达软性限制的时间
     time_t obuf_soft_limit_reached_time;
     // 详细flag参考文件开头的宏定义
+    // CLIENT_MULTI客户端处于事务状态
+    // CLIENT_DIRTY_CAS
+    // CLIENT_DIRTY_EXEC
     int flags;              /* Client flags: CLIENT_* macros. */
     // 1已通过身份验证 0未通过身份验证
     int authenticated;      /* When requirepass is non-NULL. */
@@ -736,10 +747,12 @@ typedef struct client {
     char slave_ip[NET_IP_STR_LEN]; /* Optionally given by REPLCONF ip-address */
     int slave_capa;         /* Slave capabilities: SLAVE_CAPA_* bitwise OR. */
     // 事务相关
+    // 事务状态 主要是事务队列
     multiState mstate;      /* MULTI/EXEC state */
     int btype;              /* Type of blocking op if CLIENT_BLOCKED. */
     blockingState bpop;     /* blocking state */
     long long woff;         /* Last write global replication offset. */
+    // 当前客户端watch(乐观锁)的key链表 保存的是watchedKey对象
     list *watched_keys;     /* Keys WATCHED for MULTI/EXEC CAS */
     // 客户端感兴趣的频道(相当于集合)
     // 键 => 频道名
