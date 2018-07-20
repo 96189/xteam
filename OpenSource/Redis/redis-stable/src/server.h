@@ -1337,10 +1337,16 @@ struct redisFunctionSym {
     unsigned long pointer;
 };
 
+// redis SORT命令相关
+// 用于保存被排序值及其权重的结构
 typedef struct _redisSortObject {
+    // 被排序键的值
     robj *obj;
+    // 权重
     union {
+        // 排序数字值时使用
         double score;
+        // 排序字符串时使用
         robj *cmpobj;
     } u;
 } redisSortObject;

@@ -186,6 +186,7 @@ int sortCompare(const void *s1, const void *s2) {
 
 /* The SORT command is the most complex command in Redis. Warning: this code
  * is optimized for speed and a bit less for readability */
+// SORT key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern ...]] [ASC | DESC] [ALPHA] [STORE destination]
 void sortCommand(client *c) {
     list *operations;
     unsigned int outputlen = 0;
@@ -489,6 +490,7 @@ void sortCommand(client *c) {
         }
     }
 
+    // 排序
     if (dontsort == 0) {
         server.sort_desc = desc;
         server.sort_alpha = alpha;
