@@ -41,15 +41,20 @@ size_t redisPopcount(void *s, long count) {
     size_t bits = 0;
     unsigned char *p = s;
     uint32_t *p4;
+    // 查表法表定义
     static const unsigned char bitsinbyte[256] = {0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8};
 
     /* Count initial bytes not aligned to 32 bit. */
+    // 四字节对齐
+    // 不是32整数倍的用查表处理 方便接下来每次按照28字节处理
     while((unsigned long)p & 3 && count) {
         bits += bitsinbyte[*p++];
         count--;
     }
 
     /* Count bits 28 bytes at a time */
+    // 每次统计28字节4*7
+    // variable-precisionSWAR算法
     p4 = (uint32_t*)p;
     while(count>=28) {
         uint32_t aux1, aux2, aux3, aux4, aux5, aux6, aux7;
@@ -86,6 +91,7 @@ size_t redisPopcount(void *s, long count) {
                     ((aux7 + (aux7 >> 4)) & 0x0F0F0F0F))* 0x01010101) >> 24;
     }
     /* Count the remaining bytes. */
+    // 不足28Byte的 剩下的每个字节按照查表法统计
     p = (unsigned char*)p4;
     while(count--) bits += bitsinbyte[*p++];
     return bits;
@@ -476,11 +482,14 @@ int getBitfieldTypeFromArgument(client *c, robj *o, int *sign, int *bits) {
  * returned. Otherwise if the key holds a wrong type NULL is returned and
  * an error is sent to the client. */
 robj *lookupStringForBitCommand(client *c, size_t maxbit) {
+    // 计算maxbit所在的字节索引
     size_t byte = maxbit >> 3;
     robj *o = lookupKeyWrite(c->db,c->argv[1]);
 
     if (o == NULL) {
+        // 创建v对象
         o = createObject(OBJ_STRING,sdsnewlen(NULL, byte+1));
+        // 插入(k,v)到db中
         dbAdd(c->db,c->argv[1],o);
     } else {
         if (checkType(c,o,OBJ_STRING)) return NULL;
@@ -522,6 +531,7 @@ unsigned char *getObjectReadOnlyString(robj *o, long *len, char *llbuf) {
 }
 
 /* SETBIT key offset bitvalue */
+// offset从左向右
 void setbitCommand(client *c) {
     robj *o;
     char *err = "bit is not an integer or out of range";
@@ -542,21 +552,32 @@ void setbitCommand(client *c) {
         return;
     }
 
+    // 查询db中key对应的val对象
+    // 若不存在则创建
     if ((o = lookupStringForBitCommand(c,bitoffset)) == NULL) return;
 
     /* Get current values */
+    // 计算bitoffset所在的字节索引
     byte = bitoffset >> 3;
+    // 取出bitoffset所在的那一个字节
     byteval = ((uint8_t*)o->ptr)[byte];
+    // 计算bitoffset在8bit中的bit索引(从左向右)
     bit = 7 - (bitoffset & 0x7);
+    // 记录更新之前该bitoffset位上的值(0或者1)
+    // (1<<bit)是要取出bitoffset位上的值 byteval是整个字节(8位的值)
     bitval = byteval & (1 << bit);
 
     /* Update byte with new bit value and return original value */
-    byteval &= ~(1 << bit);
-    byteval |= ((on & 0x1) << bit);
+    byteval &= ~(1 << bit);     // 把要设置的位设为0
+    // 把要设置的bitoffset设置为0或1 (on&0x1)表示无论on为多少最终设置的是0和1两种状态
+    // 同时将bitoffset位置变化后的值添加到原来的值上
+    byteval |= ((on & 0x1) << bit); 
     ((uint8_t*)o->ptr)[byte] = byteval;
+
     signalModifiedKey(c->db,c->argv[1]);
     notifyKeyspaceEvent(NOTIFY_STRING,"setbit",c->argv[1],c->db->id);
     server.dirty++;
+    // 向客户端返回原来该bitoffset位置的值bitval
     addReply(c, bitval ? shared.cone : shared.czero);
 }
 
@@ -571,14 +592,21 @@ void getbitCommand(client *c) {
     if (getBitOffsetFromArgument(c,c->argv[2],&bitoffset,0,0) != C_OK)
         return;
 
+    // 查询key对应的val对象
+    // 若没有则创建 初始值为0
     if ((o = lookupKeyReadOrReply(c,c->argv[1],shared.czero)) == NULL ||
         checkType(c,o,OBJ_STRING)) return;
 
+    // 计算bitoffset所在的byte索引 >> 3 <=> / 8
     byte = bitoffset >> 3;
+    // 计算bitoffset在字节中所在的bit索引(从左到右且索引从0开始)
     bit = 7 - (bitoffset & 0x7);
+    // 字符串编码
     if (sdsEncodedObject(o)) {
         if (byte < sdslen(o->ptr))
+            // 取值 先取字节值 再取字节中的位值
             bitval = ((uint8_t*)o->ptr)[byte] & (1 << bit);
+    // 整数编码
     } else {
         if (byte < (size_t)ll2string(llbuf,sizeof(llbuf),(long)o->ptr))
             bitval = llbuf[byte] & (1 << bit);
@@ -623,10 +651,12 @@ void bitopCommand(client *c) {
     numkeys = c->argc - 3;
     src = zmalloc(sizeof(unsigned char*) * numkeys);
     len = zmalloc(sizeof(long) * numkeys);
+    // 存储src_key对象数值
     objects = zmalloc(sizeof(robj*) * numkeys);
     for (j = 0; j < numkeys; j++) {
         o = lookupKeyRead(c->db,c->argv[j+3]);
         /* Handle non-existing keys as empty strings. */
+        // src_key对应的对象不存在
         if (o == NULL) {
             objects[j] = NULL;
             src[j] = NULL;
@@ -634,6 +664,7 @@ void bitopCommand(client *c) {
             minlen = 0;
             continue;
         }
+        // src_key对应的对象存在
         /* Return an error if one of the keys is not a string. */
         if (checkType(c,o,OBJ_STRING)) {
             unsigned long i;
@@ -649,12 +680,14 @@ void bitopCommand(client *c) {
         objects[j] = getDecodedObject(o);
         src[j] = objects[j]->ptr;
         len[j] = sdslen(objects[j]->ptr);
+        // maxlen保存key对应的对象长度最长的
         if (len[j] > maxlen) maxlen = len[j];
         if (j == 0 || len[j] < minlen) minlen = len[j];
     }
 
     /* Compute the bit operation, if at least one string is not empty. */
     if (maxlen) {
+        // dst_key最终对象的长度设置位maxlen
         res = (unsigned char*) sdsnewlen(NULL,maxlen);
         unsigned char output, byte;
         unsigned long i;
@@ -729,11 +762,15 @@ void bitopCommand(client *c) {
         #endif
 
         /* j is set to the next byte to process by the previous loop. */
+        // 遍历字节
         for (; j < maxlen; j++) {
             output = (len[0] <= j) ? 0 : src[0][j];
             if (op == BITOP_NOT) output = ~output;
+            // 遍历每个key
             for (i = 1; i < numkeys; i++) {
+                // 取到每个key对应的字节
                 byte = (len[i] <= j) ? 0 : src[i][j];
+                // 对每个字节按位 与 或 异或
                 switch(op) {
                 case BITOP_AND: output &= byte; break;
                 case BITOP_OR:  output |= byte; break;
@@ -753,7 +790,9 @@ void bitopCommand(client *c) {
 
     /* Store the computed value into the target key */
     if (maxlen) {
+        // 创建target_key对应的值对象
         o = createObject(OBJ_STRING,res);
+        // 插入(targetkey,o)到数据库
         setKey(c->db,targetkey,o);
         notifyKeyspaceEvent(NOTIFY_STRING,"set",targetkey,c->db->id);
         decrRefCount(o);
@@ -775,6 +814,7 @@ void bitcountCommand(client *c) {
     /* Lookup, check for type, and return 0 for non existing keys. */
     if ((o = lookupKeyReadOrReply(c,c->argv[1],shared.czero)) == NULL ||
         checkType(c,o,OBJ_STRING)) return;
+    // strlen保存字节数
     p = getObjectReadOnlyString(o,&strlen,llbuf);
 
     /* Parse start/end range if any. */
@@ -810,6 +850,7 @@ void bitcountCommand(client *c) {
     } else {
         long bytes = end-start+1;
 
+        // 统计从p+start开始的bytes个字节中1的个数
         addReplyLongLong(c,redisPopcount(p+start,bytes));
     }
 }
