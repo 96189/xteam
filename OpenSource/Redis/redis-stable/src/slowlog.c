@@ -132,6 +132,7 @@ void slowlogPushEntryIfNeeded(client *c, robj **argv, int argc, long long durati
 }
 
 /* Remove all the entries from the current slow log. */
+// SLOWLOG RESET
 void slowlogReset(void) {
     while (listLength(server.slowlog) > 0)
         listDelNode(server.slowlog,listLast(server.slowlog));
@@ -139,6 +140,9 @@ void slowlogReset(void) {
 
 /* The SLOWLOG command. Implements all the subcommands needed to handle the
  * Redis slow log. */
+// SLOWLOG GET [number]
+// SLOWLOG LEN
+// SLOWLOG RESET
 void slowlogCommand(client *c) {
     if (c->argc == 2 && !strcasecmp(c->argv[1]->ptr,"reset")) {
         slowlogReset();
@@ -148,12 +152,14 @@ void slowlogCommand(client *c) {
     } else if ((c->argc == 2 || c->argc == 3) &&
                !strcasecmp(c->argv[1]->ptr,"get"))
     {
+        // 若未指定number则默认显示10条慢查询日志
         long count = 10, sent = 0;
         listIter li;
         void *totentries;
         listNode *ln;
         slowlogEntry *se;
 
+        // 获取命令行number值存储再count中
         if (c->argc == 3 &&
             getLongFromObjectOrReply(c,c->argv[2],&count,NULL) != C_OK)
             return;

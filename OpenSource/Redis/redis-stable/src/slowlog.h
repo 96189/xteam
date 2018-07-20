@@ -32,10 +32,14 @@
 
 /* This structure defines an entry inside the slow log list */
 typedef struct slowlogEntry {
+    // 命令与命令参数数组
     robj **argv;
+    // 命令与命令参数总数
     int argc;
     long long id;       /* Unique entry identifier. */
+    // 执行命令消耗的时间,以ms为单位
     long long duration; /* Time spent by the query, in microseconds. */
+    // 命令执行的时间,格式为unix时间戳
     time_t time;        /* Unix time at which the query was executed. */
     sds cname;          /* Client name. */
     sds peerid;         /* Client network address. */

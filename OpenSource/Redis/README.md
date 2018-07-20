@@ -312,6 +312,9 @@
     连续登录奖励发放的条件判断
 
 # 0x0n 全局唯一id生成方法
-    事件定时器id和客户端id以及服务id
+    事件定时器id
+    客户端id
+    服务id
+    慢查询标识符
 
     HyperLogLog algorithm -> MurmurHash64A
