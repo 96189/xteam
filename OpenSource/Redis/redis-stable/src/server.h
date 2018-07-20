@@ -973,6 +973,7 @@ struct redisServer {
     // 已关闭客户端链表
     list *clients_to_close;     /* Clients to close asynchronously(异步) */
     list *clients_pending_write; /* There is to write or install handler. */
+    // monitors是redisServer当前的监视器链表
     list *slaves, *monitors;    /* List of slaves and MONITORs */
     client *current_client; /* Current client, only used on crash report */
     int clients_paused;         /* True if clients are currently paused */

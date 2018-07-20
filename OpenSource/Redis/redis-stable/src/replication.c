@@ -308,6 +308,7 @@ void replicationFeedSlavesFromMasterStream(list *slaves, char *buf, size_t bufle
     }
 }
 
+// 复制命令到监视器
 void replicationFeedMonitors(client *c, list *monitors, int dictid, robj **argv, int argc) {
     listNode *ln;
     listIter li;
@@ -340,8 +341,10 @@ void replicationFeedMonitors(client *c, list *monitors, int dictid, robj **argv,
     cmdobj = createObject(OBJ_STRING,cmdrepr);
 
     listRewind(monitors,&li);
+    // 遍历监视器 
     while((ln = listNext(&li))) {
         client *monitor = ln->value;
+        // 发送命令到当前redisServer的监视器
         addReply(monitor,cmdobj);
     }
     decrRefCount(cmdobj);

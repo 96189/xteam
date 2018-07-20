@@ -2279,6 +2279,7 @@ void call(client *c, int flags) {
         !server.loading &&
         !(c->cmd->flags & (CMD_SKIP_MONITOR|CMD_ADMIN)))
     {
+        // 将命令发送给监视器
         replicationFeedMonitors(c,server.monitors,c->db->id,c->argv,c->argc);
     }
 
@@ -3423,11 +3424,14 @@ void infoCommand(client *c) {
     addReplyBulkSds(c, genRedisInfoString(section));
 }
 
+// MONITOR 
+// 使当前客户端成为redisServer的一个monitor
 void monitorCommand(client *c) {
     /* ignore MONITOR if already slave or in monitor mode */
     if (c->flags & CLIENT_SLAVE) return;
 
     c->flags |= (CLIENT_SLAVE|CLIENT_MONITOR);
+    // 添加到监视器链表末尾
     listAddNodeTail(server.monitors,c);
     addReply(c,shared.ok);
 }
