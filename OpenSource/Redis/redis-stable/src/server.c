@@ -2290,8 +2290,10 @@ void call(client *c, int flags) {
 
     /* Call the command. */
     dirty = server.dirty;
+    // 执行命令前记录时间
     start = ustime();
     c->cmd->proc(c);
+    // 计算命令执行消耗时间
     duration = ustime()-start;
     dirty = server.dirty-dirty;
     if (dirty < 0) dirty = 0;
@@ -2317,6 +2319,7 @@ void call(client *c, int flags) {
         char *latency_event = (c->cmd->flags & CMD_FAST) ?
                               "fast-command" : "command";
         latencyAddSampleIfNeeded(latency_event,duration/1000);
+        // 是否慢查询记录
         slowlogPushEntryIfNeeded(c,c->argv,c->argc,duration);
     }
     if (flags & CMD_CALL_STATS) {
