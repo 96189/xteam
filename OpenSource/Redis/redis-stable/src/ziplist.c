@@ -445,7 +445,7 @@ unsigned int zipStorePrevEntryLength(unsigned char *p, unsigned int len) {
 
 /* Return the number of bytes used to encode the length of the previous
  * entry. The length is returned by setting the var 'prevlensize'. */
-#define ZIP_DECODE_PREVLENSIZE(ptr, prevlensize) do {                          \
+#define ZIP_DECODE_PREVLENSIZE(ptr, prevlensize) do{                          \
     if ((ptr)[0] < ZIP_BIG_PREVLEN) {                                          \
         (prevlensize) = 1;                                                     \
     } else {                                                                   \
@@ -464,17 +464,17 @@ unsigned int zipStorePrevEntryLength(unsigned char *p, unsigned int len) {
 // 取出编码前置节点所需的字节数并保存到prevlensize
 // 根据prevlensize从ptr中取出前置节点的长度值保存到prevlen
 #define ZIP_DECODE_PREVLEN(ptr, prevlensize, prevlen) do {                     \
-    // 
+    /**/                                                                       \
     ZIP_DECODE_PREVLENSIZE(ptr, prevlensize);                                  \
-    // 前置节点的长度小于254字节
+    /* 前置节点的长度小于254字节 */                                              \
     if ((prevlensize) == 1) {                                                  \
-        // 前一个节点的长度就保存在这一个字节里
+        /* 前一个节点的长度就保存在这一个字节里 */                                \
         (prevlen) = (ptr)[0];                                                  \
-    // 前置节点的长度大于等于254字节
+    /* 前置节点的长度大于等于254字节 */                                          \
     } else if ((prevlensize) == 5) {                                           \
-        assert(sizeof((prevlen)) == 4);                                    \
-        // 5个字节的前1个字节设置为0xFE(254)
-        // 后4个字节保存前一个节点
+        assert(sizeof((prevlen)) == 4);                                        \
+        /* 5个字节的前1个字节设置为0xFE(254) */                                  \
+        /* 后4个字节保存前一个节点 */                                            \
         memcpy(&(prevlen), ((char*)(ptr)) + 1, 4);                             \
         memrev32ifbe(&prevlen);                                                \
     }                                                                          \

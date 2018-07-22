@@ -1054,7 +1054,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     databasesCron();
 
     /* Start a scheduled AOF rewrite if this was requested by the user while
-     * a BGSAVE was in progress. */、
+     * a BGSAVE was in progress. */
     // aof_rewrite_scheduled为1表示有BGREWRITEAOF被延迟
     // 执行aof重写
     if (server.rdb_child_pid == -1 && server.aof_child_pid == -1 &&

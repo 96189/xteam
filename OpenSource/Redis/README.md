@@ -1,3 +1,5 @@
+redis源码版本:
+Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
 
 # 0x01 底层数据结构
 ## sds字符串对象
