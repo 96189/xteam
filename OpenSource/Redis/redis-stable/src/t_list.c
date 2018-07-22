@@ -46,6 +46,7 @@ void listTypePush(robj *subject, robj *value, int where) {
         // 内部可能增加已用计数或者生成新的对象
         value = getDecodedObject(value);
         size_t len = sdslen(value->ptr);
+        // 插入值到quicklist
         quicklistPush(subject->ptr, value->ptr, len, pos);
         // 减少引用计数或者释放对象
         decrRefCount(value);
@@ -220,6 +221,7 @@ void pushGenericCommand(client *c, int where) {
     for (j = 2; j < c->argc; j++) {
         // list对象不存在则创建,只进来一次,下次循环时对象已创建
         if (!lobj) {
+            // 创建quicklist对象
             lobj = createQuicklistObject();
             quicklistSetOptions(lobj->ptr, server.list_max_ziplist_size,
                                 server.list_compress_depth);

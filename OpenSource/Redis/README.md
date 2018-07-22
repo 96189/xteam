@@ -13,7 +13,13 @@
     
 ## Quicklist
     ziplist和双向链表的结合(列表对象实际使用的数据结构)
-    
+    ziplist的优缺点:
+        内存连续,插入和删除需要频繁拷贝数据且每次申请新节点内存需要realloc拷贝数据,节点之间的关系只需要较少的
+        额外内存就可以维护,但也正是由于内存空间连续内存碎片会小一些
+    双向链表的优缺点:
+        内存不连续,大量节点的申请和释放会造成比较大的内存碎片且维护节点之间的关系需要大量额外的内存,但也正是由于内存不连续,会更灵活的组织数据插入新节点不必拷贝数据
+    为什么要引入quicklist:
+        集合ziplist和双向链表的优点,通过链表来管理数据,对数据进行分片,每一片数据由内存连续的ziplist管理.极端情况下,若每个ziplist中保存一个数据,则quicklist退化为双向链表,若所有数据都存储在一个节点中,则quicklist退化为ziplist。因此需要配置每个ziplist中最大可存储多大数据.
 ## 跳跃表
     [skiplist论文](ftp://ftp.cs.umd.edu/pub/skipLists/skiplists.pdf)
     平均O(logN)复杂度的证明 
@@ -314,11 +320,13 @@
 # 0x0E HyperLogLog
     http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf
     http://algo.inria.fr/flajolet/Publications/DuFl03-LNCS.pdf
+    https://research.neustar.biz/2012/10/25/sketch-of-the-day-hyperloglog-cornerstone-of-a-big-data-infrastructure/
+    http://content.research.neustar.biz/blog/hll.html
 
 # 0x0n 全局唯一id生成方法
     事件定时器id
     客户端id
     服务id
     慢查询标识符
-
+    Redis通过异步IO和pipelining等机制来实现高速的并发访问
     HyperLogLog algorithm -> MurmurHash64A

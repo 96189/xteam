@@ -44,6 +44,8 @@
 #endif
 
 /* Optimization levels for size-based filling */
+// 4k 8k 16k 32k 64k
+// ((-fill) - 1)作下标
 static const size_t optimization_level[] = {4096, 8192, 16384, 32768, 65536};
 
 /* Maximum size in bytes of any multi-element ziplist.
@@ -94,11 +96,13 @@ static const size_t optimization_level[] = {4096, 8192, 16384, 32768, 65536};
 quicklist *quicklistCreate(void) {
     struct quicklist *quicklist;
 
+    // 64-bit systems 40Byte
     quicklist = zmalloc(sizeof(*quicklist));
     quicklist->head = quicklist->tail = NULL;
     quicklist->len = 0;
     quicklist->count = 0;
     quicklist->compress = 0;
+    // 每个节点的ziplist字节大小不能超过8kb
     quicklist->fill = -2;
     return quicklist;
 }
@@ -138,6 +142,7 @@ quicklist *quicklistNew(int fill, int compress) {
 REDIS_STATIC quicklistNode *quicklistCreateNode(void) {
     quicklistNode *node;
     node = zmalloc(sizeof(*node));
+    // 创建quicklistNode时zl无内存
     node->zl = NULL;
     node->count = 0;
     node->sz = 0;
@@ -161,9 +166,11 @@ void quicklistRelease(quicklist *quicklist) {
     while (len--) {
         next = current->next;
 
+        // 释放zl的连续内存
         zfree(current->zl);
         quicklist->count -= current->count;
 
+        // 释放quicklistNode节点内存
         zfree(current);
 
         quicklist->len--;
@@ -417,19 +424,24 @@ _quicklistNodeSizeMeetsOptimizationRequirement(const size_t sz,
 
 #define sizeMeetsSafetyLimit(sz) ((sz) <= SIZE_SAFETY_LIMIT)
 
+// 1 允许插入 0 不允许插入
 REDIS_STATIC int _quicklistNodeAllowInsert(const quicklistNode *node,
                                            const int fill, const size_t sz) {
+    // 当前quicklistNode为NULL
     if (unlikely(!node))
         return 0;
 
+    // 计算当前节点header需要的字节数
     int ziplist_overhead;
     /* size of previous offset */
+    // 编码前置节点需要的字节数
     if (sz < 254)
         ziplist_overhead = 1;
     else
         ziplist_overhead = 5;
 
     /* size of forward offset */
+    // 编码当前节点需要的字节数
     if (sz < 64)
         ziplist_overhead += 1;
     else if (likely(sz < 16384))
@@ -438,9 +450,12 @@ REDIS_STATIC int _quicklistNodeAllowInsert(const quicklistNode *node,
         ziplist_overhead += 5;
 
     /* new_sz overestimates if 'sz' encodes to an integer type */
+    // zl总字节数 = 原来zl的字节数 + 新的值长度 + 新值节点的头部长度
     unsigned int new_sz = node->sz + sz + ziplist_overhead;
+    // 校验若新加节点到zl是否超过zl的最大内存限制
     if (likely(_quicklistNodeSizeMeetsOptimizationRequirement(new_sz, fill)))
         return 1;
+    // 校验新节点是否超过8kb
     else if (!sizeMeetsSafetyLimit(new_sz))
         return 0;
     else if ((int)node->count < fill)
@@ -479,16 +494,19 @@ REDIS_STATIC int _quicklistNodeAllowMerge(const quicklistNode *a,
  * Returns 1 if new head created. */
 int quicklistPushHead(quicklist *quicklist, void *value, size_t sz) {
     quicklistNode *orig_head = quicklist->head;
-    if (likely(
-            _quicklistNodeAllowInsert(quicklist->head, quicklist->fill, sz))) {
-        quicklist->head->zl =
-            ziplistPush(quicklist->head->zl, value, sz, ZIPLIST_HEAD);
+    // 新值有限存储到头节点
+    if (likely(_quicklistNodeAllowInsert(quicklist->head, quicklist->fill, sz))) {
+        quicklist->head->zl = ziplistPush(quicklist->head->zl, value, sz, ZIPLIST_HEAD);
         quicklistNodeUpdateSz(quicklist->head);
     } else {
+        // 创建新节点
         quicklistNode *node = quicklistCreateNode();
+        // 分配新节点的zl内存
         node->zl = ziplistPush(ziplistNew(), value, sz, ZIPLIST_HEAD);
 
+        // 设置node->sz总字节数字段
         quicklistNodeUpdateSz(node);
+        // 头插
         _quicklistInsertNodeBefore(quicklist, quicklist->head, node);
     }
     quicklist->count++;
@@ -502,16 +520,19 @@ int quicklistPushHead(quicklist *quicklist, void *value, size_t sz) {
  * Returns 1 if new tail created. */
 int quicklistPushTail(quicklist *quicklist, void *value, size_t sz) {
     quicklistNode *orig_tail = quicklist->tail;
+    // 新值优先存储到尾节点
     if (likely(
             _quicklistNodeAllowInsert(quicklist->tail, quicklist->fill, sz))) {
         quicklist->tail->zl =
             ziplistPush(quicklist->tail->zl, value, sz, ZIPLIST_TAIL);
         quicklistNodeUpdateSz(quicklist->tail);
     } else {
+        // 创建新节点
         quicklistNode *node = quicklistCreateNode();
         node->zl = ziplistPush(ziplistNew(), value, sz, ZIPLIST_TAIL);
 
         quicklistNodeUpdateSz(node);
+        // 尾插法
         _quicklistInsertNodeAfter(quicklist, quicklist->tail, node);
     }
     quicklist->count++;
@@ -523,12 +544,15 @@ int quicklistPushTail(quicklist *quicklist, void *value, size_t sz) {
  * Used for loading RDBs where entire ziplists have been stored
  * to be retrieved later. */
 void quicklistAppendZiplist(quicklist *quicklist, unsigned char *zl) {
+    // 创建新quicklistNode节点
     quicklistNode *node = quicklistCreateNode();
 
+    // 存储指定zl空间
     node->zl = zl;
     node->count = ziplistLen(node->zl);
     node->sz = ziplistBlobLen(zl);
 
+    // 尾插法插入quicklistNode节点
     _quicklistInsertNodeAfter(quicklist, quicklist->tail, node);
     quicklist->count += node->count;
 }
@@ -631,6 +655,7 @@ REDIS_STATIC int quicklistDelIndex(quicklist *quicklist, quicklistNode *node,
  *
  * 'entry' stores enough metadata to delete the proper position in
  * the correct ziplist in the correct quicklist node. */
+// LREM
 void quicklistDelEntry(quicklistIter *iter, quicklistEntry *entry) {
     quicklistNode *prev = entry->node->prev;
     quicklistNode *next = entry->node->next;
@@ -955,6 +980,7 @@ void quicklistInsertAfter(quicklist *quicklist, quicklistEntry *entry,
  * have to be careful about tracking where we start and end.
  *
  * Returns 1 if entries were deleted, 0 if nothing was deleted. */
+// LTRIM
 int quicklistDelRange(quicklist *quicklist, const long start,
                       const long count) {
     if (count <= 0)
@@ -1114,6 +1140,7 @@ void quicklistReleaseIterator(quicklistIter *iter) {
  * Returns 0 when iteration is complete or if iteration not possible.
  * If return value is 0, the contents of 'entry' are not valid.
  */
+// LRANGE
 int quicklistNext(quicklistIter *iter, quicklistEntry *entry) {
     initEntry(entry);
 
@@ -1321,6 +1348,8 @@ void quicklistRotate(quicklist *quicklist) {
  * Return value of 0 means no elements available.
  * Return value of 1 means check 'data' and 'sval' for values.
  * If 'data' is set, use 'data' and 'sz'.  Otherwise, use 'sval'. */
+// LPOP
+// RPOP
 int quicklistPopCustom(quicklist *quicklist, int where, unsigned char **data,
                        unsigned int *sz, long long *sval,
                        void *(*saver)(unsigned char *data, unsigned int sz)) {
