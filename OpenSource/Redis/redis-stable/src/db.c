@@ -660,10 +660,15 @@ int parseScanCursorOrReply(client *c, robj *o, unsigned long *cursor) {
  *
  * In the case of a Hash object the function returns both the field and value
  * of every element on the Hash. */
+// SCAN cursor [MATCH pattern] [COUNT count]
+// SSCAN key cursor [MATCH pattern] [COUNT count]
+// HSCAN key cursor [MATCH pattern] [COUNT count]
+// ZSCAN key cursor [MATCH pattern] [COUNT count]
 void scanGenericCommand(client *c, robj *o, unsigned long cursor) {
     int i, j;
     list *keys = listCreate();
     listNode *node, *nextnode;
+    // 默认迭代10个
     long count = 10;
     sds pat = NULL;
     int patlen = 0, use_pattern = 0;
@@ -680,6 +685,7 @@ void scanGenericCommand(client *c, robj *o, unsigned long cursor) {
     /* Step 1: Parse options. */
     while (i < c->argc) {
         j = c->argc - i;
+        // 取count选项的值
         if (!strcasecmp(c->argv[i]->ptr, "count") && j >= 2) {
             if (getLongFromObjectOrReply(c, c->argv[i+1], &count, NULL)
                 != C_OK)
@@ -693,6 +699,7 @@ void scanGenericCommand(client *c, robj *o, unsigned long cursor) {
             }
 
             i += 2;
+        // 取match选项的值
         } else if (!strcasecmp(c->argv[i]->ptr, "match") && j >= 2) {
             pat = c->argv[i+1]->ptr;
             patlen = sdslen(pat);
@@ -715,23 +722,32 @@ void scanGenericCommand(client *c, robj *o, unsigned long cursor) {
      * composed of a small number of elements. So to avoid taking state we
      * just return everything inside the object in a single call, setting the
      * cursor to zero to signal the end of the iteration. */
-
+     // 如果对象的底层实现为 ziplist 、intset 而不是哈希表，
+     // 那么这些对象应该只包含了少量元素，
+     // 为了保持不让服务器记录迭代状态的设计
+     // 我们将 ziplist 或者 intset 里面的所有元素都一次返回给调用者
+     // 并向调用者返回游标（cursor） 0
     /* Handle the case of a hash table. */
     ht = NULL;
     if (o == NULL) {
+        // SCAN命令迭代数据库的所有键
         ht = c->db->dict;
     } else if (o->type == OBJ_SET && o->encoding == OBJ_ENCODING_HT) {
+        // SSCAN命令迭代set(集合)键中的数据,且当前哈希对象底层编码是ht
         ht = o->ptr;
     } else if (o->type == OBJ_HASH && o->encoding == OBJ_ENCODING_HT) {
+        // HSCAN命令迭代hash键中的键值对 且当前哈希对象底层编码是ht
         ht = o->ptr;
         count *= 2; /* We return key / value for this type. */
     } else if (o->type == OBJ_ZSET && o->encoding == OBJ_ENCODING_SKIPLIST) {
+        // ZSCAN命令迭代当前zset集合中的数据 且当前zset对象底层编码为ht
         zset *zs = o->ptr;
         ht = zs->dict;
         count *= 2; /* We return key / value for this type. */
     }
 
     if (ht) {
+        // 回调函数参数
         void *privdata[2];
         /* We set the max number of iterations to ten times the specified
          * COUNT, so if the hash table is in a pathological state (very
@@ -742,20 +758,30 @@ void scanGenericCommand(client *c, robj *o, unsigned long cursor) {
         /* We pass two pointers to the callback: the list to which it will
          * add new elements, and the object containing the dictionary so that
          * it is possible to fetch more data in a type-dependent way. */
+        // keys list链表作为回调函数参数
         privdata[0] = keys;
         privdata[1] = o;
+        // 循环读取多次
+        // 返回游标不为0 最大迭代数量不为0 已存储的key个数小于指定的count
         do {
+            // scanCallback函数存储key val 到privdata[0]中
             cursor = dictScan(ht, cursor, scanCallback, NULL, privdata);
         } while (cursor &&
               maxiterations-- &&
               listLength(keys) < (unsigned long)count);
+    // 集合对象但不是ht编码而是intset编码
+    // 则一次性返回对象中的所有元素
     } else if (o->type == OBJ_SET) {
         int pos = 0;
         int64_t ll;
 
+        // 整数集合
         while(intsetGet(o->ptr,pos++,&ll))
             listAddNodeTail(keys,createStringObjectFromLongLong(ll));
+        // 一次性返回所有元素 游标置为0
         cursor = 0;
+    // 哈希对象或者集合对象 但 底层编码不是ht而是ziplist
+    // 则一次性返回对象中的所有元素
     } else if (o->type == OBJ_HASH || o->type == OBJ_ZSET) {
         unsigned char *p = ziplistIndex(o->ptr,0);
         unsigned char *vstr;
@@ -769,6 +795,7 @@ void scanGenericCommand(client *c, robj *o, unsigned long cursor) {
                                  createStringObjectFromLongLong(vll));
             p = ziplistNext(o->ptr,p);
         }
+        // 一次性返回所有元素 游标置为0
         cursor = 0;
     } else {
         serverPanic("Not handled encoding in SCAN.");
@@ -776,6 +803,7 @@ void scanGenericCommand(client *c, robj *o, unsigned long cursor) {
 
     /* Step 3: Filter elements. */
     node = listFirst(keys);
+    // 在keys链表中过滤掉模式不匹配的节点和过期节点
     while (node) {
         robj *kobj = listNodeValue(node);
         nextnode = listNextNode(node);
@@ -784,6 +812,7 @@ void scanGenericCommand(client *c, robj *o, unsigned long cursor) {
         /* Filter element if it does not match the pattern. */
         if (!filter && use_pattern) {
             if (sdsEncodedObject(kobj)) {
+                // 模式匹配
                 if (!stringmatchlen(pat, patlen, kobj->ptr, sdslen(kobj->ptr), 0))
                     filter = 1;
             } else {
@@ -792,6 +821,7 @@ void scanGenericCommand(client *c, robj *o, unsigned long cursor) {
 
                 serverAssert(kobj->encoding == OBJ_ENCODING_INT);
                 len = ll2string(buf,sizeof(buf),(long)kobj->ptr);
+                // 模式匹配
                 if (!stringmatchlen(pat, patlen, buf, len, 0)) filter = 1;
             }
         }
@@ -838,6 +868,7 @@ cleanup:
 }
 
 /* The SCAN command completely relies on scanGenericCommand. */
+// SCAN cursor [MATCH pattern] [COUNT count]
 void scanCommand(client *c) {
     unsigned long cursor;
     if (parseScanCursorOrReply(c,c->argv[1],&cursor) == C_ERR) return;

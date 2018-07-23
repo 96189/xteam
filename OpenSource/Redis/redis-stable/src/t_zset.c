@@ -3157,6 +3157,7 @@ void zrevrankCommand(client *c) {
     zrankGenericCommand(c, 1);
 }
 
+// ZSCAN key cursor [MATCH pattern] [COUNT count]
 void zscanCommand(client *c) {
     robj *o;
     unsigned long cursor;

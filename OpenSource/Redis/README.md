@@ -163,6 +163,16 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
 ## allkeys-random和volatile-random淘汰缓存
 
 # Scan命令
+    迭代数据库的所有键                             SCAN cursor [MATCH pattern] [COUNT count]        
+    迭代数据库中key指定的set对象中的元素            SSCAN key cursor [MATCH pattern] [COUNT count]
+    迭代数据库中key指定的hash对象中的所有键值对      HSCAN key cursor [MATCH pattern] [COUNT count]
+    迭代数据库中key指定的zset中的所有元素           ZSCAN key cursor [MATCH pattern] [COUNT count]
+
+        以上列出的四个命令都支持增量式迭代， 它们每次执行都只会返回少量元素， 所以这些命令可以用于生产环境， 而不会出现像 KEYS 命  令、SMEMBERS 命令带来的问题 —— 当 KEYS 命令被用于处理一个大的数据库时， 又或者 SMEMBERS 命令被用于处理一个大的集合键时，它们可能会阻塞服务器达数秒之久。
+
+        scan命令指定cursor从0开始迭代,直到返回cursor为0表示结束,每次迭代返回N个元素.
+        sscan/hscan/zscan迭代set对象hash对象zset对象时,若set和hash底层编码不是OBJ_ENCODING_HT,zset底层编码不是
+    OBJ_ENCODING_SKIPLIST则会一次性返回所有元素,否则返回N个元素
 
 # 0x04 Redis过期键(expire key)的删除策略
 ## 惰性删除策略(expireIfNeeded)
@@ -200,6 +210,8 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
             AOF_FSYNC_ALWAYS    写入后立即同步到磁盘
             AOF_FSYNC_EVERYSEC  写入后每秒同步一次
             不配置               写入文件何时同步由操作系统决定
+
+## 持久化方案的选择
 
 ### 在*nix操作系统,如何保证对文件的更新内容成功持久化到硬盘?
     linux同步i/o sync fsync fdatasync
@@ -325,10 +337,15 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
     https://research.neustar.biz/2012/10/25/sketch-of-the-day-hyperloglog-cornerstone-of-a-big-data-infrastructure/
     http://content.research.neustar.biz/blog/hll.html
 
-# 0x0n 全局唯一id生成方法
+# 0x10 redis配置文件
+
+# 0x11 全局唯一id生成方法
     事件定时器id
     客户端id
     服务id
     慢查询标识符
     Redis通过异步IO和pipelining等机制来实现高速的并发访问
     HyperLogLog algorithm -> MurmurHash64A
+
+# 0x12 redis常见问题
+    1、假如Redis里面有1亿个key，其中有10w个key是以某个固定的已知的前缀开头的，如果将它们全部找出来？

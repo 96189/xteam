@@ -1990,6 +1990,7 @@ void selectCommand(client *c);
 void swapdbCommand(client *c);
 void randomkeyCommand(client *c);
 void keysCommand(client *c);
+// SCAN cursor [MATCH pattern] [COUNT count]
 void scanCommand(client *c);
 void dbsizeCommand(client *c);
 void lastsaveCommand(client *c);
@@ -2026,6 +2027,7 @@ void sunionCommand(client *c);
 void sunionstoreCommand(client *c);
 void sdiffCommand(client *c);
 void sdiffstoreCommand(client *c);
+// SSCAN key cursor [MATCH pattern] [COUNT count]
 void sscanCommand(client *c);
 void syncCommand(client *c);
 void flushdbCommand(client *c);
@@ -2086,11 +2088,13 @@ void hstrlenCommand(client *c);
 void zremrangebyrankCommand(client *c);
 void zunionstoreCommand(client *c);
 void zinterstoreCommand(client *c);
+// ZSCAN key cursor [MATCH pattern] [COUNT count]
 void zscanCommand(client *c);
 void hkeysCommand(client *c);
 void hvalsCommand(client *c);
 void hgetallCommand(client *c);
 void hexistsCommand(client *c);
+// HSCAN key cursor [MATCH pattern] [COUNT count]
 void hscanCommand(client *c);
 void configCommand(client *c);
 void hincrbyCommand(client *c);

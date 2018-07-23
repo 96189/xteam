@@ -1253,6 +1253,7 @@ void sdiffstoreCommand(client *c) {
     sunionDiffGenericCommand(c,c->argv+2,c->argc-2,c->argv[1],SET_OP_DIFF);
 }
 
+// SSCAN key cursor [MATCH pattern] [COUNT count]
 void sscanCommand(client *c) {
     robj *set;
     unsigned long cursor;

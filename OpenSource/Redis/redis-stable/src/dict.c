@@ -849,18 +849,25 @@ static unsigned long rev(unsigned long v) {
  * Iterating works the following way:
  *
  * 1) Initially you call the function using a cursor (v) value of 0.
+ * 一开始，你使用 0 作为游标来调用函数
  * 2) The function performs one step of the iteration, and returns the
  *    new cursor value you must use in the next call.
+ * 函数执行一步迭代操作，并返回一个下次迭代时使用的新游标。
  * 3) When the returned cursor is 0, the iteration is complete.
- *
+ *  当函数返回的游标为 0 时，迭代完成。
+ * 
  * The function guarantees all elements present in the
  * dictionary get returned between the start and end of the iteration.
  * However it is possible some elements get returned multiple times.
- *
+ * 函数保证，在迭代从开始到结束期间，一直存在于字典的元素肯定会被迭代到，
+ * 但一个元素可能会被返回多次。
+ * 
  * For every element returned, the callback argument 'fn' is
  * called with 'privdata' as first argument and the dictionary entry
  * 'de' as second argument.
- *
+ * 每当一个元素被返回时，回调函数 fn 就会被执行，
+ * fn 函数的第一个参数是 privdata ，而第二个参数则是字典节点 de 。
+ * 
  * HOW IT WORKS.
  *
  * The iteration algorithm was designed by Pieter Noordhuis.
@@ -868,26 +875,45 @@ static unsigned long rev(unsigned long v) {
  * bits. That is, instead of incrementing the cursor normally, the bits
  * of the cursor are reversed, then the cursor is incremented, and finally
  * the bits are reversed again.
- *
+ * 迭代所使用的算法是由 Pieter Noordhuis 设计的，
+ * 算法的主要思路是在二进制高位上对游标进行加法计算
+ * 也即是说，不是按正常的办法来对游标进行加法计算，
+ * 而是首先将游标的二进制位翻转（reverse）过来，
+ * 然后对翻转后的值进行加法计算，
+ * 最后再次对加法计算之后的结果进行翻转。
+ * 
  * This strategy is needed because the hash table may be resized between
  * iteration calls.
- *
+ * 这一策略是必要的，因为在一次完整的迭代过程中，
+ * 哈希表的大小有可能在两次迭代之间发生改变。
  * dict.c hash tables are always power of two in size, and they
  * use chaining, so the position of an element in a given table is given
  * by computing the bitwise AND between Hash(key) and SIZE-1
  * (where SIZE-1 is always the mask that is equivalent to taking the rest
  *  of the division between the Hash of the key and SIZE).
- *
+ * 哈希表的大小总是 2 的某个次方，并且哈希表使用链表来解决冲突，
+ * 因此一个给定元素在一个给定表的位置总可以通过 Hash(key) & SIZE-1
+ * 公式来计算得出，
+ * 其中 SIZE-1 是哈希表的最大索引值，
+ * 这个最大索引值就是哈希表的 mask （掩码）
+ * 
  * For example if the current hash table size is 16, the mask is
  * (in binary) 1111. The position of a key in the hash table will always be
  * the last four bits of the hash output, and so forth.
- *
+ * 举个例子，如果当前哈希表的大小为 16 ，
+ * 那么它的掩码就是二进制值 1111 ，
+ * 这个哈希表的所有位置都可以使用哈希值的最后四个二进制位来记录
+ * 
  * WHAT HAPPENS IF THE TABLE CHANGES IN SIZE?
- *
+ * 如果哈希表的大小改变了怎么办？
+ * 
  * If the hash table grows, elements can go anywhere in one multiple of
  * the old bucket: for example let's say we already iterated with
  * a 4 bit cursor 1100 (the mask is 1111 because hash table size = 16).
- *
+ * 当对哈希表进行扩展时，元素可能会从一个槽移动到另一个槽，
+ * 举个例子，假设我们刚好迭代至 4 位游标 1100 ，
+ * 而哈希表的 mask 为 1111 （哈希表的大小为 16 ）。
+ * 
  * If the hash table will be resized to 64 elements, then the new mask will
  * be 111111. The new buckets you obtain by substituting in ??1100
  * with either 0 or 1 can be targeted only by keys we already visited
@@ -917,14 +943,21 @@ static unsigned long rev(unsigned long v) {
  *
  * This iterator is completely stateless, and this is a huge advantage,
  * including no additional memory used.
- *
+ * 这个迭代器是完全无状态的，这是一个巨大的优势，
+ * 因为迭代可以在不使用任何额外内存的情况下进行。
+ * 
  * The disadvantages resulting from this design are:
  *
  * 1) It is possible we return elements more than once. However this is usually
  *    easy to deal with in the application level.
+ * 函数可能会返回重复的元素，不过这个问题可以很容易在应用层解决。
  * 2) The iterator must return multiple elements per call, as it needs to always
  *    return all the keys chained in a given bucket, and all the expansions, so
  *    we are sure we don't miss keys moving during rehashing.
+ *    为了不错过任何元素，
+ *    迭代器需要返回给定桶上的所有键，
+ *    以及因为扩展哈希表而产生出来的新表，
+ *    所以迭代器必须在一次迭代中返回多个元素。
  * 3) The reverse cursor is somewhat hard to understand at first, but this
  *    comment is supposed to help.
  */
@@ -938,15 +971,21 @@ unsigned long dictScan(dict *d,
     const dictEntry *de, *next;
     unsigned long m0, m1;
 
+    // 跳过空字典
     if (dictSize(d) == 0) return 0;
 
+    // 当前没有在执行rehash 所有数据都在一个字典上
     if (!dictIsRehashing(d)) {
+        // 指向hash表
         t0 = &(d->ht[0]);
+        // 记录掩码
         m0 = t0->sizemask;
 
         /* Emit entries at cursor */
         if (bucketfn) bucketfn(privdata, &t0->table[v & m0]);
+        // 执行哈希桶
         de = t0->table[v & m0];
+        // 遍历桶中的所有节点
         while (de) {
             next = de->next;
             fn(privdata, de);
@@ -962,7 +1001,9 @@ unsigned long dictScan(dict *d,
         v++;
         v = rev(v);
 
+    // rehash进行中 数据落在两个字典上
     } else {
+        // 执行哈希表
         t0 = &d->ht[0];
         t1 = &d->ht[1];
 
@@ -972,12 +1013,14 @@ unsigned long dictScan(dict *d,
             t1 = &d->ht[0];
         }
 
+        // 记录掩码
         m0 = t0->sizemask;
         m1 = t1->sizemask;
 
         /* Emit entries at cursor */
         if (bucketfn) bucketfn(privdata, &t0->table[v & m0]);
         de = t0->table[v & m0];
+        // 指向桶，并迭代桶中的所有节点
         while (de) {
             next = de->next;
             fn(privdata, de);
@@ -990,6 +1033,7 @@ unsigned long dictScan(dict *d,
             /* Emit entries at cursor */
             if (bucketfn) bucketfn(privdata, &t1->table[v & m1]);
             de = t1->table[v & m1];
+            // 指向桶，并迭代桶中的所有节点
             while (de) {
                 next = de->next;
                 fn(privdata, de);
