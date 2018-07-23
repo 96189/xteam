@@ -349,3 +349,5 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
 
 # 0x12 redis常见问题
     1、假如Redis里面有1亿个key，其中有10w个key是以某个固定的已知的前缀开头的，如果将它们全部找出来？
+    2、如果有大量的key需要设置同一时间过期，一般需要注意什么？
+    

@@ -79,20 +79,32 @@ int activeExpireCycleTryExpire(redisDb *db, dictEntry *de, long long now) {
  *
  * No more than CRON_DBS_PER_CALL databases are tested at every
  * iteration.
- *
+ * 每次循环中被测试的数据库数目不会超过 REDIS_DBCRON_DBS_PER_CALL
+ * 
  * This kind of call is used when Redis detects that timelimit_exit is
  * true, so there is more work to do, and we do it more incrementally from
  * the beforeSleep() function of the event loop.
- *
+ * 如果 timelimit_exit 为真，那么说明还有更多删除工作要做，
+ * 那么在 beforeSleep() 函数调用时，程序会再次执行这个函数。
+ * 
  * Expire cycle type:
  *
  * If type is ACTIVE_EXPIRE_CYCLE_FAST the function will try to run a
  * "fast" expire cycle that takes no longer than EXPIRE_FAST_CYCLE_DURATION
  * microseconds, and is not repeated again before the same amount of time.
- *
+ * 如果循环的类型为 ACTIVE_EXPIRE_CYCLE_FAST
+ * 那么函数会以“快速过期”模式执行
+ * 执行的时间不会长过 EXPIRE_FAST_CYCLE_DURATION 毫秒
+ * 并且在 EXPIRE_FAST_CYCLE_DURATION 毫秒之内不会再重新执行
+ * 
  * If type is ACTIVE_EXPIRE_CYCLE_SLOW, that normal expire cycle is
  * executed, where the time limit is a percentage of the REDIS_HZ period
- * as specified by the ACTIVE_EXPIRE_CYCLE_SLOW_TIME_PERC define. */
+ * as specified by the ACTIVE_EXPIRE_CYCLE_SLOW_TIME_PERC define. 
+ * 如果循环的类型为 ACTIVE_EXPIRE_CYCLE_SLOW 
+ * 那么函数会以“正常过期”模式执行
+ * 函数的执行时限为 REDIS_HS 常量的一个百分比
+ * 这个百分比由 REDIS_EXPIRELOOKUPS_TIME_PERC 定义
+ * */
 
 void activeExpireCycle(int type) {
     /* This function has some global state in order to continue the work
@@ -102,7 +114,9 @@ void activeExpireCycle(int type) {
     static long long last_fast_cycle = 0; /* When last fast cycle ran. */
 
     int j, iteration = 0;
+    // 默认每次处理的数据库数量
     int dbs_per_call = CRON_DBS_PER_CALL;
+    // 开始执行的时间
     long long start = ustime(), timelimit, elapsed;
 
     /* When clients are paused the dataset should be static not just from the
@@ -110,12 +124,16 @@ void activeExpireCycle(int type) {
      * expires and evictions of keys not being performed. */
     if (clientsArePaused()) return;
 
+    // 快速模式
     if (type == ACTIVE_EXPIRE_CYCLE_FAST) {
         /* Don't start a fast cycle if the previous cycle did not exit
          * for time limt. Also don't repeat a fast cycle for the same period
          * as the fast cycle total duration itself. */
+        // 如果上次执行没有触发timelimit_exit则不执行处理
         if (!timelimit_exit) return;
+        // 距离上次执行未够一定时间 则不执行处理
         if (start < last_fast_cycle + ACTIVE_EXPIRE_CYCLE_FAST_DURATION*2) return;
+        // 运行到这里 说明执行快速模式 记录当前时间
         last_fast_cycle = start;
     }
 
@@ -133,10 +151,15 @@ void activeExpireCycle(int type) {
      * per iteration. Since this function gets called with a frequency of
      * server.hz times per second, the following is the max amount of
      * microseconds we can spend in this function. */
+    // ACTIVE_EXPIRE_CYCLE_SLOW_TIME_PERC 默认为 25 ，也即是 25 % 的 CPU 时间
     timelimit = 1000000*ACTIVE_EXPIRE_CYCLE_SLOW_TIME_PERC/server.hz/100;
     timelimit_exit = 0;
     if (timelimit <= 0) timelimit = 1;
 
+    // 如果是运行在快速模式之下
+    // 那么最多只能运行 FAST_DURATION 微秒 
+    // 默认值为 1000 （微秒） 
+    // 快速模式限制了运行时间 慢速模式无任何限制
     if (type == ACTIVE_EXPIRE_CYCLE_FAST)
         timelimit = ACTIVE_EXPIRE_CYCLE_FAST_DURATION; /* in microseconds. */
 
@@ -146,6 +169,7 @@ void activeExpireCycle(int type) {
     long total_sampled = 0;
     long total_expired = 0;
 
+    // 遍历数据库
     for (j = 0; j < dbs_per_call && timelimit_exit == 0; j++) {
         int expired;
         redisDb *db = server.db+(current_db % server.dbnum);
@@ -164,6 +188,7 @@ void activeExpireCycle(int type) {
             iteration++;
 
             /* If there is nothing to expire try next DB ASAP. */
+            // 获取当前数据库中过期键的数量
             if ((num = dictSize(db->expires)) == 0) {
                 db->avg_ttl = 0;
                 break;
@@ -174,15 +199,21 @@ void activeExpireCycle(int type) {
             /* When there are less than 1% filled slots getting random
              * keys is expensive, so stop here waiting for better times...
              * The dictionary will be resized asap. */
+            // 这个数据库的使用率低于 1%,扫描起来太费力了（大部分都会 MISS）
+            // 跳过，等待字典收缩程序运行
             if (num && slots > DICT_HT_INITIAL_SIZE &&
                 (num*100/slots < 1)) break;
 
             /* The main collection cycle. Sample random keys among keys
              * with an expire set, checking for expired ones. */
+            // 已处理过期键的总数
             expired = 0;
+            // 键的总ttl计数器
             ttl_sum = 0;
+            // 总处理器的键计数器
             ttl_samples = 0;
 
+            // 每次最多只能检查ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP个键
             if (num > ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP)
                 num = ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP;
 
@@ -190,12 +221,17 @@ void activeExpireCycle(int type) {
                 dictEntry *de;
                 long long ttl;
 
+                // 随机获取当前expires中的键
                 if ((de = dictGetRandomKey(db->expires)) == NULL) break;
+                // 计算ttl
                 ttl = dictGetSignedIntegerVal(de)-now;
+                // 键过期则删除 并更新计数器
                 if (activeExpireCycleTryExpire(db,de,now)) expired++;
                 if (ttl > 0) {
                     /* We want the average TTL of keys yet not expired. */
+                    // 累计的ttl
                     ttl_sum += ttl;
+                    // 累计处理键的个数
                     ttl_samples++;
                 }
                 total_sampled++;
@@ -204,6 +240,7 @@ void activeExpireCycle(int type) {
 
             /* Update the average TTL stats for this database. */
             if (ttl_samples) {
+                // 计算当前平均值
                 long long avg_ttl = ttl_sum/ttl_samples;
 
                 /* Do a simple running average with a few samples.
@@ -219,6 +256,9 @@ void activeExpireCycle(int type) {
             if ((iteration & 0xf) == 0) { /* check once every 16 iterations. */
                 elapsed = ustime()-start;
                 if (elapsed > timelimit) {
+                    // 如果遍历次数正好是 16 的倍数
+                    // 并且遍历的时间超过了 timelimit
+                    // 那么断开 timelimit_exit
                     timelimit_exit = 1;
                     server.stat_expired_time_cap_reached_count++;
                     break;
@@ -226,6 +266,8 @@ void activeExpireCycle(int type) {
             }
             /* We don't repeat the cycle if there are less than 25% of keys
              * found expired in the current DB. */
+        // 如果已删除的过期键占当前总数据库带过期时间的键数量的 25 %
+        // 那么不再遍历
         } while (expired > ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP/4);
     }
 
