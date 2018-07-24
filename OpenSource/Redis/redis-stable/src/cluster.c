@@ -692,14 +692,18 @@ unsigned int keyHashSlot(char *key, int keylen) {
  * The node is created and returned to the user, but it is not automatically
  * added to the nodes hash table. */
 clusterNode *createClusterNode(char *nodename, int flags) {
+    // 申请节点内存
     clusterNode *node = zmalloc(sizeof(*node));
 
+    // 设置名字
     if (nodename)
         memcpy(node->name, nodename, CLUSTER_NAMELEN);
     else
         getRandomHexChars(node->name, CLUSTER_NAMELEN);
+    // 节点属性设置
     node->ctime = mstime();
     node->configEpoch = 0;
+    // 设置给定的标记
     node->flags = flags;
     memset(node->slots,0,sizeof(node->slots));
     node->numslots = 0;
@@ -1258,16 +1262,20 @@ int clusterHandshakeInProgress(char *ip, int port, int cport) {
     dictIterator *di;
     dictEntry *de;
 
+    // 迭代当前的集群节点集合
     di = dictGetSafeIterator(server.cluster->nodes);
     while((de = dictNext(di)) != NULL) {
         clusterNode *node = dictGetVal(de);
 
+        // 跳过非握手状态的节点
         if (!nodeInHandshake(node)) continue;
+        // 正在握手 则立即跳出循环 防止重复握手
         if (!strcasecmp(node->ip,ip) &&
             node->port == port &&
             node->cport == cport) break;
     }
     dictReleaseIterator(di);
+    // 
     return de != NULL;
 }
 
@@ -1315,6 +1323,7 @@ int clusterStartHandshake(char *ip, int port, int cport) {
             (void*)&(((struct sockaddr_in6 *)&sa)->sin6_addr),
             norm_ip,NET_IP_STR_LEN);
 
+    // 检查节点是否已经发送握手请求 如果是的话 那么直接返回 防止出现重复握手
     if (clusterHandshakeInProgress(norm_ip,port,cport)) {
         errno = EAGAIN;
         return 0;
@@ -1324,9 +1333,11 @@ int clusterStartHandshake(char *ip, int port, int cport) {
      * createClusterNode()). Everything will be fixed during the
      * handshake. */
     n = createClusterNode(NULL,CLUSTER_NODE_HANDSHAKE|CLUSTER_NODE_MEET);
+    // 将(ip,port)信息设置到node节点中
     memcpy(n->ip,norm_ip,sizeof(n->ip));
     n->port = port;
     n->cport = cport;
+    // 添加新节点到集群的集群节点名单cluster->nodes
     clusterAddNode(n);
     return 1;
 }
@@ -1335,12 +1346,16 @@ int clusterStartHandshake(char *ip, int port, int cport) {
  * Note that this function assumes that the packet is already sanity-checked
  * by the caller, not in the content of the gossip section, but in the
  * length. */
+// 解释 MEET PING PONG 消息中和 gossip 协议有关的信息
 void clusterProcessGossipSection(clusterMsg *hdr, clusterLink *link) {
+    // 消息正文包含的节点信息数量
     uint16_t count = ntohs(hdr->count);
+    // 消息payload
     clusterMsgDataGossip *g = (clusterMsgDataGossip*) hdr->data.ping.gossip;
     clusterNode *sender = link->node ? link->node : clusterLookupNode(hdr->sender);
 
     while(count--) {
+        // 节点的表示值
         uint16_t flags = ntohs(g->flags);
         clusterNode *node;
         sds ci;
@@ -1357,7 +1372,9 @@ void clusterProcessGossipSection(clusterMsg *hdr, clusterLink *link) {
         }
 
         /* Update our state accordingly to the gossip sections */
+        // 查询给定的节点名是否存在集群节点名单中
         node = clusterLookupNode(g->nodename);
+        // 之前已存在 则更新节点信息
         if (node) {
             /* We already know this node.
                Handle failure reports, only when the sender is a master. */
@@ -1418,6 +1435,7 @@ void clusterProcessGossipSection(clusterMsg *hdr, clusterLink *link) {
                 node->cport = ntohs(g->cport);
                 node->flags &= ~CLUSTER_NODE_NOADDR;
             }
+        // 之前不存在 是新节点
         } else {
             /* If it's not in NOADDR state and we don't have it, we
              * start a handshake process against this IP/PORT pairs.
@@ -1429,6 +1447,7 @@ void clusterProcessGossipSection(clusterMsg *hdr, clusterLink *link) {
                 !(flags & CLUSTER_NODE_NOADDR) &&
                 !clusterBlacklistExists(g->nodename))
             {
+                // 新加入集群的节点 开始握手
                 clusterStartHandshake(g->ip,ntohs(g->port),ntohs(g->cport));
             }
         }
@@ -1752,24 +1771,33 @@ int clusterProcessPacket(clusterLink *link) {
          * In this stage we don't try to add the node with the right
          * flags, slaveof pointer, and so forth, as this details will be
          * resolved when we'll receive PONGs from the node. */
+        // MEET命令实现
         if (!sender && type == CLUSTERMSG_TYPE_MEET) {
             clusterNode *node;
 
+            // 创建HANDSHAKE状态的新节点 并置节点flag字段为CLUSTER_NODE_HANDSHAKE
             node = createClusterNode(NULL,CLUSTER_NODE_HANDSHAKE);
+            // 设置ip和端口到node节点
             nodeIp2String(node->ip,link,hdr->myip);
             node->port = ntohs(hdr->port);
             node->cport = ntohs(hdr->cport);
+            // 添加新节点到自己的集群节点名单nodes中
             clusterAddNode(node);
+            // 向todo_before_sleep添加位标记
             clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
         }
 
         /* If this is a MEET packet from an unknown node, we still process
          * the gossip section here since we have to trust the sender because
          * of the message type. */
+        // 读取消息内容 
+        // 循环生成n个节点 并将每个节点的信息设置
+        // 添加n个节点到集群节点名单中
         if (!sender && type == CLUSTERMSG_TYPE_MEET)
             clusterProcessGossipSection(hdr,link);
 
         /* Anyway reply with a PONG */
+        // 向目标节点返回一个PONG
         clusterSendPing(link,CLUSTERMSG_TYPE_PONG);
     }
 
@@ -1781,6 +1809,7 @@ int clusterProcessPacket(clusterLink *link) {
             type == CLUSTERMSG_TYPE_PING ? "ping" : "pong",
             (void*)link->node);
         if (link->node) {
+            // 节点处于正在握手的状态
             if (nodeInHandshake(link->node)) {
                 /* If we already have this node, try to change the
                  * IP/port of the node with the new one. */
@@ -1788,6 +1817,7 @@ int clusterProcessPacket(clusterLink *link) {
                     serverLog(LL_VERBOSE,
                         "Handshake: we already know node %.40s, "
                         "updating the address if needed.", sender->name);
+                    // 若有必要则更新节点地址
                     if (nodeUpdateAddressIfNeeded(sender,link,hdr))
                     {
                         clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG|
@@ -1801,10 +1831,13 @@ int clusterProcessPacket(clusterLink *link) {
 
                 /* First thing to do is replacing the random name with the
                  * right node name if this was a handshake stage. */
+                // 节点重命名(MEET时的名字是随机的)
                 clusterRenameNode(link->node, hdr->sender);
                 serverLog(LL_DEBUG,"Handshake with node %.40s completed.",
                     link->node->name);
+                // 关闭HANDSHAKE状态
                 link->node->flags &= ~CLUSTER_NODE_HANDSHAKE;
+                // 设置节点的角色
                 link->node->flags |= flags&(CLUSTER_NODE_MASTER|CLUSTER_NODE_SLAVE);
                 clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
             } else if (memcmp(link->node->name,hdr->sender,
@@ -2187,9 +2220,11 @@ void clusterReadHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
  * from event handlers that will do stuff with the same link later. */
 void clusterSendMessage(clusterLink *link, unsigned char *msg, size_t msglen) {
     if (sdslen(link->sndbuf) == 0 && msglen != 0)
+        // 安装写事件处理器
         aeCreateFileEvent(server.el,link->fd,AE_WRITABLE|AE_BARRIER,
                     clusterWriteHandler,link);
 
+    // 将消息追加到输出缓冲区
     link->sndbuf = sdscatlen(link->sndbuf, msg, msglen);
 
     /* Populate sent messages stats. */
@@ -2326,6 +2361,7 @@ void clusterSetGossipEntry(clusterMsg *hdr, int i, clusterNode *n) {
 
 /* Send a PING or PONG packet to the specified node, making sure to add enough
  * gossip informations. */
+// 向指定节点发送MEET PING PONG命令
 void clusterSendPing(clusterLink *link, int type) {
     unsigned char *buf;
     clusterMsg *hdr;
@@ -2336,6 +2372,7 @@ void clusterSendPing(clusterLink *link, int type) {
      * nodes available minus two (ourself and the node we are sending the
      * message to). However practically there may be less valid nodes since
      * nodes in handshake state, disconnected, are not considered. */
+    // -2是因为myself节点和接受gossip信息的节点
     int freshnodes = dictSize(server.cluster->nodes)-2;
 
     /* How many gossip sections we want to add? 1/10 of the number of nodes
@@ -2384,13 +2421,16 @@ void clusterSendPing(clusterLink *link, int type) {
     hdr = (clusterMsg*) buf;
 
     /* Populate the header. */
+    // 更新PING消息最后一次发送的时间戳
     if (link->node && type == CLUSTERMSG_TYPE_PING)
         link->node->ping_sent = mstime();
+    // 创建消息头
     clusterBuildMessageHdr(hdr,type);
 
     /* Populate the gossip fields */
     int maxiterations = wanted*3;
     while(freshnodes > 0 && gossipcount < wanted && maxiterations--) {
+        // 从集群节点名单中随机返回一个节点
         dictEntry *de = dictGetRandomKey(server.cluster->nodes);
         clusterNode *this = dictGetVal(de);
 
@@ -2417,6 +2457,7 @@ void clusterSendPing(clusterLink *link, int type) {
         if (clusterNodeIsInGossipSection(hdr,gossipcount,this)) continue;
 
         /* Add it */
+        // 将被选中的节点this的值设置到hdr中
         clusterSetGossipEntry(hdr,gossipcount,this);
         freshnodes--;
         gossipcount++;
@@ -2448,8 +2489,11 @@ void clusterSendPing(clusterLink *link, int type) {
      * output buffer. */
     totlen = sizeof(clusterMsg)-sizeof(union clusterMsgData);
     totlen += (sizeof(clusterMsgDataGossip)*gossipcount);
+    // 节点数量
     hdr->count = htons(gossipcount);
+    // 消息长度(header+payload)
     hdr->totlen = htonl(totlen);
+    // 发送消息
     clusterSendMessage(link,buf,totlen);
     zfree(buf);
 }
@@ -3228,6 +3272,7 @@ void clusterHandleManualFailover(void) {
  * -------------------------------------------------------------------------- */
 
 /* This is executed 10 times every second */
+// 集群节点定时任务
 void clusterCron(void) {
     dictIterator *di;
     dictEntry *de;
@@ -3237,6 +3282,7 @@ void clusterCron(void) {
     int this_slaves; /* Number of ok slaves for our master (if we are slave). */
     mstime_t min_pong = 0, now = mstime();
     clusterNode *min_pong_node = NULL;
+    // 迭代计数器
     static unsigned long long iteration = 0;
     mstime_t handshake_timeout;
 

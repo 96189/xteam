@@ -709,12 +709,17 @@ typedef struct client {
     robj **argv;            /* Arguments of current command. */
     // 命令实现函数(lookupCommand(argv[0])查表)
     struct redisCommand *cmd, *lastcmd;  /* Last command executed. */
+    // 请求的类型:内联命令 多条命令
     int reqtype;            /* Request protocol type: PROTO_REQ_* */
+    // 剩余未读取的命令内容数量
     int multibulklen;       /* Number of multi bulk arguments left to read. */
+    // 命令内容长度
     long bulklen;           /* Length of bulk argument in multi bulk request. */
     // 变长的输出缓冲区
     list *reply;            /* List of reply objects to send to the client. */
+    // 回复链表中所有对象总字节数
     unsigned long long reply_bytes; /* Tot bytes of objects in reply list. */
+    // 已发送的字节数
     size_t sentlen;         /* Amount of bytes already sent in the current
                                buffer or object being sent. */
     // 可计算客户端与服务器已经连接了多少秒 client list的age域
@@ -1248,6 +1253,7 @@ struct redisServer {
     int cluster_enabled;      /* Is cluster enabled? */
     mstime_t cluster_node_timeout; /* Cluster node timeout. */
     char *cluster_configfile; /* Cluster auto-generated config file name. */
+    // 记录以当前节点的视角看待集群的信息
     struct clusterState *cluster;  /* State of the cluster */
     int cluster_migration_barrier; /* Cluster replicas migration barrier. */
     int cluster_slave_validity_factor; /* Slave max data age for failover. */
@@ -1903,6 +1909,7 @@ int *migrateGetKeys(struct redisCommand *cmd, robj **argv, int argc, int *numkey
 int *georadiusGetKeys(struct redisCommand *cmd, robj **argv, int argc, int *numkeys);
 
 /* Cluster */
+// 集群初始化
 void clusterInit(void);
 unsigned short crc16(const char *buf, int len);
 unsigned int keyHashSlot(char *key, int keylen);

@@ -2023,7 +2023,7 @@ void initServer(void) {
         server.maxmemory_policy = MAXMEMORY_NO_EVICTION;
     }
 
-    // 如果服务器以 cluster 模式打开,初始化 cluster
+    // redisServer以cluster模式启动 则初始化集群
     if (server.cluster_enabled) clusterInit();
     // 初始化复制功能有关的脚本缓存
     replicationScriptCacheInit();

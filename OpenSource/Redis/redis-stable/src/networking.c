@@ -1069,7 +1069,11 @@ void resetClient(client *c) {
  * is ready to be executed, or C_ERR if there is still protocol to read to
  * have a well formed command. The function also returns C_ERR when there is
  * a protocol error: in such a case the client structure is setup to reply
- * with the error and close the connection. */
+ * with the error and close the connection. 
+ * 内联命令的各个参数以空格分开，并以 \r\n 结尾
+ * 例子：
+ * <arg0> <arg1> <arg...> <argN>\r\n
+ * */
 int processInlineBuffer(client *c) {
     char *newline;
     int argc, j;
@@ -1172,7 +1176,15 @@ static void setProtocolError(const char *errstr, client *c, long pos) {
  *
  * This function is called if processInputBuffer() detects that the next
  * command is in RESP format, so the first byte in the command is found
- * to be '*'. Otherwise for inline commands processInlineBuffer() is called. */
+ * to be '*'. Otherwise for inline commands processInlineBuffer() is called. 
+ * 将 c->querybuf 中的协议内容转换成 c->argv 中的参数对象
+ * 
+ * 比如 *3\r\n$3\r\nSET\r\n$3\r\nMSG\r\n$5\r\nHELLO\r\n
+ * 将被转换为：
+ * argv[0] = SET
+ * argv[1] = MSG
+ * argv[2] = HELLO
+ * */
 int processMultibulkBuffer(client *c) {
     char *newline = NULL;
     long pos = 0;
@@ -1319,6 +1331,7 @@ int processMultibulkBuffer(client *c) {
 void processInputBuffer(client *c) {
     server.current_client = c;
     /* Keep processing while there is something in the input buffer */
+    // 循环处理查询缓冲区(pipeline)
     while(sdslen(c->querybuf)) {
         /* Return if clients are paused. */
         if (!(c->flags & CLIENT_SLAVE) && clientsArePaused()) break;
@@ -1341,9 +1354,10 @@ void processInputBuffer(client *c) {
                 c->reqtype = PROTO_REQ_INLINE;
             }
         }
-
+        // 内联命令
         if (c->reqtype == PROTO_REQ_INLINE) {
             if (processInlineBuffer(c) != C_OK) break;
+        // 多条命令
         } else if (c->reqtype == PROTO_REQ_MULTIBULK) {
             if (processMultibulkBuffer(c) != C_OK) break;
         } else {
