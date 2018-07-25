@@ -2315,6 +2315,7 @@ void clusterBuildMessageHdr(clusterMsg *hdr, int type) {
                           server.cluster_announce_bus_port :
                           (server.port + CLUSTER_PORT_INCR);
 
+    // 当前节点所负责的槽信息添加到包头 后序传播到集群中
     memcpy(hdr->myslots,master->slots,sizeof(hdr->myslots));
     memset(hdr->slaveof,0,CLUSTER_NAMELEN);
     if (myself->slaveof != NULL)
@@ -3707,7 +3708,9 @@ int clusterNodeGetSlotBit(clusterNode *n, int slot) {
  * an error and C_ERR is returned. */
 int clusterAddSlot(clusterNode *n, int slot) {
     if (server.cluster->slots[slot]) return C_ERR;
+    // 置位标记
     clusterNodeSetSlotBit(n,slot);
+    // 添加slot和clusterNode节点的映射关系
     server.cluster->slots[slot] = n;
     return C_OK;
 }
@@ -3719,7 +3722,9 @@ int clusterDelSlot(int slot) {
     clusterNode *n = server.cluster->slots[slot];
 
     if (!n) return C_ERR;
+    // 清除位标记
     serverAssert(clusterNodeClearSlotBit(n,slot) == 1);
+    // 解除slot和clusterNode节点的映射关系
     server.cluster->slots[slot] = NULL;
     return C_OK;
 }
@@ -4256,19 +4261,23 @@ void clusterCommand(client *c) {
         /* Check that all the arguments are parseable and that all the
          * slots are not already busy. */
         for (j = 2; j < c->argc; j++) {
+            // 设置c->argv[j]到slot
             if ((slot = getSlotOrReply(c,c->argv[j])) == -1) {
                 zfree(slots);
                 return;
             }
+            // delslots
             if (del && server.cluster->slots[slot] == NULL) {
                 addReplyErrorFormat(c,"Slot %d is already unassigned", slot);
                 zfree(slots);
                 return;
+            // addslots 槽已经有节点在负责
             } else if (!del && server.cluster->slots[slot]) {
                 addReplyErrorFormat(c,"Slot %d is already busy", slot);
                 zfree(slots);
                 return;
             }
+            // 如果某个槽指定了一次以上 返回一个错误
             if (slots[slot]++ == 1) {
                 addReplyErrorFormat(c,"Slot %d specified multiple times",
                     (int)slot);
@@ -4282,6 +4291,8 @@ void clusterCommand(client *c) {
 
                 /* If this slot was set as importing we can clear this
                  * state as now we are the real owner of the slot. */
+                // 如果指定 slot 之前的状态为载入状态 那么现在可以清除这一状态
+                // 因为当前节点现在已经是 slot 的负责人了
                 if (server.cluster->importing_slots_from[j])
                     server.cluster->importing_slots_from[j] = NULL;
 
@@ -4294,10 +4305,10 @@ void clusterCommand(client *c) {
         clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE|CLUSTER_TODO_SAVE_CONFIG);
         addReply(c,shared.ok);
     } else if (!strcasecmp(c->argv[1]->ptr,"setslot") && c->argc >= 4) {
-        /* SETSLOT 10 MIGRATING <node ID> */
-        /* SETSLOT 10 IMPORTING <node ID> */
-        /* SETSLOT 10 STABLE */
-        /* SETSLOT 10 NODE <node ID> */
+        /* CLUSTER SETSLOT 10 MIGRATING <node ID> */
+        /* CLUSTER SETSLOT 10 IMPORTING <node ID> */
+        /* CLUSTER SETSLOT 10 STABLE */
+        /* CLUSTER SETSLOT 10 NODE <node ID> */
         int slot;
         clusterNode *n;
 
@@ -4306,37 +4317,48 @@ void clusterCommand(client *c) {
             return;
         }
 
+        // 设置命令行slot值到slot变量
         if ((slot = getSlotOrReply(c,c->argv[2])) == -1) return;
 
+        // 本节点迁出槽位
         if (!strcasecmp(c->argv[3]->ptr,"migrating") && c->argc == 5) {
+            // 校验当前槽位是否由本节点负责
             if (server.cluster->slots[slot] != myself) {
                 addReplyErrorFormat(c,"I'm not the owner of hash slot %u",slot);
                 return;
             }
+            // 校验迁出目的节点是否在集群节点名单中
             if ((n = clusterLookupNode(c->argv[4]->ptr)) == NULL) {
                 addReplyErrorFormat(c,"I don't know about node %s",
                     (char*)c->argv[4]->ptr);
                 return;
             }
+            // 迁出数组中添加slot和clusterNode的映射关系
             server.cluster->migrating_slots_to[slot] = n;
+        // 本几点迁入槽位
         } else if (!strcasecmp(c->argv[3]->ptr,"importing") && c->argc == 5) {
+            // 校验本节点是否已经负责当前要迁入的槽位
             if (server.cluster->slots[slot] == myself) {
                 addReplyErrorFormat(c,
                     "I'm already the owner of hash slot %u",slot);
                 return;
             }
+            // 校验迁入的源节点是否在集群节点名单
             if ((n = clusterLookupNode(c->argv[4]->ptr)) == NULL) {
                 addReplyErrorFormat(c,"I don't know about node %s",
                     (char*)c->argv[4]->ptr);
                 return;
             }
+            // 迁入数组中添加slot和clusterNode的映射关系
             server.cluster->importing_slots_from[slot] = n;
         } else if (!strcasecmp(c->argv[3]->ptr,"stable") && c->argc == 4) {
             /* CLUSTER SETSLOT <SLOT> STABLE */
             server.cluster->importing_slots_from[slot] = NULL;
             server.cluster->migrating_slots_to[slot] = NULL;
+        // 通知所有节点 更新槽位<slot> 新的负责节点为<nodeid>
         } else if (!strcasecmp(c->argv[3]->ptr,"node") && c->argc == 5) {
             /* CLUSTER SETSLOT <SLOT> NODE <NODE ID> */
+            // 根据<NODE ID>查询集群节点名单中负责<SLOT>的节点
             clusterNode *n = clusterLookupNode(c->argv[4]->ptr);
 
             if (!n) {
@@ -4346,6 +4368,7 @@ void clusterCommand(client *c) {
             }
             /* If this hash slot was served by 'myself' before to switch
              * make sure there are no longer local keys for this hash slot. */
+            // 当前节点正在将slot迁出到n节点
             if (server.cluster->slots[slot] == myself && n != myself) {
                 if (countKeysInSlot(slot) != 0) {
                     addReplyErrorFormat(c,
@@ -4357,12 +4380,13 @@ void clusterCommand(client *c) {
             /* If this slot is in migrating status but we have no keys
              * for it assigning the slot to another node will clear
              * the migratig status. */
-            if (countKeysInSlot(slot) == 0 &&
-                server.cluster->migrating_slots_to[slot])
+            // slot上的key已经迁完
+            if (countKeysInSlot(slot) == 0 && server.cluster->migrating_slots_to[slot])
                 server.cluster->migrating_slots_to[slot] = NULL;
 
             /* If this node was importing this slot, assigning the slot to
              * itself also clears the importing status. */
+            // 当前节点是正在迁入的节点
             if (n == myself &&
                 server.cluster->importing_slots_from[slot])
             {
@@ -4381,7 +4405,9 @@ void clusterCommand(client *c) {
                 }
                 server.cluster->importing_slots_from[slot] = NULL;
             }
+            // 清除位信息 解除映射关系
             clusterDelSlot(slot);
+            // 添加位信息 添加映射关系
             clusterAddSlot(n,slot);
         } else {
             addReplyError(c,
@@ -4497,12 +4523,14 @@ void clusterCommand(client *c) {
             return;
         }
         addReplyLongLong(c,countKeysInSlot(slot));
+    // 获得迁出槽位<slot>中的<count>个key 以便下一步能够执行key的迁移操作
     } else if (!strcasecmp(c->argv[1]->ptr,"getkeysinslot") && c->argc == 4) {
         /* CLUSTER GETKEYSINSLOT <slot> <count> */
         long long maxkeys, slot;
         unsigned int numkeys, j;
         robj **keys;
 
+        // 设置命令行参数到对应的变量
         if (getLongLongFromObjectOrReply(c,c->argv[2],&slot,NULL) != C_OK)
             return;
         if (getLongLongFromObjectOrReply(c,c->argv[3],&maxkeys,NULL)
@@ -4515,13 +4543,16 @@ void clusterCommand(client *c) {
 
         /* Avoid allocating more than needed in case of large COUNT argument
          * and smaller actual number of keys. */
+        // 获取slot上的总key个数
         unsigned int keys_in_slot = countKeysInSlot(slot);
         if (maxkeys > keys_in_slot) maxkeys = keys_in_slot;
 
         keys = zmalloc(sizeof(robj*)*maxkeys);
+        // 将slot槽中的所有key取出来放到keys数组中
         numkeys = getKeysInSlot(slot, keys, maxkeys);
         addReplyMultiBulkLen(c,numkeys);
         for (j = 0; j < numkeys; j++) {
+            // 将所取得的key和key数量回复客户端
             addReplyBulk(c,keys[j]);
             decrRefCount(keys[j]);
         }
@@ -4870,7 +4901,9 @@ void restoreCommand(client *c) {
     if (replace) dbDelete(c->db,c->argv[1]);
 
     /* Create the key and set the TTL if any */
+    // 添加键值对
     dbAdd(c->db,c->argv[1],obj);
+    // 设置过期时间
     if (ttl) setExpire(c,c->db,c->argv[1],mstime()+ttl);
     signalModifiedKey(c->db,c->argv[1]);
     addReply(c,shared.ok);
@@ -4889,7 +4922,7 @@ void restoreCommand(client *c) {
 typedef struct migrateCachedSocket {
     int fd;
     long last_dbid;
-    time_t last_use_time;
+    time_t last_use_time;// 计算是否超时用
 } migrateCachedSocket;
 
 /* Return a migrateCachedSocket containing a TCP socket connected with the
@@ -4912,16 +4945,20 @@ migrateCachedSocket* migrateGetSocket(client *c, robj *host, robj *port, long ti
     name = sdscatlen(name,host->ptr,sdslen(host->ptr));
     name = sdscatlen(name,":",1);
     name = sdscatlen(name,port->ptr,sdslen(port->ptr));
+    // 在连接池中查询 以(ip:port)作为名字查询
     cs = dictFetchValue(server.migrate_cached_sockets,name);
     if (cs) {
         sdsfree(name);
         cs->last_use_time = server.unixtime;
+        // 返回用户
         return cs;
     }
 
     /* No cached socket, create one. */
+    // 连接池已满
     if (dictSize(server.migrate_cached_sockets) == MIGRATE_SOCKET_CACHE_ITEMS) {
         /* Too many items, drop one at random. */
+        // 随机释放一个连接
         dictEntry *de = dictGetRandomKey(server.migrate_cached_sockets);
         cs = dictGetVal(de);
         close(cs->fd);
@@ -4930,6 +4967,7 @@ migrateCachedSocket* migrateGetSocket(client *c, robj *host, robj *port, long ti
     }
 
     /* Create the socket */
+    // 创建新连接
     fd = anetTcpNonBlockConnect(server.neterr,c->argv[1]->ptr,
                                 atoi(c->argv[2]->ptr));
     if (fd == -1) {
@@ -4941,6 +4979,7 @@ migrateCachedSocket* migrateGetSocket(client *c, robj *host, robj *port, long ti
     anetEnableTcpNoDelay(server.neterr,fd);
 
     /* Check if it connects within the specified timeout. */
+    // 等待可写事件触发
     if ((aeWait(fd,AE_WRITABLE,timeout) & AE_WRITABLE) == 0) {
         sdsfree(name);
         addReplySds(c,
@@ -4954,6 +4993,7 @@ migrateCachedSocket* migrateGetSocket(client *c, robj *host, robj *port, long ti
     cs->fd = fd;
     cs->last_dbid = -1;
     cs->last_use_time = server.unixtime;
+    // 添加新连接到连接池
     dictAdd(server.migrate_cached_sockets,name,cs);
     return cs;
 }
@@ -4986,6 +5026,7 @@ void migrateCloseTimedoutSockets(void) {
         migrateCachedSocket *cs = dictGetVal(de);
 
         if ((server.unixtime - cs->last_use_time) > MIGRATE_SOCKET_CACHE_TTL) {
+            // 释放连接
             close(cs->fd);
             zfree(cs);
             dictDelete(server.migrate_cached_sockets,dictGetKey(de));
@@ -5000,7 +5041,11 @@ void migrateCloseTimedoutSockets(void) {
  *
  * MIGRATE host port "" dbid timeout [COPY | REPLACE | AUTH password] KEYS key1
  * key2 ... keyN */
+// 将<key>迁出到目标节点的<target_database>数据库中
+// 迁出过程的超时时间为<timeout>
+// 一旦超时 则回复客户端错误信息
 void migrateCommand(client *c) {
+    // 连接池
     migrateCachedSocket *cs;
     int copy = 0, replace = 0, j;
     char *password = NULL;
@@ -5049,11 +5094,13 @@ void migrateCommand(client *c) {
     }
 
     /* Sanity check */
+    // 设置命令行参数timeout和dbid到变量timeout和dbid中
     if (getLongFromObjectOrReply(c,c->argv[5],&timeout,NULL) != C_OK ||
         getLongFromObjectOrReply(c,c->argv[4],&dbid,NULL) != C_OK)
     {
         return;
     }
+    // timeout单位ms
     if (timeout <= 0) timeout = 1000;
 
     /* Check if the keys are here. If at least one key is to migrate, do it
@@ -5066,6 +5113,7 @@ void migrateCommand(client *c) {
     int oi = 0;
 
     for (j = 0; j < num_keys; j++) {
+        // 存储key value
         if ((ov[oi] = lookupKeyRead(c->db,c->argv[first_key+j])) != NULL) {
             kv[oi] = c->argv[first_key+j];
             oi++;
@@ -5082,23 +5130,27 @@ try_again:
     write_error = 0;
 
     /* Connect */
+    // MIGRATE host port key dbid timeout [COPY | REPLACE | AUTH password]
+    // 连接redis
+    // 或者从缓存中取出连接
     cs = migrateGetSocket(c,c->argv[1],c->argv[2],timeout);
     if (cs == NULL) {
         zfree(ov); zfree(kv);
         return; /* error sent to the client by migrateGetSocket() */
     }
 
+    // 初始化rio结构的cmd
     rioInitWithBuffer(&cmd,sdsempty());
 
     /* Authentication */
     if (password) {
         serverAssertWithInfo(c,NULL,rioWriteBulkCount(&cmd,'*',2));
         serverAssertWithInfo(c,NULL,rioWriteBulkString(&cmd,"AUTH",4));
-        serverAssertWithInfo(c,NULL,rioWriteBulkString(&cmd,password,
-            sdslen(password)));
+        serverAssertWithInfo(c,NULL,rioWriteBulkString(&cmd,password,sdslen(password)));
     }
 
     /* Send the SELECT command if the current DB is not already selected. */
+    // 按格式构造cmd
     int select = cs->last_dbid != dbid; /* Should we emit SELECT? */
     if (select) {
         serverAssertWithInfo(c,NULL,rioWriteBulkCount(&cmd,'*',2));
@@ -5107,6 +5159,8 @@ try_again:
     }
 
     /* Create RESTORE payload and generate the protocol to call the command. */
+    // 循环存储所有的key value及相关信息
+    // 按格式构造cmd
     for (j = 0; j < num_keys; j++) {
         long long ttl = 0;
         long long expireat = getExpire(c->db,kv[j]);
@@ -5115,25 +5169,24 @@ try_again:
             ttl = expireat-mstime();
             if (ttl < 1) ttl = 1;
         }
-        serverAssertWithInfo(c,NULL,
-            rioWriteBulkCount(&cmd,'*',replace ? 5 : 4));
+        serverAssertWithInfo(c,NULL,rioWriteBulkCount(&cmd,'*',replace ? 5 : 4));
 
         if (server.cluster_enabled)
-            serverAssertWithInfo(c,NULL,
-                rioWriteBulkString(&cmd,"RESTORE-ASKING",14));
+            serverAssertWithInfo(c,NULL,rioWriteBulkString(&cmd,"RESTORE-ASKING",14));
         else
             serverAssertWithInfo(c,NULL,rioWriteBulkString(&cmd,"RESTORE",7));
+
         serverAssertWithInfo(c,NULL,sdsEncodedObject(kv[j]));
-        serverAssertWithInfo(c,NULL,rioWriteBulkString(&cmd,kv[j]->ptr,
-                sdslen(kv[j]->ptr)));
+        // 写入key
+        serverAssertWithInfo(c,NULL,rioWriteBulkString(&cmd,kv[j]->ptr,sdslen(kv[j]->ptr)));
+        // 写入ttl
         serverAssertWithInfo(c,NULL,rioWriteBulkLongLong(&cmd,ttl));
 
         /* Emit the payload argument, that is the serialized object using
          * the DUMP format. */
+        // 写入value
         createDumpPayload(&payload,ov[j]);
-        serverAssertWithInfo(c,NULL,
-            rioWriteBulkString(&cmd,payload.io.buffer.ptr,
-                               sdslen(payload.io.buffer.ptr)));
+        serverAssertWithInfo(c,NULL,rioWriteBulkString(&cmd,payload.io.buffer.ptr,sdslen(payload.io.buffer.ptr)));
         sdsfree(payload.io.buffer.ptr);
 
         /* Add the REPLACE option to the RESTORE command if it was specified
@@ -5141,16 +5194,19 @@ try_again:
         if (replace)
             serverAssertWithInfo(c,NULL,rioWriteBulkString(&cmd,"REPLACE",7));
     }
-
+    // 以上构造的每条迁移键命令为以下格式:
+    // RESTORE <key> <ttl> <serialized-value> [REPLACE]
+    // RESTORE-ASKING  <key>  <ttl>  <serialized-value> [REPLACE]
     /* Transfer the query to the other node in 64K chunks. */
     errno = 0;
     {
         sds buf = cmd.io.buffer.ptr;
         size_t pos = 0, towrite;
         int nwritten = 0;
-
+        // 循环发送cmd(所有的key value及其相关信息)
         while ((towrite = sdslen(buf)-pos) > 0) {
             towrite = (towrite > (64*1024) ? (64*1024) : towrite);
+            // 同步发送命令 每次最多写64k
             nwritten = syncWrite(cs->fd,buf+pos,towrite,timeout);
             if (nwritten != (signed)towrite) {
                 write_error = 1;
@@ -5169,6 +5225,7 @@ try_again:
         goto socket_err;
 
     /* Read the SELECT reply if needed. */
+    // 同步读之前发送的select的回复
     if (select && syncReadLine(cs->fd, buf1, sizeof(buf1), timeout) <= 0)
         goto socket_err;
 
@@ -5179,11 +5236,14 @@ try_again:
 
     if (!copy) newargv = zmalloc(sizeof(robj*)*(num_keys+1));
 
+    // 循环读回复
     for (j = 0; j < num_keys; j++) {
+        // 读取写入cmd的回复
         if (syncReadLine(cs->fd, buf2, sizeof(buf2), timeout) <= 0) {
             socket_error = 1;
             break;
         }
+        // 回复的首字符为'-'表示发生错误 需要将错误信息反馈给客户端
         if ((password && buf0[0] == '-') ||
             (select && buf1[0] == '-') ||
             buf2[0] == '-')
@@ -5200,7 +5260,9 @@ try_again:
                 addReplyErrorFormat(c,"Target instance replied with error: %s",
                     errbuf+1);
             }
+        // 回复内容正常
         } else {
+            // 非COPY拷贝命令
             if (!copy) {
                 /* No COPY option: remove the local key, signal the change. */
                 dbDelete(c->db,kv[j]);
@@ -5226,8 +5288,10 @@ try_again:
     /* On socket errors, close the migration socket now that we still have
      * the original host/port in the ARGV. Later the original command may be
      * rewritten to DEL and will be too later. */
+    // 循环读发生错误
     if (socket_error) migrateCloseSocket(c->argv[1],c->argv[2]);
 
+    // 非COPY命令
     if (!copy) {
         /* Translate MIGRATE as DEL for replication/AOF. Note that we do
          * this only for the keys for which we received an acknowledgement
@@ -5235,6 +5299,7 @@ try_again:
         if (del_idx > 1) {
             newargv[0] = createStringObject("DEL",3);
             /* Note that the following call takes ownership of newargv. */
+            // 后续传递DEL命令到AOF文件和slave节点
             replaceClientCommandVector(c,del_idx,newargv);
             argv_rewritten = 1;
         } else {

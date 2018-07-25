@@ -117,7 +117,7 @@ typedef struct clusterNode {
     // 阶段
     uint64_t configEpoch; /* Last configEpoch observed for this node */
     // CLUSTER_SLOTS/8 * 8bit = CLUSTER_SLOTS个bit
-    // 位数组 1表示slot当前由本节点处理 0表示slot并非本节点处理
+    // 节点位图 1表示slot当前由本节点处理 0表示slot并非本节点处理
     unsigned char slots[CLUSTER_SLOTS/8]; /* slots handled by this node */
     // 当前节点负责处理的slot数量
     int numslots;   /* Number of slots handled by this node */
@@ -163,17 +163,19 @@ typedef struct clusterState {
     dict *nodes;          /* Hash table of name -> clusterNode structures */
     // 集群节点黑名单
     dict *nodes_black_list; /* Nodes we don't re-add for a few seconds. */
-    // 记录当前节点迁移到目标节点的slot 以及要迁移到的目标节点
+    // 当前节点所负责的槽位正在迁出到哪个节点
     // index下标 指示第index个slot
     // migrating_slots_to[index]表示第index个slot需要迁移到的目标节点
     clusterNode *migrating_slots_to[CLUSTER_SLOTS];
-    // 记录从源节点迁移到本节点的slot
+    // 当前节点正在从哪个节点将某个槽位迁入到本节点中
     // index表示第index个slot
     // importing_slots_from[index]表示正在迁移的slot来自哪个节点
     clusterNode *importing_slots_from[CLUSTER_SLOTS];
     // 负责处理各slot的节点
     clusterNode *slots[CLUSTER_SLOTS];
+    // 保存slot和keys的映射关系
     uint64_t slots_keys_count[CLUSTER_SLOTS];
+    // 某一个槽slot上的所有key
     rax *slots_to_keys;
     /* The following fields are used to take the slave state on elections. */
     mstime_t failover_auth_time; /* Time of previous or next election. */

@@ -1581,6 +1581,9 @@ void slotToKeyFlush(void) {
 /* Pupulate the specified array of objects with keys in the specified slot.
  * New objects are returned to represent keys, it's up to the caller to
  * decrement the reference count to release the keys names. */
+// 返回值为实际取出的hashslot上key的总数
+// keys数组中存储所有的key
+// count表示key的最大数量
 unsigned int getKeysInSlot(unsigned int hashslot, robj **keys, unsigned int count) {
     raxIterator iter;
     int j = 0;

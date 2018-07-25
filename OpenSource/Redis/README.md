@@ -316,18 +316,58 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
 
     clusterInit -> aeCreateFileEvent(server.el, server.cfd[j], AE_READABLE,clusterAcceptHandler, NULL) -> aeCreateFileEvent(server.el,cfd,AE_READABLE,clusterReadHandler,link) -> clusterProcessPacket(命令处理函数)
 
-    集群节点间是如何认识的?
-    https://blog.csdn.net/gqtcgq/article/details/51722852
-    1、两个节点间是如何认识的?
-    2、一个节点和包含n个节点的集群是如何认识的?
-    3、分布式基础通信协议--gossip协议
 
-    心跳消息和下线检测 -> clusterCron
-    1、心跳消息
-    2、疑似下线(PFAIL)
-    3、下线(FAIL)
+## 集群节点间是如何认识的?
+    https://blog.csdn.net/gqtcgq/article/category/5992975
+### 0、MEET命令
+### 1、两个节点间是如何认识的?
+### 2、一个节点和包含n个节点的集群是如何认识的?
+### 3、分布式基础通信协议--gossip协议
+
+## 心跳消息和下线检测 -> clusterCron
+### 1、心跳消息
+### 2、疑似下线(PFAIL)
+### 3、下线(FAIL)
     
-
+## 集群键的分配与迁移
+### 1、对集群节点分配槽位
+        CLUSTER  ADDSLOTS  <slot>  [slot]  ...
+        clusterNodeSetSlotBit(myself,slot)  // 添加位图
+        server.cluster->slots[slot] = myself // 添加slot-> clusterNode的映射关系
+### 2、重新分片(槽位迁移)流程
+####    (1)、通知迁入节点
+            CLUSTER  SETSLOT  <slot>  IMPORTING  <node> // <slot>是要迁入的槽位号 <node>是当前负责该槽位的节点
+            server.cluster->importing_slots_from[slot] = node
+####    (2)、通知迁出节点
+            CLUSTER  SETSLOT  <slot>  MIGRATING  <node> // <slot>是要迁出的槽位号 <node>是迁出槽位的目的地节点
+            server.cluster->migrating_slots_to[slot] = node
+####    (3)、向迁出节点查询slot上对应的key总数
+            CLUSTER  GETKEYSINSLOT  <slot>  <count> // 获得迁出槽位<slot>中的<count>个key以便下一步能够执行key的迁移操作
+####    (4)、命令迁出节点迁出数据
+            迁出节点连接到迁入节点migrateGetSocket
+            MIGRATE <target_host> <target_port> <key> <target_database> <timeout> // migrateCommand迁移键
+            迁出节点循环构造RESTORE <key> <ttl> <serialized-value> [REPLACE]或者RESTORE-ASKING  <key>  <ttl>  
+        <serialized-value> [REPLACE]
+            发送循环构造好的命令到迁入节点
+####    (5)、命令迁入节点存储数据
+            restoreCommand处理命令
+            迁入节点解析RESTORE <key> <ttl> <serialized-value> [REPLACE]或者RESTORE-ASKING  <key>  <ttl>  
+        <serialized-value> [REPLACE]
+            解析结果存储到数据库
+####    (6)、周知所有集群节点发生了重新分片
+            CLUSTER  SETSLOT  <slot>  NODE  <nodeid> // 通知所有节点 更新槽位<slot> 新的负责节点为<nodeid>
+            当前正在迁入的节点收到本消息 server.cluster->importing_slots_from[slot] = NULL
+            当前正在迁出的节点收到本消息且已经迁完 server.cluster->migrating_slots_to[slot] = NULL
+            每一个收到本消息的节点 
+                清除旧的位图并解除slot-> clusterNode的映射关系clusterNodeClearSlotBit(n,slot) server.cluster->slots[slot]
+            = NULL
+                添加新的位图并添加slot-> clusterNode的映射关系clusterNodeSetSlotBit(n,slot) server.cluster->slots[slot]=n
+### 3、连接池
+####    (1)、缓存连接的时机
+            migrateCommand -> migrateGetSocket
+####    (2)、定期清理连接池 
+            serverCron -> migrateCloseTimedoutSockets
+### 4、集群节点执行命令
 
 # 0x0B 订阅与发布
 ## 一、频道订阅 数据结构:服务端与客户端各自维护一份频道字典 
