@@ -600,6 +600,7 @@ clusterLink *createClusterLink(clusterNode *node) {
  * with this link will have the 'link' field set to NULL. */
 void freeClusterLink(clusterLink *link) {
     if (link->fd != -1) {
+        // 删除被释放连接上的可读可写处理器
         aeDeleteFileEvent(server.el, link->fd, AE_WRITABLE);
         aeDeleteFileEvent(server.el, link->fd, AE_READABLE);
     }
@@ -1211,11 +1212,13 @@ void markNodeAsFailingIfNeeded(clusterNode *node) {
 
     /* Mark the node as failing. */
     node->flags &= ~CLUSTER_NODE_PFAIL;
+    // 标记集群节点下线
     node->flags |= CLUSTER_NODE_FAIL;
     node->fail_time = mstime();
 
     /* Broadcast the failing node name to everybody, forcing all the other
      * reachable nodes to flag the node as FAIL. */
+    // 广播节点下线
     if (nodeIsMaster(myself)) clusterSendFail(node->name);
     clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE|CLUSTER_TODO_SAVE_CONFIG);
 }
@@ -1332,6 +1335,7 @@ int clusterStartHandshake(char *ip, int port, int cport) {
     /* Add the node with a random address (NULL as first argument to
      * createClusterNode()). Everything will be fixed during the
      * handshake. */
+    // 创建节点 初始化节点属性
     n = createClusterNode(NULL,CLUSTER_NODE_HANDSHAKE|CLUSTER_NODE_MEET);
     // 将(ip,port)信息设置到node节点中
     memcpy(n->ip,norm_ip,sizeof(n->ip));
@@ -1354,6 +1358,7 @@ void clusterProcessGossipSection(clusterMsg *hdr, clusterLink *link) {
     clusterMsgDataGossip *g = (clusterMsgDataGossip*) hdr->data.ping.gossip;
     clusterNode *sender = link->node ? link->node : clusterLookupNode(hdr->sender);
 
+    // 认识集群中的n个节点
     while(count--) {
         // 节点的表示值
         uint16_t flags = ntohs(g->flags);
@@ -1379,14 +1384,19 @@ void clusterProcessGossipSection(clusterMsg *hdr, clusterLink *link) {
             /* We already know this node.
                Handle failure reports, only when the sender is a master. */
             if (sender && nodeIsMaster(sender) && node != myself) {
+                // 节点下线或者疑似下线
                 if (flags & (CLUSTER_NODE_FAIL|CLUSTER_NODE_PFAIL)) {
+                    // 报告节点下线
                     if (clusterNodeAddFailureReport(node,sender)) {
                         serverLog(LL_VERBOSE,
                             "Node %.40s reported node %.40s as not reachable.",
                             sender->name, node->name);
                     }
+                    // 在条件满足的情况下 将node标记为FAIL 并向其他所有节点广播放发送FAIL包
                     markNodeAsFailingIfNeeded(node);
+                // 包中没有标注节点FAIL或者PFAIL
                 } else {
+                    // 清除节点的下线报告
                     if (clusterNodeDelFailureReport(node,sender)) {
                         serverLog(LL_VERBOSE,
                             "Node %.40s reported node %.40s is back online.",
@@ -1422,6 +1432,9 @@ void clusterProcessGossipSection(clusterMsg *hdr, clusterLink *link) {
              * can talk with this other node, update the address, disconnect
              * the old link if any, so that we'll attempt to connect with the
              * new address. */
+            // 节点被标注为PFAIL或者FAIL
+            // 之前记录的节点地址与当前包中的节点地址不一致(可能节点有了新的地址)
+            // 更新新地址信息
             if (node->flags & (CLUSTER_NODE_FAIL|CLUSTER_NODE_PFAIL) &&
                 !(flags & CLUSTER_NODE_NOADDR) &&
                 !(flags & (CLUSTER_NODE_FAIL|CLUSTER_NODE_PFAIL)) &&
@@ -1705,6 +1718,7 @@ int clusterProcessPacket(clusterLink *link) {
     }
 
     /* Check if the sender is a known node. */
+    // 根据名字查询
     sender = clusterLookupNode(hdr->sender);
     if (sender && !nodeInHandshake(sender)) {
         /* Update our curretEpoch if we see a newer epoch in the cluster. */
@@ -1790,7 +1804,7 @@ int clusterProcessPacket(clusterLink *link) {
         /* If this is a MEET packet from an unknown node, we still process
          * the gossip section here since we have to trust the sender because
          * of the message type. */
-        // 读取消息内容 
+        // 读取消息内容 认识集群中的n个节点
         // 循环生成n个节点 并将每个节点的信息设置
         // 添加n个节点到集群节点名单中
         if (!sender && type == CLUSTERMSG_TYPE_MEET)
@@ -1883,7 +1897,9 @@ int clusterProcessPacket(clusterLink *link) {
 
         /* Update our info about the node */
         if (link->node && type == CLUSTERMSG_TYPE_PONG) {
+            // 最后一次接到该节点的 PONG 的时间
             link->node->pong_received = mstime();
+            // 清零最近一次等待 PING 命令的时间
             link->node->ping_sent = 0;
 
             /* The PFAIL condition can be reversed without external
@@ -2022,6 +2038,7 @@ int clusterProcessPacket(clusterLink *link) {
         clusterNode *failing;
 
         if (sender) {
+            // 从字典中找出对应下线节点
             failing = clusterLookupNode(hdr->data.fail.about.nodename);
             if (failing &&
                 !(failing->flags & (CLUSTER_NODE_FAIL|CLUSTER_NODE_MYSELF)))
@@ -2029,8 +2046,11 @@ int clusterProcessPacket(clusterLink *link) {
                 serverLog(LL_NOTICE,
                     "FAIL message received from %.40s about %.40s",
                     hdr->sender, hdr->data.fail.about.nodename);
+                // 置下线标记
                 failing->flags |= CLUSTER_NODE_FAIL;
+                // 记录下线时间
                 failing->fail_time = mstime();
+                // 清除疑似下线标记
                 failing->flags &= ~CLUSTER_NODE_PFAIL;
                 clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG|
                                      CLUSTER_TODO_UPDATE_STATE);
@@ -2373,6 +2393,7 @@ void clusterSendPing(clusterLink *link, int type) {
      * message to). However practically there may be less valid nodes since
      * nodes in handshake state, disconnected, are not considered. */
     // -2是因为myself节点和接受gossip信息的节点
+    // freshnodes标识gossip部分可以包含节点数的最大值
     int freshnodes = dictSize(server.cluster->nodes)-2;
 
     /* How many gossip sections we want to add? 1/10 of the number of nodes
@@ -2401,6 +2422,7 @@ void clusterSendPing(clusterLink *link, int type) {
      * Since we have non-voting slaves that lower the probability of an entry
      * to feature our node, we set the number of entires per packet as
      * 10% of the total nodes we have. */
+    // 从节点数的1/10 但是属于[3,freshnodes]区间
     wanted = floor(dictSize(server.cluster->nodes)/10);
     if (wanted < 3) wanted = 3;
     if (wanted > freshnodes) wanted = freshnodes;
@@ -2428,7 +2450,9 @@ void clusterSendPing(clusterLink *link, int type) {
     clusterBuildMessageHdr(hdr,type);
 
     /* Populate the gossip fields */
+    // 循环遍历的最大次数
     int maxiterations = wanted*3;
+    // 将集群中的其他节点推给目标 使目标认识集群中的其他节点
     while(freshnodes > 0 && gossipcount < wanted && maxiterations--) {
         // 从集群节点名单中随机返回一个节点
         dictEntry *de = dictGetRandomKey(server.cluster->nodes);
@@ -3345,11 +3369,15 @@ void clusterCron(void) {
             continue;
         }
 
+        // 未向该节点建链 或者 之前的连接已断开
+        // clusterStartHandshake握手后新创建的节点link被初始化为NULL
+        // 开始向tcp建链
         if (node->link == NULL) {
             int fd;
             mstime_t old_ping_sent;
             clusterLink *link;
 
+            // 发起连接
             fd = anetTcpNonBlockBindConnect(server.neterr, node->ip,
                 node->cport, NET_FIRST_BIND_ADDR);
             if (fd == -1) {
@@ -3364,9 +3392,11 @@ void clusterCron(void) {
                     node->cport, server.neterr);
                 continue;
             }
+            // 创建集群节点间的连接link结构
             link = createClusterLink(node);
             link->fd = fd;
             node->link = link;
+            // 集群连接创建读事件处理器
             aeCreateFileEvent(server.el,link->fd,AE_READABLE,
                     clusterReadHandler,link);
             /* Queue a PING in the new connection ASAP: this is crucial
@@ -3399,11 +3429,13 @@ void clusterCron(void) {
 
     /* Ping some random node 1 time every 10 iterations, so that we usually ping
      * one random node every second. */
+    // 本函数100ms调用1次 1s(1000ms)调用10次 则以下逻辑1秒执行一次
     if (!(iteration % 10)) {
         int j;
 
         /* Check a few random nodes and ping the one with the oldest
          * pong_received time. */
+        // 随机从集群节点名单中抽取5个节点
         for (j = 0; j < 5; j++) {
             de = dictGetRandomKey(server.cluster->nodes);
             clusterNode *this = dictGetVal(de);
@@ -3412,11 +3444,13 @@ void clusterCron(void) {
             if (this->link == NULL || this->ping_sent != 0) continue;
             if (this->flags & (CLUSTER_NODE_MYSELF|CLUSTER_NODE_HANDSHAKE))
                 continue;
+            // 从5个随机节点中跳出最早收到PONG回复的节点
             if (min_pong_node == NULL || min_pong > this->pong_received) {
                 min_pong_node = this;
                 min_pong = this->pong_received;
             }
         }
+        // 向最早收到PONG回复的节点发送PING包
         if (min_pong_node) {
             serverLog(LL_DEBUG,"Pinging node %.40s", min_pong_node->name);
             clusterSendPing(min_pong_node->link, CLUSTERMSG_TYPE_PING);
@@ -3432,6 +3466,7 @@ void clusterCron(void) {
     orphaned_masters = 0;
     max_slaves = 0;
     this_slaves = 0;
+    // 迭代集群节点名单
     di = dictGetSafeIterator(server.cluster->nodes);
     while((de = dictNext(di)) != NULL) {
         clusterNode *node = dictGetVal(de);
@@ -3464,14 +3499,14 @@ void clusterCron(void) {
          * timeout, reconnect the link: maybe there is a connection
          * issue even if the node is alive. */
         if (node->link && /* is connected */
-            now - node->link->ctime >
-            server.cluster_node_timeout && /* was not already reconnected */
+            now - node->link->ctime > server.cluster_node_timeout && /* was not already reconnected */
             node->ping_sent && /* we already sent a ping */
             node->pong_received < node->ping_sent && /* still waiting pong */
             /* and we are waiting for the pong more than timeout/2 */
             now - node->ping_sent > server.cluster_node_timeout/2)
         {
             /* Disconnect the link, it will be reconnected automatically. */
+            // 释放连接
             freeClusterLink(node->link);
         }
 
@@ -3479,10 +3514,14 @@ void clusterCron(void) {
          * received PONG is older than half the cluster timeout, send
          * a new ping now, to ensure all the nodes are pinged without
          * a too big delay. */
+        // node连接正常
+        // 上一次发送的PING包已经收到回复PONG包
+        // 距离收到PONG包已经超过server.cluster_node_timeout/2时间
         if (node->link &&
             node->ping_sent == 0 &&
             (now - node->pong_received) > server.cluster_node_timeout/2)
         {
+            // 发送PING包
             clusterSendPing(node->link, CLUSTERMSG_TYPE_PING);
             continue;
         }
@@ -3512,6 +3551,7 @@ void clusterCron(void) {
             if (!(node->flags & (CLUSTER_NODE_PFAIL|CLUSTER_NODE_FAIL))) {
                 serverLog(LL_DEBUG,"*** NODE %.40s possibly failing",
                     node->name);
+                // 标记疑似下线状态
                 node->flags |= CLUSTER_NODE_PFAIL;
                 update_state = 1;
             }
@@ -4145,6 +4185,7 @@ void clusterReplyMultiBulkSlots(client *c) {
     setDeferredMultiBulkLength(c, slot_replylen, num_masters);
 }
 
+// 集群命令处理函数
 void clusterCommand(client *c) {
     if (server.cluster_enabled == 0) {
         addReplyError(c,"This instance has cluster support disabled");

@@ -3,7 +3,7 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
 
 # 0x01 底层数据结构
 ## 一、sds字符串对象
-    1、sds对象设计的几个优点
+### 1、sds对象设计的几个优点
         (1) 常数复杂度获取长度
         (2) 杜绝缓冲区溢出
         (3) 减少修改字符串长度时所需的内存重新分配次数
@@ -316,8 +316,18 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
 
     clusterInit -> aeCreateFileEvent(server.el, server.cfd[j], AE_READABLE,clusterAcceptHandler, NULL) -> aeCreateFileEvent(server.el,cfd,AE_READABLE,clusterReadHandler,link) -> clusterProcessPacket(命令处理函数)
 
-    集群支持的命令
-        PING MEET PONG FAIL PUBLISH UPDATE
+    集群节点间是如何认识的?
+    https://blog.csdn.net/gqtcgq/article/details/51722852
+    1、两个节点间是如何认识的?
+    2、一个节点和包含n个节点的集群是如何认识的?
+    3、分布式基础通信协议--gossip协议
+
+    心跳消息和下线检测 -> clusterCron
+    1、心跳消息
+    2、疑似下线(PFAIL)
+    3、下线(FAIL)
+    
+
 
 # 0x0B 订阅与发布
 ## 一、频道订阅 数据结构:服务端与客户端各自维护一份频道字典 
