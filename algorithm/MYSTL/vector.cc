@@ -45,14 +45,44 @@ void shrink()
     }
 }
 // 扫描交换
-bool bubble(Rank lo, Rank hi)
+bool bubbleV1(Rank lo, Rank hi)
 {
-    return true;
+    bool sorted = true;
+    Rank idx = lo + 1;
+    while (idx < hi)
+    {
+        if (_elem[idx-1] > _elem[idx])
+        {
+            sorted = false;
+            swap(_elem[idx-1], _elem[idx]);
+        }
+        ++idx;
+    }
+    return sorted;
 }
 // 冒泡排序
-bool bubbleSort(Rank lo, Rank hi)
+bool bubbleSortV1(Rank lo, Rank hi)
 {
-    return true;
+    return while(!bubbleV1(lo, hi--));
+}
+bool bubbleV2(Rank lo, Rank hi)
+{
+    Rank lastSwap = lo;
+    Rank idx = lo + 1;
+    while (idx < hi)
+    {
+        if (_elem[idx-1] > _elem[idx])
+        {
+            lastSwap = idx;
+            swap(_elem[idx-1], _elem[idx]);
+        }
+        ++idx;
+    }
+    return lastSwap;
+}
+bool bubbleSortV2(Rank lo, Rank hi)
+{
+    return while(lo < bubbleV2(lo, hi--));
 }
 // 选取最大元素
 Rank max(Rank lo, Rank hi)
@@ -75,12 +105,35 @@ bool selectionSort(Rank lo, Rank hi)
 // 归并算法
 void merge(Rank lo, Rank mi, Rank hi)
 {
-
+    T *B = new T[mi - lo];
+    T *C = _elem + lo + mi;
+    assert(B);
+    int b = lo;
+    int c = mi;
+    while (b < mi && c < hi)
+    {
+        T maxVal = B[b] > _elem[c] ? B[b++] : _elem[c++];
+        _elem[lo++] = maxVal; 
+    }
+    // B
+    while (b < mi)
+    {
+        _elem[lo++] = B[b++];
+    }
+    // C -> nothing
+    delete[] B;
 }
 // 归并排序
 void mergeSort(Rank lo, Rank hi)
 {
-
+    if (hi <= lo)
+    {
+        return;
+    }
+    int mi = (lo + hi) >> 1;
+    mergeSort(lo, mi);
+    mergeSort(mi, hi);
+    merge(lo, mi, hi);
 }
 // 轴点构造算法
 Rank partition(Rank lo, Rank hi)
@@ -123,9 +176,8 @@ Rank find(const T &e, Rank lo, Rank hi)
     }
     return pos;
 }
-// 有序向量区间查找
 template <typename T>
-Rank search(const T &e, Rank lo, Rank hi)
+Rank BinSearchV1(const T &e, Rank lo, Rank hi)
 {
     Rank pos = -1;
     Rank mi = 0;
@@ -149,6 +201,44 @@ Rank search(const T &e, Rank lo, Rank hi)
         }
     }
     return pos;
+}
+template <typename T>
+Rank BinSearchV2(const T &e, Rank lo, Rank hi)
+{
+
+}
+template <typename T>
+Rank BinSearchV3(const T &e, Rank lo, Rank hi)
+{
+    
+}
+template <typename T>
+Rank FiboSearch(const T &e, Rank lo, Rank hi)
+{
+    
+}
+// 有序向量区间查找
+template <typename T>
+Rank search(const T &e, Rank lo, Rank hi)
+{
+    Rank idx = -1;
+    Rank r = rand() % 4;
+    switch(r)
+    {
+        case 1:
+            idx = BinSearchV1(e, lo, hi);
+            break;
+        case 2:
+            idx = BinSearchV2(e, lo, hi);
+            break;
+        case 3:
+            idx = BinSearchV3(e, lo, hi);
+            break;
+        default:
+            idx = FiboSearch(e, lo, hi);
+            break;
+    }
+    return idx;
 }
 
 // 可写访问接口
