@@ -367,7 +367,15 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
             migrateCommand -> migrateGetSocket
 ####    (2)、定期清理连接池 
             serverCron -> migrateCloseTimedoutSockets
-### 4、集群节点执行命令
+## 集群节点执行命令
+### 1、执行命令的过程
+        processCommand -> getNodeByQuery(查询能集群中能处理当前命令的节点) -> 
+### 2、ASK重定向
+        查询集群节点名单命中当前节点
+        对当前命令的key经过hash计算得出的slot槽虽然现在属于本节点处理 但本节点正在将keys迁移到其他节点
+### 3、MOVED重定向
+        查询集群节点名单命中其他节点
+        对当前命令的key经过hash计算得出的slot槽不属于本节点处理 将请求重定向到其他节点 
 
 # 0x0B 订阅与发布
 ## 一、频道订阅 数据结构:服务端与客户端各自维护一份频道字典 

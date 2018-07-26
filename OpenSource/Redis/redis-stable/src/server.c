@@ -2439,28 +2439,40 @@ int processCommand(client *c) {
 
     /* If cluster is enabled perform the cluster redirection here.
      * However we don't perform the redirection if:
+     * 如果有以下情况出现 则节点不重定向
      * 1) The sender of this command is our master.
-     * 2) The command has no key arguments. */
-    if (server.cluster_enabled &&
-        !(c->flags & CLIENT_MASTER) &&
-        !(c->flags & CLIENT_LUA &&
+     * 命令的发送者是本节点的主节点
+     * 2) The command has no key arguments. 
+     * 命令没有 key 参数 */
+    if (server.cluster_enabled &&      
+        !(c->flags & CLIENT_MASTER) &&  
+        !(c->flags & CLIENT_LUA &&      
           server.lua_caller->flags & CLIENT_MASTER) &&
-        !(c->cmd->getkeys_proc == NULL && c->cmd->firstkey == 0 &&
-          c->cmd->proc != execCommand))
+        !(c->cmd->getkeys_proc == NULL && c->cmd->firstkey == 0 && c->cmd->proc != execCommand))
     {
+        // 记录当前命令应该在哪个槽执行
         int hashslot;
+        // 记录MOVED错误或ASK错误或者其他集群错误
         int error_code;
-        clusterNode *n = getNodeByQuery(c,c->cmd,c->argv,c->argc,
-                                        &hashslot,&error_code);
+        // 查询能处理当前命令的集群节点
+        clusterNode *n = getNodeByQuery(c,c->cmd,c->argv,c->argc,&hashslot,&error_code);
+        // 不能执行多键处理命令
+        // 命令针对的槽和键不是本节点处理 则重定向
         if (n == NULL || n != server.cluster->myself) {
+            // 事务模式
             if (c->cmd->proc == execCommand) {
                 discardTransaction(c);
+            // 非事务模式
             } else {
                 flagTransaction(c);
             }
+            // 重定向客户端 
+            // MOVED或ASK重定向或者其他错误
             clusterRedirectClient(c,n,hashslot,error_code);
             return C_OK;
         }
+        // 如果执行到这里 说明键 key 所在的槽由本节点处理
+        // 或者客户端执行的是无参数命令
     }
 
     /* Handle the maxmemory directive.

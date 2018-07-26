@@ -660,6 +660,7 @@ void clusterAcceptHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
  * However if the key contains the {...} pattern, only the part between
  * { and } is hashed. This may be useful in the future to force certain
  * keys to be in the same node (assuming no resharding is in progress). */
+// 0x3FFF <=> 16383
 unsigned int keyHashSlot(char *key, int keylen) {
     int s, e; /* start-end indexes of { and } */
 
@@ -5131,7 +5132,7 @@ try_again:
 
     /* Connect */
     // MIGRATE host port key dbid timeout [COPY | REPLACE | AUTH password]
-    // 连接redis
+    // 连接集群节点
     // 或者从缓存中取出连接
     cs = migrateGetSocket(c,c->argv[1],c->argv[2],timeout);
     if (cs == NULL) {
@@ -5447,6 +5448,9 @@ clusterNode *getNodeByQuery(client *c, struct redisCommand *cmd, robj **argv, in
 
     /* We handle all the cases as if they were EXEC commands, so we have
      * a common code path for everything */
+    // 集群可以执行事务
+    // 但必须确保事务中的所有命令都是针对某个相同的键进行的
+    // 这个 if 和接下来的 for 进行的就是这一合法性检测
     if (cmd->proc == execCommand) {
         /* If CLIENT_MULTI flag is not set EXEC is just going to return an
          * error. */
@@ -5478,14 +5482,15 @@ clusterNode *getNodeByQuery(client *c, struct redisCommand *cmd, robj **argv, in
         keyindex = getKeysFromCommand(mcmd,margv,margc,&numkeys);
         for (j = 0; j < numkeys; j++) {
             robj *thiskey = margv[keyindex[j]];
-            int thisslot = keyHashSlot((char*)thiskey->ptr,
-                                       sdslen(thiskey->ptr));
+            // 根据key计算slot槽
+            int thisslot = keyHashSlot((char*)thiskey->ptr,sdslen(thiskey->ptr));
 
             if (firstkey == NULL) {
                 /* This is the first key we see. Check what is the slot
                  * and node. */
                 firstkey = thiskey;
                 slot = thisslot;
+                // 在当前集群节点的映射表中查找slot对应的处理节点
                 n = server.cluster->slots[slot];
 
                 /* Error: If a slot is not served, we are in "cluster down"
@@ -5495,6 +5500,7 @@ clusterNode *getNodeByQuery(client *c, struct redisCommand *cmd, robj **argv, in
                 if (n == NULL) {
                     getKeysFreeResult(keyindex);
                     if (error_code)
+                        // 该槽位没有节点负责 集群目前处于下线状态
                         *error_code = CLUSTER_REDIR_DOWN_UNBOUND;
                     return NULL;
                 }
@@ -5561,6 +5567,7 @@ clusterNode *getNodeByQuery(client *c, struct redisCommand *cmd, robj **argv, in
     /* If we don't have all the keys and we are migrating the slot, send
      * an ASK redirection. */
     if (migrating_slot && missing_keys) {
+        // 当前节点正在迁出槽位且命令中的key有的已经不再当前节点中
         if (error_code) *error_code = CLUSTER_REDIR_ASK;
         return server.cluster->migrating_slots_to[slot];
     }
@@ -5594,6 +5601,7 @@ clusterNode *getNodeByQuery(client *c, struct redisCommand *cmd, robj **argv, in
 
     /* Base case: just return the right node. However if this node is not
      * myself, set error_code to MOVED since we need to issue a rediretion. */
+    // 当前槽位不是由自己负责
     if (n != myself && error_code) *error_code = CLUSTER_REDIR_MOVED;
     return n;
 }
@@ -5617,6 +5625,7 @@ void clusterRedirectClient(client *c, clusterNode *n, int hashslot, int error_co
         addReplySds(c,sdsnew("-CLUSTERDOWN The cluster is down\r\n"));
     } else if (error_code == CLUSTER_REDIR_DOWN_UNBOUND) {
         addReplySds(c,sdsnew("-CLUSTERDOWN Hash slot not served\r\n"));
+    // MOVED或者ASK重定向
     } else if (error_code == CLUSTER_REDIR_MOVED ||
                error_code == CLUSTER_REDIR_ASK)
     {
