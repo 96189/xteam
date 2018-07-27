@@ -1560,6 +1560,13 @@ void clusterSetNodeAsMaster(clusterNode *n) {
  * The 'sender' is the node for which we received a configuration update.
  * Sometimes it is not actually the "Sender" of the information, like in the
  * case we receive the info via an UPDATE packet. */
+// 处理场景:节点sender宣称自己的configEpoch和负责的槽位信息slots 但是这些槽位之前由其他节点负责
+// 而sender节点的configEpoch更大 说明需要更新这些槽位的负责节点为sender
+// 本函数会由多种角色的节点执行
+// 1、下线的master节点重新上线 收到其他节点发来的UPDATE包 通过本函数更新配置信息并成为其他节点的slave节点
+// 2、已下线节点的其他slave节点 收到新的master节点的心跳包 通过本函数更新配置信息并成为新master的slave节点
+// 3、集群中的其他节点 收到新master节点发来的心跳包 更新自己的配置信息
+// 4、集群刚建立时 当前节点收到其他节点声称自己负责某些槽位 更新配置信息
 void clusterUpdateSlotsConfigWith(clusterNode *sender, uint64_t senderConfigEpoch, unsigned char *slots) {
     int j;
     clusterNode *curmaster, *newmaster = NULL;
@@ -1584,6 +1591,7 @@ void clusterUpdateSlotsConfigWith(clusterNode *sender, uint64_t senderConfigEpoc
     }
 
     for (j = 0; j < CLUSTER_SLOTS; j++) {
+        // sender宣称负责的槽slots
         if (bitmapTestBit(slots,j)) {
             /* The slot is already bound to the sender of this message. */
             if (server.cluster->slots[j] == sender) continue;
@@ -1598,16 +1606,22 @@ void clusterUpdateSlotsConfigWith(clusterNode *sender, uint64_t senderConfigEpoc
              * 1) The slot was unassigned or the new node claims it with a
              *    greater configEpoch.
              * 2) We are not currently importing the slot. */
+            // j槽位尚未有节点负责
+            // j槽位负责节点的configEpoch小于发送着携带的configEpoch
+            // 则将j槽位交由sender负责
             if (server.cluster->slots[j] == NULL ||
                 server.cluster->slots[j]->configEpoch < senderConfigEpoch)
             {
                 /* Was this slot mine, and still contains keys? Mark it as
                  * a dirty slot. */
+                // j槽位由当前节点负责 且 该槽位上有key
+                // 说明当前节点是下线后又重新上线的节点
                 if (server.cluster->slots[j] == myself &&
                     countKeysInSlot(j) &&
                     sender != myself)
                 {
                     dirty_slots[dirty_slots_count] = j;
+                    // 统计当前节点槽位个数
                     dirty_slots_count++;
                 }
 
@@ -1633,6 +1647,7 @@ void clusterUpdateSlotsConfigWith(clusterNode *sender, uint64_t senderConfigEpoc
         serverLog(LL_WARNING,
             "Configuration change detected. Reconfiguring myself "
             "as a replica of %.40s", sender->name);
+        // 设置当前节点的slave节点
         clusterSetMaster(sender);
         clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG|
                              CLUSTER_TODO_UPDATE_STATE|
@@ -1644,7 +1659,18 @@ void clusterUpdateSlotsConfigWith(clusterNode *sender, uint64_t senderConfigEpoc
          * a slave.
          *
          * In order to maintain a consistent state between keys and slots
-         * we need to remove all the keys from the slots we lost. */
+         * we need to remove all the keys from the slots we lost. 
+         * 这种情况的场景是下线主节点A，原来负责槽位1,2,3，经过很长一段时间，现在A又重新上线了
+         * 但是现在槽位1,2由B节点负责，而槽位3由C节点负责。A现在收到的UPDATE包，
+         * 其中只有节点B负责槽位1,2的信息（因为其他节点D收到A的包之后，发现A宣
+         * 称负责的1,2,3槽位，现在由其他节点负责了。节点D轮训16384个槽位
+         * 只要发现槽位1的负责节点B的configEpoch大于A的configEpoch
+         * 它就只会发出一个UPDATE包，其中只带有节点B的信息
+         * （函数clusterProcessPacket中发送UPDATE包的逻辑）
+         * 因此节点A收到该UPDATE包之后，只能先将槽位1和2删除
+         * 并将其中的KEY从数据库中删除，只有下次收到关于节点C负责槽位3的UPDATE包之后
+         * 把槽位3也清除了，此时就符合curmaster->numslots == 0的条件了
+         * 才能把自己置为C的从节点*/
         for (j = 0; j < dirty_slots_count; j++)
             delKeysInSlot(dirty_slots[j]);
     }
@@ -1920,6 +1946,9 @@ int clusterProcessPacket(clusterLink *link) {
 
         /* Check for role switch: slave -> master or master -> slave. */
         if (sender) {
+            // 发送节点的slaveof为NULL -> 发送节点是master节点
+            // 节点故障转移成功 会将自己的slave指针置空 且标记自身为master 同时发起广播PONG包
+            // 这里的逻辑正是处理这种情况
             if (!memcmp(hdr->slaveof,CLUSTER_NODE_NULL_NAME,
                 sizeof(hdr->slaveof)))
             {
@@ -1969,6 +1998,8 @@ int clusterProcessPacket(clusterLink *link) {
         if (sender) {
             sender_master = nodeIsMaster(sender) ? sender : sender->slaveof;
             if (sender_master) {
+                // 发送PONG包的节点 新晋成为master节点 发送PONG包已经接管slots
+                // 这里判等为0 最终置dirty_slots为1
                 dirty_slots = memcmp(sender_master->slots,
                         hdr->myslots,sizeof(hdr->myslots)) != 0;
             }
@@ -1977,6 +2008,7 @@ int clusterProcessPacket(clusterLink *link) {
         /* 1) If the sender of the message is a master, and we detected that
          *    the set of slots it claims changed, scan the slots to see if we
          *    need to update our configuration. */
+        // 刚上任的新master节点
         if (sender && nodeIsMaster(sender) && dirty_slots)
             clusterUpdateSlotsConfigWith(sender,senderConfigEpoch,hdr->myslots);
 
@@ -1998,6 +2030,7 @@ int clusterProcessPacket(clusterLink *link) {
          * new configuration, so other nodes that have an updated table must
          * do it. In this way A will stop to act as a master (or can try to
          * failover if there are the conditions to win the election). */
+        // 之前发生故障被下线的master节点 现在恢复上线
         if (sender && dirty_slots) {
             int j;
 
@@ -2005,15 +2038,15 @@ int clusterProcessPacket(clusterLink *link) {
                 if (bitmapTestBit(hdr->myslots,j)) {
                     if (server.cluster->slots[j] == sender ||
                         server.cluster->slots[j] == NULL) continue;
-                    if (server.cluster->slots[j]->configEpoch >
-                        senderConfigEpoch)
+                    // 发送节点的configEpoch小于j槽位对应的condfigEpoch
+                    if (server.cluster->slots[j]->configEpoch > senderConfigEpoch)
                     {
                         serverLog(LL_VERBOSE,
                             "Node %.40s has old slots configuration, sending "
                             "an UPDATE message about %.40s",
                                 sender->name, server.cluster->slots[j]->name);
-                        clusterSendUpdate(sender->link,
-                            server.cluster->slots[j]);
+                        // 发更新包
+                        clusterSendUpdate(sender->link,server.cluster->slots[j]);
 
                         /* TODO: instead of exiting the loop send every other
                          * UPDATE packet for other nodes that are the new owner
@@ -2081,20 +2114,26 @@ int clusterProcessPacket(clusterLink *link) {
             decrRefCount(channel);
             decrRefCount(message);
         }
+    // 集群节点收到拉票请求
     } else if (type == CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST) {
         if (!sender) return 1;  /* We don't know that node. */
         clusterSendFailoverAuthIfNeeded(sender,hdr);
+    // 发起投票的节点统计投票数
     } else if (type == CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK) {
         if (!sender) return 1;  /* We don't know that node. */
         /* We consider this vote only if the sender is a master serving
          * a non zero number of slots, and its currentEpoch is greater or
          * equal to epoch where this node started the election. */
+        // 判断当前选票是否有效
+        // 投票的节点是主节点 且 该投票节点有负责的slot槽位 且投票节点的发送的currentEpoch大于发起选举时的currentEpoch
         if (nodeIsMaster(sender) && sender->numslots > 0 &&
             senderCurrentEpoch >= server.cluster->failover_auth_epoch)
         {
+            // 有效票数计票
             server.cluster->failover_auth_count++;
             /* Maybe we reached a quorum here, set a flag to make sure
              * we check ASAP. */
+            // 设置标志 下次循环开始前执行故障转移
             clusterDoBeforeSleep(CLUSTER_TODO_HANDLE_FAILOVER);
         }
     } else if (type == CLUSTERMSG_TYPE_MFSTART) {
@@ -2123,6 +2162,7 @@ int clusterProcessPacket(clusterLink *link) {
         if (nodeIsSlave(n)) clusterSetNodeAsMaster(n);
 
         /* Update the node's configEpoch. */
+        // 更新configEpoch
         n->configEpoch = reportedConfigEpoch;
         clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG|
                              CLUSTER_TODO_FSYNC_CONFIG);
@@ -2335,6 +2375,7 @@ void clusterBuildMessageHdr(clusterMsg *hdr, int type) {
         offset = replicationGetSlaveOffset();
     else
         offset = server.master_repl_offset;
+    // 复制偏移
     hdr->offset = htonu64(offset);
 
     /* Set the message flags. */
@@ -2709,12 +2750,15 @@ void clusterSendFailoverAuthIfNeeded(clusterNode *node, clusterMsg *request) {
      * right to vote, as the cluster size in Redis Cluster is the number
      * of masters serving at least one slot, and quorum is the cluster
      * size + 1 */
+    // 过滤没有资格投票的节点
     if (nodeIsSlave(myself) || myself->numslots == 0) return;
 
     /* Request epoch must be >= our currentEpoch.
      * Note that it is impossible for it to actually be greater since
      * our currentEpoch was updated as a side effect of receiving this
      * request, if the request epoch was greater. */
+    // 发送者的状态和当前集群的状态不一致 拒绝为其投票
+    // currentEpoch标记整个集群的状态 整个集群状态一致则该值都是一致的
     if (requestCurrentEpoch < server.cluster->currentEpoch) {
         serverLog(LL_WARNING,
             "Failover auth denied to %.40s: reqEpoch (%llu) < curEpoch(%llu)",
@@ -2725,6 +2769,7 @@ void clusterSendFailoverAuthIfNeeded(clusterNode *node, clusterMsg *request) {
     }
 
     /* I already voted for this epoch? Return ASAP. */
+    // 当前节点已经投过票 不再投票
     if (server.cluster->lastVoteEpoch == server.cluster->currentEpoch) {
         serverLog(LL_WARNING,
                 "Failover auth denied to %.40s: already voted for epoch %llu",
@@ -2739,14 +2784,17 @@ void clusterSendFailoverAuthIfNeeded(clusterNode *node, clusterMsg *request) {
     if (nodeIsMaster(node) || master == NULL ||
         (!nodeFailed(master) && !force_ack))
     {
+        // 发起投票的节点是master节点
         if (nodeIsMaster(node)) {
             serverLog(LL_WARNING,
                     "Failover auth denied to %.40s: it is a master node",
                     node->name);
+        // 发起投票的节点没有master节点
         } else if (master == NULL) {
             serverLog(LL_WARNING,
                     "Failover auth denied to %.40s: I don't know its master",
                     node->name);
+        // 发起投票的节点的master节点没有下线
         } else if (!nodeFailed(master)) {
             serverLog(LL_WARNING,
                     "Failover auth denied to %.40s: its master is up",
@@ -2758,6 +2806,8 @@ void clusterSendFailoverAuthIfNeeded(clusterNode *node, clusterMsg *request) {
     /* We did not voted for a slave about this master for two
      * times the node timeout. This is not strictly needed for correctness
      * of the algorithm but makes the base case more linear. */
+    // 获胜从节点有时间将其成为新主节点的消息通知给其他从节点
+    // 避免另一个从节点发起新一轮选举又进行一次没必要的故障转移
     if (mstime() - node->slaveof->voted_time < server.cluster_node_timeout * 2)
     {
         serverLog(LL_WARNING,
@@ -2773,12 +2823,17 @@ void clusterSendFailoverAuthIfNeeded(clusterNode *node, clusterMsg *request) {
      * slots that is >= the one of the masters currently serving the same
      * slots in the current configuration. */
     for (j = 0; j < CLUSTER_SLOTS; j++) {
+        // 当前槽位j不属于宣称负责的槽位claimed_slots则跳过
         if (bitmapTestBit(claimed_slots, j) == 0) continue;
+        // 宣称负责的槽位没有对应的有效节点
         if (server.cluster->slots[j] == NULL ||
-            server.cluster->slots[j]->configEpoch <= requestConfigEpoch)
+            /* 请求投票的节点的configEpoch必须大于等于当前槽位负责节点的epoch */
+            server.cluster->slots[j]->configEpoch <= requestConfigEpoch) 
         {
             continue;
         }
+        // 否则 说明发送节点的配置信息不是最新的 可能是一个长时间下线的节点又重新上线
+        // 不给它投票直接返回
         /* If we reached this point we found a slot that in our current slots
          * is served by a master with a greater configEpoch than the one claimed
          * by the slave requesting our vote. Refuse to vote for this slave. */
@@ -2792,9 +2847,12 @@ void clusterSendFailoverAuthIfNeeded(clusterNode *node, clusterMsg *request) {
     }
 
     /* We can vote for this slave. */
+    // 记录已经投过票
     server.cluster->lastVoteEpoch = server.cluster->currentEpoch;
+    // 记录最后投票时间
     node->slaveof->voted_time = mstime();
     clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG|CLUSTER_TODO_FSYNC_CONFIG);
+    // master节点投票给node节点
     clusterSendFailoverAuth(node);
     serverLog(LL_WARNING, "Failover auth granted to %.40s for epoch %llu",
         node->name, (unsigned long long) server.cluster->currentEpoch);
@@ -2906,19 +2964,27 @@ void clusterFailoverReplaceYourMaster(void) {
     if (nodeIsMaster(myself) || oldmaster == NULL) return;
 
     /* 1) Turn this node into a master. */
+    // 将当前节点从它的master节点的slaves节点数组中删除
+    // 置空当前节点的slave指针
+    // 设置当前节点为master标记
     clusterSetNodeAsMaster(myself);
+    // 取消主从复制过程
     replicationUnsetMaster();
 
     /* 2) Claim all the slots assigned to our master. */
     for (j = 0; j < CLUSTER_SLOTS; j++) {
         if (clusterNodeGetSlotBit(oldmaster,j)) {
+            //  将j槽位从拥有它的节点中删除
             clusterDelSlot(j);
+            // 将j槽位添加到到当前节点由当前节点负责
             clusterAddSlot(myself,j);
         }
     }
 
     /* 3) Update state and save config. */
+    // 更新集群状态
     clusterUpdateState();
+    // 更新配置文件
     clusterSaveConfigOrDie(1);
 
     /* 4) Pong all the other nodes so that they can update the state
@@ -2932,6 +2998,7 @@ void clusterFailoverReplaceYourMaster(void) {
 /* This function is called if we are a slave node and our master serving
  * a non-zero amount of hash slots is in FAIL state.
  *
+ * 如果当前节点是一个从节点且它正在复制的一个负责非零个槽的主节点处于 FAIL 状态 则执行这个函数
  * The gaol of this function is:
  * 1) To check if we are able to perform a failover, is our data updated?
  * 2) Try to get elected by masters.
@@ -2939,12 +3006,15 @@ void clusterFailoverReplaceYourMaster(void) {
  */
 void clusterHandleSlaveFailover(void) {
     mstime_t data_age;
+    // 记录距离发起故障转移已经过去多长时间
     mstime_t auth_age = mstime() - server.cluster->failover_auth_time;
+    // 当前slave节点必须至少获得多少选票才能成为新的主节点
     int needed_quorum = (server.cluster->size / 2) + 1;
-    int manual_failover = server.cluster->mf_end != 0 &&
-                          server.cluster->mf_can_start;
+    // 是否是管理员手动触发的故障转移流程
+    int manual_failover = server.cluster->mf_end != 0 && server.cluster->mf_can_start;
     mstime_t auth_timeout, auth_retry_time;
 
+    // 取消clusterCron执行前执行故障转移
     server.cluster->todo_before_sleep &= ~CLUSTER_TODO_HANDLE_FAILOVER;
 
     /* Compute the failover timeout (the max time we have to send votes
@@ -2954,8 +3024,10 @@ void clusterHandleSlaveFailover(void) {
      * Timeout is MAX(NODE_TIMEOUT*2,2000) milliseconds.
      * Retry is two times the Timeout.
      */
+    // 故障转移的超时时间,超过该时间没有获取到足够的选票,则本次故障转移失败
     auth_timeout = server.cluster_node_timeout*2;
     if (auth_timeout < 2000) auth_timeout = 2000;
+    // 开始下一次故障转移的时间间隔
     auth_retry_time = auth_timeout*2;
 
     /* Pre conditions to run the function, that must be met both in case
@@ -2965,11 +3037,12 @@ void clusterHandleSlaveFailover(void) {
      * 3) We don't have the no failover configuration set, and this is
      *    not a manual failover.
      * 4) It is serving slots. */
-    if (nodeIsMaster(myself) ||
-        myself->slaveof == NULL ||
-        (!nodeFailed(myself->slaveof) && !manual_failover) ||
-        (server.cluster_slave_no_failover && !manual_failover) ||
-        myself->slaveof->numslots == 0)
+    // 过滤掉不符合条件的故障转移
+    if (nodeIsMaster(myself) || /* master节点 */
+        myself->slaveof == NULL || /* 当前节点是slvae但没有master节点 */
+        (!nodeFailed(myself->slaveof) && !manual_failover) || /* 当前节点的master节点不在下线状态且不是手动进行故障转移 */
+        (server.cluster_slave_no_failover && !manual_failover) || 
+        myself->slaveof->numslots == 0) /* 当前节点的master节点没有负责任何slots */
     {
         /* There are no reasons to failover, so we set the reason why we
          * are returning without failing over to NONE. */
@@ -2979,6 +3052,7 @@ void clusterHandleSlaveFailover(void) {
 
     /* Set data_age to the number of seconds we are disconnected from
      * the master. */
+    // 计算当前slave节点已经与master节点断开连接的时间
     if (server.repl_state == REPL_STATE_CONNECTED) {
         data_age = (mstime_t)(server.unixtime - server.master->lastinteraction)
                    * 1000;
@@ -3009,7 +3083,9 @@ void clusterHandleSlaveFailover(void) {
 
     /* If the previous failover attempt timedout and the retry time has
      * elapsed, we can setup a new one. */
+    // 可以开始下一次故障转移
     if (auth_age > auth_retry_time) {
+        // slave节点可以开始进行故障转移的时间点(开始拉票的时间点)
         server.cluster->failover_auth_time = mstime() +
             500 + /* Fixed delay of 500 milliseconds, let FAIL msg propagate. */
             random() % 500; /* Random delay between 0 and 500 milliseconds. */
@@ -3019,9 +3095,9 @@ void clusterHandleSlaveFailover(void) {
         /* We add another delay that is proportional to the slave rank.
          * Specifically 1 second * rank. This way slaves that have a probably
          * less updated replication offset, are penalized. */
-        server.cluster->failover_auth_time +=
-            server.cluster->failover_auth_rank * 1000;
+        server.cluster->failover_auth_time += server.cluster->failover_auth_rank * 1000;
         /* However if this is a manual failover, no delay is needed. */
+        // 管理员发起的手动强制故障转移不推迟执行 记录当前时间
         if (server.cluster->mf_end) {
             server.cluster->failover_auth_time = mstime();
             server.cluster->failover_auth_rank = 0;
@@ -3035,6 +3111,8 @@ void clusterHandleSlaveFailover(void) {
         /* Now that we have a scheduled election, broadcast our offset
          * to all the other slaves so that they'll updated their offsets
          * if our offset is better. */
+        // 向该slave的master的下属所有slave节点发送PONG包
+        // 包头带有当前slave节点的复制数据量
         clusterBroadcastPong(CLUSTER_BROADCAST_LOCAL_SLAVES);
         return;
     }
@@ -3044,10 +3122,14 @@ void clusterHandleSlaveFailover(void) {
      * Update the delay if our rank changed.
      *
      * Not performed if this is a manual failover. */
+    // 尚未开始故障转移
     if (server.cluster->failover_auth_sent == 0 &&
         server.cluster->mf_end == 0)
     {
+        // 实时获取当前slave节点的排名
         int newrank = clusterGetSlaveRank();
+        // 新排名比之前的排名靠后 则增加故障转移的时间延迟
+        // 数字越大说明排名越低 排名低则需要延迟当前节点发起投票的时间
         if (newrank > server.cluster->failover_auth_rank) {
             long long added_delay =
                 (newrank - server.cluster->failover_auth_rank) * 1000;
@@ -3060,24 +3142,31 @@ void clusterHandleSlaveFailover(void) {
     }
 
     /* Return ASAP if we can't still start the election. */
+    // 当前时间还不到开始故障转移的时间
     if (mstime() < server.cluster->failover_auth_time) {
         clusterLogCantFailover(CLUSTER_CANT_FAILOVER_WAITING_DELAY);
         return;
     }
 
     /* Return ASAP if the election is too old to be valid. */
+    // 故障转移已超时
     if (auth_age > auth_timeout) {
         clusterLogCantFailover(CLUSTER_CANT_FAILOVER_EXPIRED);
         return;
     }
 
+    // 开始故障转移
     /* Ask for votes if needed. */
     if (server.cluster->failover_auth_sent == 0) {
+        // 增加当前节点的currentEpoch表示要开始新的一轮选举 此时该节点的currentEpoch就是集群中最大的
         server.cluster->currentEpoch++;
+        // 记录
         server.cluster->failover_auth_epoch = server.cluster->currentEpoch;
         serverLog(LL_WARNING,"Starting a failover election for epoch %llu.",
             (unsigned long long) server.cluster->currentEpoch);
+        // 发起故障转移流程 向其他集群节点拉票
         clusterRequestFailoverAuth();
+        // 标记已发起故障转移流程(拉票)
         server.cluster->failover_auth_sent = 1;
         clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG|
                              CLUSTER_TODO_UPDATE_STATE|
@@ -3086,6 +3175,7 @@ void clusterHandleSlaveFailover(void) {
     }
 
     /* Check if we reached the quorum. */
+    // 有效票数满足要求 选举成功
     if (server.cluster->failover_auth_count >= needed_quorum) {
         /* We have the quorum, we can finally failover the master. */
 
@@ -3094,6 +3184,7 @@ void clusterHandleSlaveFailover(void) {
 
         /* Update my configEpoch to the epoch of the election. */
         if (myself->configEpoch < server.cluster->failover_auth_epoch) {
+            // 选举成功更新 configEpoch
             myself->configEpoch = server.cluster->failover_auth_epoch;
             serverLog(LL_WARNING,
                 "configEpoch set to %llu after successful failover",
@@ -3101,6 +3192,7 @@ void clusterHandleSlaveFailover(void) {
         }
 
         /* Take responsability for the cluster slots. */
+        // 取代下线master 成为新的master 并广播这种变化
         clusterFailoverReplaceYourMaster();
     } else {
         clusterLogCantFailover(CLUSTER_CANT_FAILOVER_WAITING_VOTES);
@@ -3575,6 +3667,7 @@ void clusterCron(void) {
     /* Abourt a manual failover if the timeout is reached. */
     manualFailoverCheckTimeout();
 
+    // 当前节点是从节点
     if (nodeIsSlave(myself)) {
         clusterHandleManualFailover();
         clusterHandleSlaveFailover();
@@ -3937,17 +4030,27 @@ void clusterSetMaster(clusterNode *n) {
     serverAssert(n != myself);
     serverAssert(myself->numslots == 0);
 
+    // 当前节点是主节点且没有负责任何slot槽
     if (nodeIsMaster(myself)) {
+        // 修改更新标记
         myself->flags &= ~(CLUSTER_NODE_MASTER|CLUSTER_NODE_MIGRATE_TO);
         myself->flags |= CLUSTER_NODE_SLAVE;
+        // migrating_slots_to migrating_slots_from清空
         clusterCloseAllSlots();
+    // 当前节点是从节点
     } else {
+        // 当前节点已经有master节点
         if (myself->slaveof)
+            // 解除当前节点与前master节点之间的关系
             clusterNodeRemoveSlave(myself->slaveof,myself);
     }
+    // 设置当前节点的新master节点
     myself->slaveof = n;
+    // 添加当前节点到集群节点n的从节点数组
     clusterNodeAddSlave(n,myself);
+    // 执行主从复制
     replicationSetMaster(n->ip, n->port);
+    // 清除手动故障转移状态
     resetManualFailover();
 }
 
@@ -4577,8 +4680,10 @@ void clusterCommand(client *c) {
         clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE|
                              CLUSTER_TODO_SAVE_CONFIG);
         addReply(c,shared.ok);
+    // 集群主从复制
     } else if (!strcasecmp(c->argv[1]->ptr,"replicate") && c->argc == 3) {
-        /* CLUSTER REPLICATE <NODE ID> */
+        /* CLUSTER REPLICATE <NODE ID> */ // 使收到命令的集群节点成为<nodeID>节点的从节点
+        // 查询<NODE ID>对应的节点
         clusterNode *n = clusterLookupNode(c->argv[2]->ptr);
 
         /* Lookup the specified node in our table. */
@@ -4588,12 +4693,14 @@ void clusterCommand(client *c) {
         }
 
         /* I can't replicate myself. */
+        // 拒绝自我复制
         if (n == myself) {
             addReplyError(c,"Can't replicate myself");
             return;
         }
 
         /* Can't replicate a slave. */
+        // 拒绝复制从节点
         if (nodeIsSlave(n)) {
             addReplyError(c,"I can only replicate a master, not a slave.");
             return;
@@ -4602,6 +4709,9 @@ void clusterCommand(client *c) {
         /* If the instance is currently a master, it should have no assigned
          * slots nor keys to accept to replicate some other node.
          * Slaves can switch to another master without issues. */
+        // 当前节点已经是master节点且已经负责一部分的slot
+        // 当前节点已经是master节点且当前节点的数据库键不空
+        // 拒绝执行复制
         if (nodeIsMaster(myself) &&
             (myself->numslots != 0 || dictSize(server.db[0].dict) != 0)) {
             addReplyError(c,
@@ -4611,6 +4721,7 @@ void clusterCommand(client *c) {
         }
 
         /* Set the master. */
+        // 设置当前节点为n节点的从节点
         clusterSetMaster(n);
         clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE|CLUSTER_TODO_SAVE_CONFIG);
         addReply(c,shared.ok);

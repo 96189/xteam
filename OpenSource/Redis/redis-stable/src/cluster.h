@@ -114,7 +114,7 @@ typedef struct clusterNode {
     char name[CLUSTER_NAMELEN]; /* Node name, hex string, sha1-size */
     // 记录节点角色(主从) 节点状态(在线下线)
     int flags;      /* CLUSTER_NODE_... */
-    // 阶段
+    // 纪元
     uint64_t configEpoch; /* Last configEpoch observed for this node */
     // CLUSTER_SLOTS/8 * 8bit = CLUSTER_SLOTS个bit
     // 节点位图 1表示slot当前由本节点处理 0表示slot并非本节点处理
@@ -153,7 +153,7 @@ typedef struct clusterNode {
 typedef struct clusterState {
     // 当前集群节点结构
     clusterNode *myself;  /* This node */
-    // 集群当前阶段
+    // 集群当前纪元
     uint64_t currentEpoch;
     // 集群当前状态
     int state;            /* CLUSTER_OK, CLUSTER_FAIL, ... */
@@ -286,10 +286,10 @@ typedef struct {
     // 消息正文包含的节点信息数量
     // 只在发送 MEET PING PONG 这三种Gossip协议消息时使用
     uint16_t count;     /* Only used for some kind of messages. */
-    // 消息发送者的阶段
+    // 消息发送者的纪元
     uint64_t currentEpoch;  /* The epoch accordingly to the sending node. */
-    // 若消息发送者为master 则记录消息发送者的阶段
-    // 若消息发送者为slave 则记录消息发送者正在复制的主节点的阶段
+    // 若消息发送者为master 则记录消息发送者的纪元
+    // 若消息发送者为slave 则记录消息发送者正在复制的主节点的纪元
     uint64_t configEpoch;   /* The config epoch if it's a master, or the last
                                epoch advertised by its master if it is a
                                slave. */
