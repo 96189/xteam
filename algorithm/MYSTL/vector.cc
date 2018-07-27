@@ -9,15 +9,12 @@ using namespace MYSTL;
 template <typename T>
 void copyFrom(const T *A, Rank lo, Rank hi)
 {
-    // 
     Rank count = hi - lo;
     _capacity = count << 1;
     _elem = new T[_capacity];
     assert(_elem);
-    for (_size = 0; _size < count; ++_size)
-    {
-        _elem[_size] = A[lo + _size];
-    }  
+    memmove(_elem, A + lo, count * sizeof(T));
+    _size = count; 
 }
 // 空间不足时扩容
 template <typename T>
@@ -27,7 +24,7 @@ void expand()
     {
         T* newAddr = new T[_capacity=<<1];
         assert(newAddr);
-        memcpy(newAddr, _elem, _size * sizeof(T));
+        memmove(newAddr, _elem, _size * sizeof(T));
         delete[] _elem;
         _elem = newAddr;
     }
@@ -39,7 +36,7 @@ void shrink()
     {
         T* newAddr = new T[_capacity=>>1];
         assert(newAddr);
-        memcpy(newAddr, _elem, _size * sizeof(T));
+        memmove(newAddr, _elem, _size * sizeof(T));
         delete[] _elem;
         _elem = newAddr;        
     }
@@ -63,6 +60,7 @@ bool bubbleV1(Rank lo, Rank hi)
 // 冒泡排序
 bool bubbleSortV1(Rank lo, Rank hi)
 {
+    // 若前半部已经有序 则中途结束循环
     return while(!bubbleV1(lo, hi--));
 }
 bool bubbleV2(Rank lo, Rank hi)
@@ -82,7 +80,9 @@ bool bubbleV2(Rank lo, Rank hi)
 }
 bool bubbleSortV2(Rank lo, Rank hi)
 {
-    return while(lo < bubbleV2(lo, hi--));
+    // 若前半部有序 则中途结束循环
+    // 若后缀中已经有序 则快速跳过后缀中有序的部分 避免低效率的挨个比较
+    return while(lo < (hi = bubbleV2(lo, hi)));
 }
 // 选取最大元素
 Rank max(Rank lo, Rank hi)
@@ -152,6 +152,8 @@ void heapSort(Rank lo, Rank hi)
 }
 
 // 判断向量是否已排序(升序)
+// 0 已排序 
+// > 0 未排序(逆序对的个数)
 int disordered() 
 {
     int counter = 0;
@@ -185,7 +187,6 @@ Rank BinSearchV1(const T &e, Rank lo, Rank hi)
     {
         // 二分查找 选取中间位置
         mi = (lo + hi) >> 1;
-        // fibonacii查找 选取黄金分割点
         if (e < _elem[mi])
         {
             hi = mi - 1;
@@ -215,7 +216,7 @@ Rank BinSearchV3(const T &e, Rank lo, Rank hi)
 template <typename T>
 Rank FiboSearch(const T &e, Rank lo, Rank hi)
 {
-    
+    // fibonacii查找 选取黄金分割点
 }
 // 有序向量区间查找
 template <typename T>
@@ -279,8 +280,8 @@ template <typename T>
 Rank insert(Rank r, const T &e)
 {
     expand();
-    // memcpy解决内存重叠问题
-    memcpy(_elem + r, _elem + r + 1, (_size - r) * sizeof(T));
+    // memmove解决内存重叠问题
+    memmove(_elem + r, _elem + r + 1, (_size - r) * sizeof(T));
     _elem[r] = e;
     return 0;
 }
@@ -297,9 +298,7 @@ void unsort(Rank lo, Rank hi)
     for (Rank i = hi - 1; i >= lo; --i)
     {
         Rank r = rand() % i;
-        T tmp = _elem[i];
-        _elem[i] = _elem[r];
-        _elem[r] = tmp;
+        swap(_elem[r],_elem[i]);
     }
 }
 
