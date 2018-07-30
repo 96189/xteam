@@ -735,6 +735,7 @@ void loadServerConfigFromString(char *config) {
                     err = "sentinel directive while not in sentinel mode";
                     goto loaderr;
                 }
+                // 解析哨兵模式启动的配置文件
                 err = sentinelHandleConfiguration(argv+1,argc-1);
                 if (err) goto loaderr;
             }

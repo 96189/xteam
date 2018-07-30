@@ -3838,6 +3838,7 @@ int main(int argc, char **argv) {
     getRandomHexChars(hashseed,sizeof(hashseed));
     // 设置siphash函数种子
     dictSetHashFunctionSeed((uint8_t*)hashseed);
+    // 根据命令行参数判断当前是否启用sentinel模式
     server.sentinel_mode = checkForSentinelMode(argc,argv);
     // 加载server默认配置
     initServerConfig();
@@ -3853,7 +3854,9 @@ int main(int argc, char **argv) {
     /* We need to init sentinel right now as parsing the configuration file
      * in sentinel mode will have the effect of populating the sentinel
      * data structures with master nodes to monitor. */
+    // 集群模式下特有的初始化
     if (server.sentinel_mode) {
+        // 端口覆盖
         initSentinelConfig();
         initSentinel();
     }
