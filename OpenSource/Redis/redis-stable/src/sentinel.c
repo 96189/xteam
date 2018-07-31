@@ -256,7 +256,7 @@ struct sentinelState {
     // 目前正在执行的脚本数量
     int running_scripts;    /* Number of scripts in execution right now. */
     mstime_t tilt_start_time;       /* When TITL started. */
-    // 最后一次执行时间处理器的时间
+    // 最后一次执行 时间处理器的时间
     mstime_t previous_time;         /* Last time we ran the time handler. */
     // fifo队列 包含所有需要执行的用户脚本
     list *scripts_queue;            /* Queue of user scripts to execute. */
@@ -614,6 +614,7 @@ void sentinelEvent(int level, char *type, sentinelRedisInstance *ri,
     char msg[LOG_MAX_LEN];
     robj *channel, *payload;
 
+    // 构建message
     /* Handle %@ */
     if (fmt[0] == '%' && fmt[1] == '@') {
         sentinelRedisInstance *master = (ri->flags & SRI_MASTER) ?
@@ -649,6 +650,7 @@ void sentinelEvent(int level, char *type, sentinelRedisInstance *ri,
     if (level != LL_DEBUG) {
         channel = createStringObject(type,strlen(type));
         payload = createStringObject(msg,strlen(msg));
+        // 将msg发布到以type为名的频道中
         pubsubPublishMessage(channel,payload);
         decrRefCount(channel);
         decrRefCount(payload);
@@ -658,7 +660,9 @@ void sentinelEvent(int level, char *type, sentinelRedisInstance *ri,
     if (level == LL_WARNING && ri != NULL) {
         sentinelRedisInstance *master = (ri->flags & SRI_MASTER) ?
                                          ri : ri->master;
+        // master已配置通知脚本
         if (master && master->notification_script) {
+            // 创建任务节点
             sentinelScheduleScriptExecution(master->notification_script,
                 type,msg,NULL);
         }
@@ -692,7 +696,9 @@ void sentinelReleaseScriptJob(sentinelScriptJob *sj) {
     zfree(sj);
 }
 
+// 脚本都是由任务执行的 任务以节点的形式存放到列表sentinel.scripts_queue中
 #define SENTINEL_SCRIPT_MAX_ARGS 16
+// path脚本路径
 void sentinelScheduleScriptExecution(char *path, ...) {
     va_list ap;
     char *argv[SENTINEL_SCRIPT_MAX_ARGS+1];
@@ -717,9 +723,11 @@ void sentinelScheduleScriptExecution(char *path, ...) {
     sj->pid = 0;
     memcpy(sj->argv,argv,sizeof(char*)*(argc+1));
 
+    // 添加任务
     listAddNodeTail(sentinel.scripts_queue,sj);
 
     /* Remove the oldest non running script if we already hit the limit. */
+    // 超过限制则删除最早的任务
     if (listLength(sentinel.scripts_queue) > SENTINEL_SCRIPT_MAX_QUEUE) {
         listNode *ln;
         listIter li;
@@ -765,6 +773,7 @@ void sentinelRunPendingScripts(void) {
     /* Find jobs that are not running and run them, from the top to the
      * tail of the queue, so we run older jobs first. */
     listRewind(sentinel.scripts_queue,&li);
+    // running_scripts正在运行的子进程数 即正在运行的任务数
     while (sentinel.running_scripts < SENTINEL_SCRIPT_MAX_RUNNING &&
            (ln = listNext(&li)) != NULL)
     {
@@ -790,11 +799,13 @@ void sentinelRunPendingScripts(void) {
                           "%s %d %d", sj->argv[0], 99, 0);
             sj->flags &= ~SENTINEL_SCRIPT_RUNNING;
             sj->pid = 0;
+        // 子进程执行任务
         } else if (pid == 0) {
             /* Child */
             execve(sj->argv[0],sj->argv,environ);
             /* If we are here an error occurred. */
             _exit(2); /* Don't retry execution. */
+        // 父进程记录
         } else {
             sentinel.running_scripts++;
             sj->pid = pid;
@@ -821,6 +832,7 @@ mstime_t sentinelScriptRetryDelay(int retry_num) {
  * script terminated successfully. If instead the script was terminated by
  * a signal, or returned exit code "1", it is scheduled to run again if
  * the max number of retries did not already elapsed. */
+// 收集终止任务的结束状态 主要是判断任务是否需要重试执行
 void sentinelCollectTerminatedScripts(void) {
     int statloc;
     pid_t pid;
@@ -831,10 +843,12 @@ void sentinelCollectTerminatedScripts(void) {
         listNode *ln;
         sentinelScriptJob *sj;
 
+        // 若子进程是由于信号退出的 则取出信号值
         if (WIFSIGNALED(statloc)) bysignal = WTERMSIG(statloc);
         sentinelEvent(LL_DEBUG,"-script-child",NULL,"%ld %d %d",
             (long)pid, exitcode, bysignal);
 
+        // 根据子进程的pid找出任务列表中对应的任务节点
         ln = sentinelGetScriptListNodeByPid(pid);
         if (ln == NULL) {
             serverLog(LL_WARNING,"wait3() returned a pid (%ld) we can't find in our scripts execution queue!", (long)pid);
@@ -845,6 +859,7 @@ void sentinelCollectTerminatedScripts(void) {
         /* If the script was terminated by a signal or returns an
          * exit code of "1" (that means: please retry), we reschedule it
          * if the max number of retries is not already reached. */
+        // 满足这些条件 任务可以重新执行
         if ((bysignal || exitcode == 1) &&
             sj->retry_num != SENTINEL_SCRIPT_MAX_RETRY)
         {
@@ -852,6 +867,7 @@ void sentinelCollectTerminatedScripts(void) {
             sj->pid = 0;
             sj->start_time = mstime() +
                              sentinelScriptRetryDelay(sj->retry_num);
+        // 其他情况 删除任务
         } else {
             /* Otherwise let's remove the script, but log the event if the
              * execution did not terminated in the best of the ways. */
@@ -882,6 +898,7 @@ void sentinelKillTimedoutScripts(void) {
         {
             sentinelEvent(LL_WARNING,"-script-timeout",NULL,"%s %ld",
                 sj->argv[0], (long)sj->pid);
+            // 对超时任务发送SIGKILL信号
             kill(sj->pid,SIGKILL);
         }
     }
@@ -2194,6 +2211,7 @@ void sentinelRefreshInstanceInfo(sentinelRedisInstance *ri, const char *info) {
 
     /* None of the following conditions are processed when in tilt mode, so
      * return asap. */
+    // TILT模式下 后续的主从角色变化 故障转移流程不再执行
     if (sentinel.tilt) return;
 
     /* Handle master -> slave role switch. */
@@ -2229,6 +2247,7 @@ void sentinelRefreshInstanceInfo(sentinelRedisInstance *ri, const char *info) {
                 sentinelSimFailureCrash();
             sentinelEvent(LL_WARNING,"+failover-state-reconf-slaves",
                 ri->master,"%@");
+            // 创建客户端重配置脚本的任务
             sentinelCallClientReconfScript(ri->master,SENTINEL_LEADER,
                 "start",ri->master->addr,ri->addr);
             sentinelForceHelloUpdateForMaster(ri->master);
@@ -2483,6 +2502,7 @@ void sentinelProcessHelloMessage(char *hello, int hello_len) {
                 old_addr = dupSentinelAddr(master->addr);
                 // 
                 sentinelResetMasterAndChangeAddress(master, token[5], master_port);
+                // 创建客户端重配置脚本的任务
                 sentinelCallClientReconfScript(master,
                     SENTINEL_OBSERVER,"start",
                     old_addr,master->addr);
@@ -4506,10 +4526,12 @@ void sentinelCheckTiltCondition(void) {
     mstime_t delta = now - sentinel.previous_time;
 
     if (delta < 0 || delta > SENTINEL_TILT_TRIGGER) {
+        // 进入TILT模式
         sentinel.tilt = 1;
         sentinel.tilt_start_time = mstime();
         sentinelEvent(LL_WARNING,"+tilt",NULL,"#tilt mode entered");
     }
+    // 正常情况下 本函数每隔100ms执行一次 每次执行都会更新sentinel.previous_time属性
     sentinel.previous_time = mstime();
 }
 

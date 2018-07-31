@@ -298,14 +298,25 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
     图
     sentinel系统中的节点表示、监控分组、连接建立
     sentinel系统定时处理函数sentinelTimer
+    void sentinelTimer(void) 
+    {
+        sentinelCheckTiltCondition();
+        sentinelHandleDictOfRedisInstances(sentinel.masters);
+        sentinelRunPendingScripts();
+        sentinelCollectTerminatedScripts();
+        sentinelKillTimedoutScripts();
+        server.hz = CONFIG_DEFAULT_HZ + rand() % CONFIG_DEFAULT_HZ;
+    }    
     sentinel系统的主函数sentinelHandleRedisInstance
-    TILT模式
     sentinel节点与master、slave节点的两条连接的作用(命令连接和订阅连接)
     sentinel节点之间如何互相发现
     定时发送命令的周期以及命令的用途及命令的回调处理
     判断实例是否主观下线
     选举流程及状态转移
         发起下线 -> 投票 -> 计票 -> 状态转移
+    TILT模式
+    sentinel执行任务
+
 
     sentinel选举
     发布订阅模式
@@ -533,3 +544,6 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
     13、Redis集群方案什么情况下会导致整个集群不可用？
 
     14、Redis哈希槽的概念？
+
+    15、sentinel和cluster的区别
+        sentinel解决HA(高可用)问题,实现监控、通知、自动故障恢复,cluster解决sharding(分片)问题,满足扩展性
