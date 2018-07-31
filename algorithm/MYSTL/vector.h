@@ -22,9 +22,9 @@ protected:
     // 装填因子过小时压缩
     void shrink();
     // 扫描交换
-    bool bubble(Rank lo, Rank hi);
+    int bubble(Rank lo, Rank hi);
     // 冒泡排序
-    bool bubbleSort(Rank lo, Rank hi);
+    void bubbleSort(Rank lo, Rank hi);
     // 选取最大元素
     Rank max(Rank lo, Rank hi);
     // 选择排序
@@ -90,14 +90,18 @@ public:
     { 
         return find(e, 0, _size); 
     }
-    // 无需向量区间查找
+    // 无序向量区间查找
+    // 若存在 则返回第一次出现的位置
+    // 若不存在 返回-1
     Rank find(const T& e, Rank lo, Rank hi) const;
     // 有序向量整体查找
+    // 无论存在与否都返回e元素实际应该插入的位置(即第一个大于e的位置)
     Rank search(const T& e) const 
     {
         return (0 >= _size) ? -1 : search(e, 0, _size);
     }
     // 有序向量区间查找
+    // 无论存在与否都返回e元素实际应该插入的位置(即第一个大于e的位置)
     Rank search(const T& e, Rank lo, Rank hi);
 
 // 可写访问接口
@@ -136,7 +140,7 @@ public:
 // 遍历
     void traverse(void (*pfun)(T& val));
     template<typename VST>
-    void traverse(VST& function);
+    void traverse(VST& funcobj);
 };
 
 };
