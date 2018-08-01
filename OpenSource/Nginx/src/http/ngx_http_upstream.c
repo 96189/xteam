@@ -5957,7 +5957,8 @@ ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
     uscfp = umcf->upstreams.elts;
 
     for (i = 0; i < umcf->upstreams.nelts; i++) {
-
+        // 选择后端负载均衡策略 默认是ngx_http_upstream_init_round_robin
+        // 若用户在配置文件中配置http/module下提供的其他策略则应用其他策略进行后端负载均衡
         init = uscfp[i]->peer.init_upstream ? uscfp[i]->peer.init_upstream:
                                             ngx_http_upstream_init_round_robin;
 

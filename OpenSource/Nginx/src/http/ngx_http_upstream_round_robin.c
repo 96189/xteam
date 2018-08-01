@@ -26,7 +26,7 @@ static void ngx_http_upstream_empty_save_session(ngx_peer_connection_t *pc,
 
 #endif
 
-
+// 加权轮询负载均衡初始化
 ngx_int_t
 ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
     ngx_http_upstream_srv_conf_t *us)
@@ -34,11 +34,15 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
     ngx_url_t                      u;
     ngx_uint_t                     i, j, n, w;
     ngx_http_upstream_server_t    *server;
+    // 
     ngx_http_upstream_rr_peer_t   *peer, **peerp;
+    // 后端主机列表地址和后端备机列表地址
     ngx_http_upstream_rr_peers_t  *peers, *backup;
 
+    // 配置每个请求选择后端服务器之前被调用的函数
     us->peer.init = ngx_http_upstream_init_round_robin_peer;
 
+    // 第一种情况
     if (us->servers) {
         server = us->servers->elts;
 
@@ -85,6 +89,8 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
                 continue;
             }
 
+            // 保存配置中的weight、effective_weight、current_weight
+            // 及fail_timeout秒内允许失败的max_fails到每个后端主机项中
             for (j = 0; j < server[i].naddrs; j++) {
                 peer[n].sockaddr = server[i].addrs[j].sockaddr;
                 peer[n].socklen = server[i].addrs[j].socklen;
@@ -103,6 +109,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
             }
         }
 
+        // 挂载后端主机服务器列表到data字段
         us->peer.data = peers;
 
         /* backup servers */
@@ -148,6 +155,8 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
                 continue;
             }
 
+            // 保存配置中的weight、effective_weight、current_weight
+            // 及fail_timeout秒内允许失败的max_fails到每个后端备机项中
             for (j = 0; j < server[i].naddrs; j++) {
                 peer[n].sockaddr = server[i].addrs[j].sockaddr;
                 peer[n].socklen = server[i].addrs[j].socklen;
@@ -161,17 +170,20 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
                 peer[n].server = server[i].name;
 
                 *peerp = &peer[n];
+                // 节点之间通过next指针连接起来
                 peerp = &peer[n].next;
                 n++;
             }
         }
 
+        // 挂载后端备机服务器列表到next字段
+        // 相当于将后端备机列表也挂载到data字段
         peers->next = backup;
 
         return NGX_OK;
     }
 
-
+    // 以下为第二种情况
     /* an upstream implicitly defined by proxy_pass, etc. */
 
     if (us->port == 0) {
@@ -215,7 +227,9 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
     peers->name = &us->host;
 
     peerp = &peers->peer;
-
+    
+    // 保存默认的的weight、effective_weight、current_weight
+    // 及fail_timeout秒内允许失败的max_fails到每个后端主机项中
     for (i = 0; i < u.naddrs; i++) {
         peer[i].sockaddr = u.addrs[i].sockaddr;
         peer[i].socklen = u.addrs[i].socklen;
@@ -229,14 +243,17 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
         peerp = &peer[i].next;
     }
 
+    // 挂载后端主机服务器列表到data字段
     us->peer.data = peers;
 
     /* implicitly defined upstream has no backup servers */
+    // 无后端备机服务器列表
 
     return NGX_OK;
 }
 
 
+// 每个请求选择后端服务器之前被调用
 ngx_int_t
 ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
     ngx_http_upstream_srv_conf_t *us)
@@ -244,6 +261,7 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
     ngx_uint_t                         n;
     ngx_http_upstream_rr_peer_data_t  *rrp;
 
+    // 后端主机服务器列表
     rrp = r->upstream->peer.data;
 
     if (rrp == NULL) {
@@ -258,16 +276,20 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
     rrp->peers = us->peer.data;
     rrp->current = NULL;
 
+    // 后端服务器个数
     n = rrp->peers->number;
 
     if (rrp->peers->next && rrp->peers->next->number > n) {
         n = rrp->peers->next->number;
     }
 
+    // 建立位图标识在一轮选择中 各个后端服务器是否已经被选择过
+    // 后端服务器个数小于等于当前平台指针类型所占的bit数
     if (n <= 8 * sizeof(uintptr_t)) {
         rrp->tried = &rrp->data;
         rrp->data = 0;
 
+    // 大于
     } else {
         n = (n + (8 * sizeof(uintptr_t) - 1)) / (8 * sizeof(uintptr_t));
 
@@ -277,7 +299,10 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
         }
     }
 
+    // 设置回调函数
+    // 对后端服务器进行一次选择的实现逻辑
     r->upstream->peer.get = ngx_http_upstream_get_round_robin_peer;
+    // 正常处理客户端请求后释放后端服务器
     r->upstream->peer.free = ngx_http_upstream_free_round_robin_peer;
     r->upstream->peer.tries = ngx_http_upstream_tries(rrp->peers);
 #if (NGX_HTTP_SSL)
@@ -415,6 +440,7 @@ ngx_http_upstream_create_round_robin_peer(ngx_http_request_t *r,
 }
 
 
+// 对服务器进行一次选择的逻辑
 ngx_int_t
 ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
 {
@@ -434,22 +460,28 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
     peers = rrp->peers;
     ngx_http_upstream_rr_peers_wlock(peers);
 
+    // 后端服务器只有一个
     if (peers->single) {
         peer = peers->peer;
 
+        // 策略为主机不参与选择 则从备机中选择
         if (peer->down) {
             goto failed;
         }
 
+        // 策略为备机可参与选择 选择当前备机
         rrp->current = peer;
 
+    // 后端服务器有多个
     } else {
 
         /* there are several peers */
 
+        // 按照权值选择一个服务器
         peer = ngx_http_upstream_get_peer(rrp);
 
         if (peer == NULL) {
+            // 主机中无可用从备机中选择
             goto failed;
         }
 
@@ -469,22 +501,25 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
     return NGX_OK;
 
 failed:
-
+    // 从备机中选择
     if (peers->next) {
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, pc->log, 0, "backup servers");
 
         rrp->peers = peers->next;
 
+        // 备机数
         n = (rrp->peers->number + (8 * sizeof(uintptr_t) - 1))
                 / (8 * sizeof(uintptr_t));
 
+        // 清空备机位图
         for (i = 0; i < n; i++) {
              rrp->tried[i] = 0;
         }
 
         ngx_http_upstream_rr_peers_unlock(peers);
 
+        // 递归调用 传参为备机数
         rc = ngx_http_upstream_get_round_robin_peer(pc, rrp);
 
         if (rc != NGX_BUSY) {
@@ -508,6 +543,7 @@ failed:
 }
 
 
+// 按照权值选择一个服务器
 static ngx_http_upstream_rr_peer_t *
 ngx_http_upstream_get_peer(ngx_http_upstream_rr_peer_data_t *rrp)
 {
@@ -526,22 +562,30 @@ ngx_http_upstream_get_peer(ngx_http_upstream_rr_peer_data_t *rrp)
     p = 0;
 #endif
 
+    // 循环遍历选择
+    // 每次选择都会遍历完整个后端服务器列表
+    // 因为要找到current_weight权重最大的后端服务器节点 作为最优
     for (peer = rrp->peers->peer, i = 0;
          peer;
          peer = peer->next, i++)
     {
 
+        // 在位图内存中的字节索引
         n = i / (8 * sizeof(uintptr_t));
+        // 在一个字节中的位索引
         m = (uintptr_t) 1 << i % (8 * sizeof(uintptr_t));
 
+        // 跳过已被选择过的服务器
         if (rrp->tried[n] & m) {
             continue;
         }
 
+        // 跳过备机
         if (peer->down) {
             continue;
         }
 
+        // 跳过在fail_timeout失败次数超过max_fails的后端服务器
         if (peer->max_fails
             && peer->fails >= peer->max_fails
             && now - peer->checked <= peer->fail_timeout)
@@ -549,13 +593,17 @@ ngx_http_upstream_get_peer(ngx_http_upstream_rr_peer_data_t *rrp)
             continue;
         }
 
+        // 当前后端服务器可能被选中 则计算其权重
         peer->current_weight += peer->effective_weight;
+        // 所有后端服务器节点的总有效权重
         total += peer->effective_weight;
 
+        // 服务器正常 调整effective_weight
         if (peer->effective_weight < peer->weight) {
             peer->effective_weight++;
         }
 
+        // 选择current_weight权重最大的后端服务器节点
         if (best == NULL || peer->current_weight > best->current_weight) {
             best = peer;
             p = i;
@@ -568,11 +616,14 @@ ngx_http_upstream_get_peer(ngx_http_upstream_rr_peer_data_t *rrp)
 
     rrp->current = best;
 
+    // 标记某个后端服务器已经被选择一次
     n = p / (8 * sizeof(uintptr_t));
     m = (uintptr_t) 1 << p % (8 * sizeof(uintptr_t));
 
     rrp->tried[n] |= m;
 
+    // 已经被选中的后端服务器节点 current_weight需要减到最小
+    // 保证该轮后续的选择中不会被选中
     best->current_weight -= total;
 
     if (now - best->checked > best->fail_timeout) {
@@ -583,6 +634,7 @@ ngx_http_upstream_get_peer(ngx_http_upstream_rr_peer_data_t *rrp)
 }
 
 
+// 释放后端服务器
 void
 ngx_http_upstream_free_round_robin_peer(ngx_peer_connection_t *pc, void *data,
     ngx_uint_t state)

@@ -82,21 +82,32 @@ typedef ngx_int_t (*ngx_http_upstream_init_peer_pt)(ngx_http_request_t *r,
 
 
 typedef struct {
+    // 负载均衡入口函数
     ngx_http_upstream_init_pt        init_upstream;
+    // 默认或配置的负载均衡初始化函数
     ngx_http_upstream_init_peer_pt   init;
+    // 后端主机备机服务器列表
     void                            *data;
 } ngx_http_upstream_peer_t;
 
 
 typedef struct {
     ngx_str_t                        name;
+    // ip数组
     ngx_addr_t                      *addrs;
+    // ip数量
     ngx_uint_t                       naddrs;
+    // 权重
     ngx_uint_t                       weight;
+    // 若某台后端服务器在fail_timeout时间内发生max_fails次连接失败
+    // 则该后端服务器在fail_timeout时间内不再参与被选择 直到fail_timeout时间后
+    // 最大失败次数
     ngx_uint_t                       max_fails;
+    // 失败时间阈值
     time_t                           fail_timeout;
-
+    // 为1表示主动标记其为宕机状态 不参与被选择
     unsigned                         down:1;
+    // 为1表示备机 
     unsigned                         backup:1;
 } ngx_http_upstream_server_t;
 
