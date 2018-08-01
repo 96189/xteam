@@ -8497,34 +8497,49 @@ out_uri_auth_compat:
 		 */
 
 		curproxy->lbprm.algo &= ~(BE_LB_LKUP | BE_LB_PROP_DYN);
+		// BE_LB_KIND => mask to get/clear LB algorithm
 		switch (curproxy->lbprm.algo & BE_LB_KIND) {
+		// round-robin(轮询)
 		case BE_LB_KIND_RR:
+			// static round robin 
 			if ((curproxy->lbprm.algo & BE_LB_PARM) == BE_LB_RR_STATIC) {
+				// static map based lookup
 				curproxy->lbprm.algo |= BE_LB_LKUP_MAP;
 				init_server_map(curproxy);
+			// random round robin(随机轮询)
 			} else if ((curproxy->lbprm.algo & BE_LB_PARM) == BE_LB_RR_RANDOM) {
+				// consistent hash | bit to indicate a dynamic algorithm
 				curproxy->lbprm.algo |= BE_LB_LKUP_CHTREE | BE_LB_PROP_DYN;
 				chash_init_server_tree(curproxy);
+			// BE_LB_RR_DYN
+			// dynamic round robin (default)
 			} else {
+				// FWRR tree lookup | bit to indicate a dynamic algorithm
 				curproxy->lbprm.algo |= BE_LB_LKUP_RRTREE | BE_LB_PROP_DYN;
 				fwrr_init_server_groups(curproxy);
 			}
 			break;
-
+		// connection-based
 		case BE_LB_KIND_CB:
+			// least-connections
 			if ((curproxy->lbprm.algo & BE_LB_PARM) == BE_LB_CB_LC) {
 				curproxy->lbprm.algo |= BE_LB_LKUP_LCTREE | BE_LB_PROP_DYN;
 				fwlc_init_server_tree(curproxy);
+			// BE_LB_CB_FAS
+			// first available server (opposite of leastconn)
 			} else {
 				curproxy->lbprm.algo |= BE_LB_LKUP_FSTREE | BE_LB_PROP_DYN;
 				fas_init_server_tree(curproxy);
 			}
 			break;
-
+		// hash of input (see hash inputs above)
 		case BE_LB_KIND_HI:
+			// consistent hashbit to indicate a dynamic algorithm
 			if ((curproxy->lbprm.algo & BE_LB_HASH_TYPE) == BE_LB_HASH_CONS) {
 				curproxy->lbprm.algo |= BE_LB_LKUP_CHTREE | BE_LB_PROP_DYN;
 				chash_init_server_tree(curproxy);
+			// BE_LB_HASH_MAP
+			// map-based hash (default)
 			} else {
 				curproxy->lbprm.algo |= BE_LB_LKUP_MAP;
 				init_server_map(curproxy);

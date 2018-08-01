@@ -263,6 +263,7 @@ void fwrr_init_server_groups(struct proxy *p)
 	p->lbprm.set_server_status_down = fwrr_set_server_status_down;
 	p->lbprm.update_server_eweight  = fwrr_update_server_weight;
 
+	// effective weight / user weight = BE_WEIGHT_SCALE = 16
 	p->lbprm.wdiv = BE_WEIGHT_SCALE;
 	for (srv = p->srv; srv; srv = srv->next) {
 		srv->next_eweight = (srv->uweight * p->lbprm.wdiv + p->lbprm.wmult - 1) / p->lbprm.wmult;

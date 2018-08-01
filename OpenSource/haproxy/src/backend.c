@@ -616,6 +616,7 @@ int assign_server(struct stream *s)
 		 * some input data in fact, and will support multiple algorithms.
 		 */
 		switch (s->be->lbprm.algo & BE_LB_LKUP) {
+		// FWRR tree lookup
 		case BE_LB_LKUP_RRTREE:
 			srv = fwrr_get_next_server(s->be, prev_srv);
 			break;

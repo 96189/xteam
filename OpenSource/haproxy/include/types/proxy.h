@@ -281,6 +281,7 @@ struct proxy {
 		struct list inspect_rules;      /* inspection rules */
 	} tcp_rep;
 	struct server *srv, defsrv;		/* known servers; default server configuration */
+	// 负载均衡相关参数
 	struct lbprm lbprm;			/* load-balancing parameters */
 	int srv_act, srv_bck;			/* # of servers eligible for LB (UP|!checked) AND (enabled+weight!=0) */
 	int served;				/* # of active sessions currently being served */
