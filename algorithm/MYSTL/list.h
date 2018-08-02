@@ -5,7 +5,7 @@ namespace MYSTL
 {
 
 typedef int Rank;
-#define ListNodePosi(T) ListNode<T>*;
+#define ListNodePosi(T) ListNode<T>*
 
 template <typename T>
 struct ListNode 
@@ -17,12 +17,8 @@ struct ListNode
     ListNodePosi(T) succ;
 
     // 构造函数 针对header和trailer的构造
-    ListNode() {}
-    ListNode(T e, ListNodePosi(T) p = NULL, ListNodePosi(T) s = NULL)
-            : data(e), pred(p), succ(s)
-    {
-
-    }
+    ListNode();
+    ListNode(T e, ListNodePosi(T) p = NULL, ListNodePosi(T) s = NULL);
 
     // 操作接口
     // 在当前节点之前插入
@@ -84,11 +80,11 @@ public:
     // 无序列表查找
     ListNodePosi(T) find(const T& e) const;
     // 无序区间查找
-    ListNodePosi(T) find(const T& e, int n, ListNodePosi(T) e) const;
+    ListNodePosi(T) find(const T& e, int n, ListNodePosi(T) p) const;
     // 有序列表查找
     ListNodePosi(T) search(const T& e);
     // 有序区间查找
-    ListNodePosi(T) search(const T& e, int n, ListNodePosi(T) e) const;
+    ListNodePosi(T) search(const T& e, int n, ListNodePosi(T) p) const;
     // 在p及其n-1个后继中选出最大者
     T selectMax(ListNodePosi(T) p, int n);
     // 整体最大者
@@ -122,6 +118,8 @@ public:
     // 函数对象遍历
     template <typename VST>
     void traverse(VST& funobj);
-};
+}; // List
 
-};
+}; // namespace MYSTL
+
+#endif

@@ -28,7 +28,7 @@ protected:
     // 选取最大元素
     Rank max(Rank lo, Rank hi);
     // 选择排序
-    bool selectionSort(Rank lo, Rank hi);
+    void selectionSort(Rank lo, Rank hi);
     // 归并算法
     void merge(Rank lo, Rank mi, Rank hi);
     // 归并排序
@@ -102,7 +102,7 @@ public:
     }
     // 有序向量区间查找
     // 无论存在与否都返回e元素实际应该插入的位置(即第一个大于e的位置)
-    Rank search(const T& e, Rank lo, Rank hi);
+    Rank search(const T& e, Rank lo, Rank hi) const;
 
 // 可写访问接口
     T& operator[](Rank r) const;
@@ -138,7 +138,7 @@ public:
     int uniquify();
 
 // 遍历
-    void traverse(void (*pfun)(T& val));
+    void traverse(void (*visit)(T& val));
     template<typename VST>
     void traverse(VST& funcobj);
 };

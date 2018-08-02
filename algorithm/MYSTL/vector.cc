@@ -2,9 +2,18 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 namespace MYSTL
 {
+
+template <typename T>
+void swap(T& a, T& b)
+{
+    T tmp = a;
+    a = b;
+    b = tmp;
+}
 
 // 复制数组A区间[lo,hi]
 template <typename T>
@@ -44,7 +53,7 @@ void vector<T>::shrink()
     }
 }
 // // 扫描交换
-// bool vector<T>::bubbleV1(Rank lo, Rank hi)
+// bool vector<T>::bubble(Rank lo, Rank hi)
 // {
 //     bool sorted = true;
 //     Rank idx = lo + 1;
@@ -60,11 +69,12 @@ void vector<T>::shrink()
 //     return sorted;
 // }
 // // 冒泡排序
-// bool vector<T>::bubbleSortV1(Rank lo, Rank hi)
+// bool vector<T>::bubbleSort(Rank lo, Rank hi)
 // {
 //     // 若前半部已经有序 则中途结束循环
-//     return while(!bubbleV1(lo, hi--));
+//     return while(!bubble(lo, hi--));
 // }
+// 优化版扫描交换
 template <typename T>
 int vector<T>::bubble(Rank lo, Rank hi)
 {
@@ -81,6 +91,7 @@ int vector<T>::bubble(Rank lo, Rank hi)
     }
     return lastSwap;
 }
+// 优化版冒泡排序
 template <typename T>
 void vector<T>::bubbleSort(Rank lo, Rank hi)
 {
@@ -104,9 +115,9 @@ Rank vector<T>::max(Rank lo, Rank hi)
 }
 // 选择排序
 template <typename T>
-bool vector<T>::selectionSort(Rank lo, Rank hi)
+void vector<T>::selectionSort(Rank lo, Rank hi)
 {
-    return true;
+    
 }
 // 归并算法
 template <typename T>
@@ -232,27 +243,24 @@ Rank vector<T>::find(const T &e, Rank lo, Rank hi) const
 //     return 0;
 // }
 // 有序向量区间查找
+// 查找目标元素e 返回不大于e且秩最大的元素的秩
 template <typename T>
-Rank vector<T>::search(const T &e, Rank lo, Rank hi)
+Rank vector<T>::search(const T &e, Rank lo, Rank hi) const
 {
-    Rank idx = -1;
-    Rank r = rand() % 4;
-    switch(r)
+    Rank m = lo;
+    while (lo < hi - 1)
     {
-        // case 1:
-        //     idx = BinSearchV1(e, lo, hi);
-        //     break;
-        // case 2:
-        //     idx = BinSearchV2(e, lo, hi);
-        //     break;
-        // case 3:
-        //     idx = BinSearchV3(e, lo, hi);
-        //     break;
-        // default:
-        //     idx = FiboSearch(e, lo, hi);
-        //     break;
+        m = (lo + hi) >> 1;
+        if (e < _elem[m])
+        {
+            hi = m - 1;
+        }
+        else 
+        {
+            lo = m;
+        }
     }
-    return idx;
+    return m;
 }
 
 // 可写访问接口
@@ -307,17 +315,23 @@ Rank vector<T>::insert(Rank r, const T &e)
 template <typename T>
 void vector<T>::sort(Rank lo, Rank hi)
 {
-
+    int c = rand() % 1;
+    switch(c)
+    {
+        default:
+            bubbleSort(lo, hi);
+            break;
+    }
 }
 
 // 区间置乱
 template <typename T>
 void vector<T>::unsort(Rank lo, Rank hi)
 {
-    for (Rank i = hi - 1; i >= lo; --i)
+    T* V = _elem + lo;
+    for (Rank i = hi - lo; i > 0; --i)
     {
-        Rank r = rand() % i;
-        swap(_elem[r],_elem[i]);
+        swap(V[i - 1], V[rand() % i]);
     }
 }
 
@@ -353,9 +367,12 @@ int vector<T>::uniquify()
 
 // 遍历
 template <typename T>
-void vector<T>::traverse(void (*pfun)(T &val))
+void vector<T>::traverse(void (*visit)(T &val))
 {
-
+    for (Rank i = 0; i < _size; ++i)
+    {
+        visit(_elem[i]);
+    }
 }
 // template <typename VST>
 // void vector<T>::traverse(VST &function)
@@ -382,7 +399,10 @@ void checkvector(MYSTL::vector<T>& v, const MYSTL::vector<T>& vv, int start, int
         assert(v[i-start] == vv[i]);
     }
 }
-
+void PrintInt(int& val)
+{
+    printf("%d ", val);
+}
 int main(int argc, char* argv[])
 {
     const int n = 11;
@@ -436,5 +456,15 @@ int main(int argc, char* argv[])
 
     count = vv.deduplicate();
     assert(count == 3 && vv[0] == 11 && vv[1] == 1 && vv[2] == 9);
+
+    vv.insert(11);
+    vv.sort();
+    vv.traverse(PrintInt);
+    // 1 9 11 11
+    assert(vv.search(11) == 3);
+    assert(vv.search(8) == 0);
+    printf("\n");
+    vv.unsort();
+    vv.traverse(PrintInt);
     return 0;
 }
