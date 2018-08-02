@@ -56,4 +56,64 @@
         -> if (peer->effective_weight < peer->weight) { peer->effective_weight++; }
 
 ### nginx可配置的负载均衡算法
-    http/modules/ngx_http_upstream_xxx.c系列文件
+    源码位于http/modules/ngx_http_upstream_xxx.c系列文件
+
+#### IP哈希
+    https://blog.csdn.net/zhangskd/article/details/50208527
+
+        nginx中配置ip hash后,若对一次请求选择后端服务器时选择次数超过20次或者后端只有一台服务器则会采用smooth weighted 
+    round-robin balancing
+
+##### 算法步骤:
+    (1) 计算ip的hash值
+    // 89质数
+    hash = iphp->hash; 
+    // 同一网段认为是相同ip 对于ipv4取点分十进制ip地址的前三个数字
+    int n = { ipv4 => 3, ipv6 => 16 };
+    for (i = 0; i < n; i++) 
+    {
+        // 113 6271都为质数 使结果更随机
+        hash = (hash * 113 + iphp->addr[i]) % 6271;
+    }
+
+    (2) 根据hash值得到有效的权重
+    w = hash % iphp->rrp.peers->total_weight;
+    
+    (3) 选择后端服务器
+    peer = iphp->rrp.peers->peer;
+    while (w >= peer->weight) 
+    {
+        w -= peer->weight;
+        peer = peer->next;
+    } 
+
+##### 选择的确定性和不变性
+        对于某一确定的ip地址(14.116.139.xx) 计算得到的hash值总是确定不变的 由于后端机器列表的总权重不变且
+    每一台机器的权重不变 根据以上算式总能得到唯一不变的服务器
+
+#### 一致性哈希算法Consistent hashing
+    https://blog.csdn.net/cywosp/article/details/23397179
+    https://blog.csdn.net/zhangskd/article/details/50256111
+    
+    一致性哈希解决的问题
+        解决服务器的增减带来的缓存失效问题
+
+    关键词:
+        环(%虚拟的0~2^32-1空间)
+        哈希算法(hash => crc32)
+        映射数据到环(hash(key))
+        映射机器节点到环(hash(...))
+        顺时针(遍历数组下标取mod))
+        虚拟节点(环上的实体)
+
+    一致性哈希算法步骤
+
+    nginx对一致性哈希的实现
+
+    nginx一致性哈希处理服务器增减的实现
+
+### 一些问题
+    1、后端集群中有服务器宕机,各负载均衡算法如何处理?
+
+    2、各算法的优劣势及应用场景?
+    

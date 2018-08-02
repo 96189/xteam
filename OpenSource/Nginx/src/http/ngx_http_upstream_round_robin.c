@@ -304,6 +304,7 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
     r->upstream->peer.get = ngx_http_upstream_get_round_robin_peer;
     // 正常处理客户端请求后释放后端服务器
     r->upstream->peer.free = ngx_http_upstream_free_round_robin_peer;
+    // 请求允许尝试这么多个后端
     r->upstream->peer.tries = ngx_http_upstream_tries(rrp->peers);
 #if (NGX_HTTP_SSL)
     r->upstream->peer.set_session =
@@ -498,6 +499,7 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
 
     ngx_http_upstream_rr_peers_unlock(peers);
 
+    // 选定一个后端 和该后端的连接尚未建立 之后会和后端建立连接
     return NGX_OK;
 
 failed:
@@ -539,6 +541,7 @@ failed:
 
     pc->name = peers->name;
 
+    // 所有后端服务器都不可用(包含备机) 之后给客户端发送502(Bad Gateway)
     return NGX_BUSY;
 }
 
@@ -654,6 +657,7 @@ ngx_http_upstream_free_round_robin_peer(ngx_peer_connection_t *pc, void *data,
     ngx_http_upstream_rr_peers_rlock(rrp->peers);
     ngx_http_upstream_rr_peer_lock(rrp->peers, peer);
 
+    // 后端服务器列表中只有1个主机
     if (rrp->peers->single) {
 
         peer->conns--;
@@ -665,14 +669,19 @@ ngx_http_upstream_free_round_robin_peer(ngx_peer_connection_t *pc, void *data,
         return;
     }
 
+    // 被选中的后端服务器在连接测试时失败
+    // 在处理请求过程中失败
     if (state & NGX_PEER_FAILED) {
         now = ngx_time();
 
+        // 增加服务器失败次数
         peer->fails++;
+        // 记录访问时间
         peer->accessed = now;
         peer->checked = now;
 
         if (peer->max_fails) {
+            // 后端服务器失败 标识发生异常 降低effective_weight值
             peer->effective_weight -= peer->weight / peer->max_fails;
 
             if (peer->fails >= peer->max_fails) {
@@ -685,10 +694,12 @@ ngx_http_upstream_free_round_robin_peer(ngx_peer_connection_t *pc, void *data,
                        "free rr peer failed: %p %i",
                        peer, peer->effective_weight);
 
+        // 保证effective_weight不能小于0
         if (peer->effective_weight < 0) {
             peer->effective_weight = 0;
         }
 
+    // 被选中的服务器成功处理请求
     } else {
 
         /* mark peer live if check passed */

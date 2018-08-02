@@ -18,24 +18,38 @@ typedef struct ngx_http_upstream_rr_peer_s   ngx_http_upstream_rr_peer_t;
 
 // 描述后端服务器节点(单个节点的数据结构)
 struct ngx_http_upstream_rr_peer_s {
+    // 后端服务器的地址
     struct sockaddr                *sockaddr;
+    // 地址的长度
     socklen_t                       socklen;
+    // 后端服务器地址的字符串
     ngx_str_t                       name;
+    // server的名称
     ngx_str_t                       server;
 
+    // 当前权重 初始值为0 动态调整
     ngx_int_t                       current_weight;
+    // 有效权重 初始为weight会因失败而降低
     ngx_int_t                       effective_weight;
+    // 配置权重 固定不变
     ngx_int_t                       weight;
 
+    // 当前连接数
     ngx_uint_t                      conns;
 
+    // 一段时间内已经失败的次数
     ngx_uint_t                      fails;
+    // 最近一次失败的时间点
     time_t                          accessed;
+    // 用于检查是否超过了一段时间
     time_t                          checked;
 
+    // 一段时间 最大的失败次数 固定值
     ngx_uint_t                      max_fails;
+    // 一段时间的值 固定值
     time_t                          fail_timeout;
 
+    // 服务器宕机标志
     ngx_uint_t                      down;          /* unsigned  down:1; */
 
 #if (NGX_HTTP_SSL)
@@ -72,9 +86,10 @@ struct ngx_http_upstream_rr_peers_s {
 
     // 为1标识当前列表中只有1个节点
     unsigned                        single:1;
+    // 是否使用权重
     unsigned                        weighted:1;
 
-    // host
+    // upstream配置块的名称
     ngx_str_t                      *name;
 
     // 后端备机服务器列表地址(指向连续的一块内存)
