@@ -117,7 +117,19 @@ Rank vector<T>::max(Rank lo, Rank hi)
 template <typename T>
 void vector<T>::selectionSort(Rank lo, Rank hi)
 {
-    
+    Rank maxIdx;
+    for (Rank i = hi - 1; i >= lo; --i)
+    {
+        maxIdx = lo;
+        for (Rank j = lo + 1; j <= i; ++j)
+        {
+            if (_elem[j] > _elem[maxIdx])
+            {
+                maxIdx = j;
+            }
+        }
+        swap(maxIdx,i);
+    }
 }
 // 归并算法
 template <typename T>
@@ -202,13 +214,15 @@ Rank vector<T>::find(const T &e, Rank lo, Rank hi) const
     return pos;
 }
 // template <typename T>
-// Rank vector<T>::BinSearchV1(const T &e, Rank lo, Rank hi)
+// Rank vector<T>::BinSearch(const T &e, Rank lo, Rank hi)
 // {
 //     Rank pos = -1;
 //     Rank mi = 0;
 //     while (lo <= hi)
 //     {
 //         // 二分查找 选取中间位置
+//         // 优化1 3分支改2分支
+//         // 优化2 fibonacii查找 选取黄金分割点
 //         mi = (lo + hi) >> 1;
 //         if (e < _elem[mi])
 //         {
@@ -226,41 +240,21 @@ Rank vector<T>::find(const T &e, Rank lo, Rank hi) const
 //     }
 //     return pos;
 // }
-// template <typename T>
-// Rank vector<T>::BinSearchV2(const T &e, Rank lo, Rank hi)
-// {
-//     return 0;
-// }
-// template <typename T>
-// Rank vector<T>::BinSearchV3(const T &e, Rank lo, Rank hi)
-// {
-//     return 0;
-// }
-// template <typename T>
-// Rank vector<T>::FiboSearch(const T &e, Rank lo, Rank hi)
-// {
-//     // fibonacii查找 选取黄金分割点
-//     return 0;
-// }
 // 有序向量区间查找
 // 查找目标元素e 返回不大于e且秩最大的元素的秩
 template <typename T>
 Rank vector<T>::search(const T &e, Rank lo, Rank hi) const
 {
-    Rank m = lo;
-    while (lo < hi - 1)
+    Rank mi = 0;
+    while (lo < hi)
     {
-        m = (lo + hi) >> 1;
-        if (e < _elem[m])
-        {
-            hi = m - 1;
-        }
-        else 
-        {
-            lo = m;
-        }
+        mi = (lo + hi) >> 1;
+        // 区间划分两半
+        // e划分到左半段
+        // 右半段值大于e
+        _elem[mi] <= e ? lo = mi + 1 : hi = mi; 
     }
-    return m;
+    return --lo;
 }
 
 // 可写访问接口
@@ -319,7 +313,8 @@ void vector<T>::sort(Rank lo, Rank hi)
     switch(c)
     {
         default:
-            bubbleSort(lo, hi);
+            selectionSort(lo, hi);
+            // bubbleSort(lo, hi);
             break;
     }
 }
