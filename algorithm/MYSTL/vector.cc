@@ -113,51 +113,92 @@ Rank vector<T>::max(Rank lo, Rank hi)
     }
     return maxIdx;
 }
+// 插入排序
+template <typename T>
+void vector<T>::insertionSort(Rank lo, Rank hi)
+{
+    // for (Rank uIdx = lo + 1; uIdx < hi; ++uIdx)
+    // {
+    //     swap(_elem[search(_elem[uIdx], lo, uIdx) + 1], _elem[uIdx]);
+    // }
+
+    // 可优化
+    for (Rank uIdx = lo + 1; uIdx < hi; ++uIdx)
+    {
+        for (Rank oIdx = uIdx; oIdx > lo; --oIdx)
+        {
+            if (_elem[oIdx - 1] > _elem[oIdx])
+            {
+                swap(_elem[oIdx - 1], _elem[oIdx]);
+            }
+            else 
+            {
+                break;
+            }
+        }
+    }
+}
 // 选择排序
 template <typename T>
 void vector<T>::selectionSort(Rank lo, Rank hi)
 {
     Rank maxIdx;
-    for (Rank i = hi - 1; i >= lo; --i)
+    for (Rank last = hi - 1; last >= lo; --last)
     {
         maxIdx = lo;
-        for (Rank j = lo + 1; j <= i; ++j)
+        for (Rank idx = lo; idx <= last; ++idx)
         {
-            if (_elem[j] > _elem[maxIdx])
+            // 算法稳定性保证 取得靠右位置的最大值
+            if (_elem[idx] >= _elem[maxIdx])
             {
-                maxIdx = j;
+                maxIdx = idx;
             }
         }
-        swap(maxIdx,i);
+        // 算法稳定性保证 最大的数已经在当前轮靠后的位置不再交换
+        if (maxIdx != last)
+        {
+            swap(_elem[maxIdx],_elem[last]);
+        }
     }
 }
 // 归并算法
 template <typename T>
 void vector<T>::merge(Rank lo, Rank mi, Rank hi)
 {
-    T *B = new T[mi - lo];
-    T *C = _elem + lo + mi;
+    int lenB = mi - lo;
+    int lenC = hi - mi;
+    T *B = new T[lenB];
     assert(B);
-    int b = lo;
-    int c = mi;
-    while (b < mi && c < hi)
+    T *C = new T[lenC];
+    assert(C);
+    memmove(B, _elem + lo, sizeof(T) * (lenB));
+    // 
+    memmove(C, _elem + mi, sizeof(T) * (lenC));
+   
+    int b = 0;
+    int c = 0;
+    while (b < lenB && c < lenC)
     {
-        T maxVal = B[b] > _elem[c] ? B[b++] : _elem[c++];
-        _elem[lo++] = maxVal; 
+        _elem[lo++] = B[b] < C[c] ? B[b++] : C[c++];
     }
     // B
-    while (b < mi)
+    while (b < lenB)
     {
         _elem[lo++] = B[b++];
     }
-    // C -> nothing
+    // C 
+    while (c < lenC)
+    {
+        _elem[lo++] = C[c++];
+    }
     delete[] B;
+    delete[] C;
 }
 // 归并排序
 template <typename T>
 void vector<T>::mergeSort(Rank lo, Rank hi)
 {
-    if (hi <= lo)
+    if (lo + 1 >= hi)
     {
         return;
     }
@@ -179,10 +220,13 @@ void vector<T>::quickSort(Rank lo, Rank hi)
 
 }
 // 堆排序算法
+#define parent(n) (n / 2)
+#define leftchild(n) (2 * n + 1)
+#define rightChild(n) (2 * n + 2)
 template <typename T>
 void vector<T>::heapSort(Rank lo, Rank hi)
 {
-
+    
 }
 
 // 判断向量是否已排序(升序)
@@ -313,7 +357,9 @@ void vector<T>::sort(Rank lo, Rank hi)
     switch(c)
     {
         default:
-            selectionSort(lo, hi);
+            insertionSort(lo, hi);
+            // mergeSort(lo, hi);
+            // selectionSort(lo, hi);
             // bubbleSort(lo, hi);
             break;
     }

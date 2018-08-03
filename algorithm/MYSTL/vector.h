@@ -27,6 +27,8 @@ protected:
     void bubbleSort(Rank lo, Rank hi);
     // 选取最大元素
     Rank max(Rank lo, Rank hi);
+    // 插入排序
+    void insertionSort(Rank lo, Rank hi);
     // 选择排序
     void selectionSort(Rank lo, Rank hi);
     // 归并算法
