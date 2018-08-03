@@ -95,25 +95,56 @@
     https://blog.csdn.net/cywosp/article/details/23397179
     https://blog.csdn.net/zhangskd/article/details/50256111
     
-    一致性哈希解决的问题
-        解决服务器的增减带来的缓存失效问题
+##### 一致性哈希解决的问题
+    解决服务器的增减带来的缓存失效问题
 
-    关键词:
-        环(%虚拟的0~2^32-1空间)
-        哈希算法(hash => crc32)
-        映射数据到环(hash(key))
-        映射机器节点到环(hash(...))
-        顺时针(遍历数组下标取mod))
-        虚拟节点(环上的实体)
+##### 关键词:
+    环(%虚拟的0~2^32-1空间)
+    哈希算法(hash => crc32)
+    映射数据到环(hash(key))
+    映射机器节点到环(通过虚拟节点间接映射)
+    顺时针(遍历数组下标取mod))
+    虚拟节点(环上的实体)
 
-    一致性哈希算法步骤
+##### nginx中一致性哈希的实现
+###### 建环 -> 建虚拟节点 -> 映射虚拟节点到环上
+    ngx_http_upstream_init_chash
+    创建虚拟节点数组total_weight * 160,遍历后端服务器节点对当前peer->weight*160个虚拟节点初始化,crc32算法计算hash,关联
+虚拟节点的server字段到peer->server字段.对虚拟节点数组按照hash排序,对有序数组按照hash去重.
 
-    nginx对一致性哈希的实现
+###### 映射请求到环上 -> 选取虚拟节点
+    ngx_http_upstream_init_chash_peer
+    计算请求的哈希 hash = ngx_crc32_long(hp->key.data, hp->key.len)
+    根据请求的hash值顺时针方向找最近(大于等于hash)的虚拟节点 hp->hash = ngx_http_upstream_find_chash_point
+(hcf->points, hash),hp->hash记录此虚拟节点在数组中的索引
 
-    nginx一致性哈希处理服务器增减的实现
+###### 虚拟节点与真实节点的映射关系
+    server字段相同,已知虚拟节点的server字段,可在后端服务器真实节点中遍历
+
+###### 选取真实的节点
+    ngx_http_upstream_get_chash_peer
+    取虚拟节点的server字段server = point[hp->hash % points->number].server
+    循环遍历后端服务器列表server字段相同的选取权重最大的节点
+
+##### nginx一致性哈希如何处理服务器的增加的情况,代码中如何体现?
 
 ### 一些问题
-    1、后端集群中有服务器宕机,各负载均衡算法如何处理?
-
-    2、各算法的优劣势及应用场景?
-    
+#### 1、后端集群中有服务器宕机,各负载均衡算法如何处理?
+    smooth weighted round-robin balancing:
+        后端服务器节点宕机,对一次请求,选择节点来说,循环中选择即使当前宕机节点权重最大也会跳过当前宕机节点选择权重第二大的
+    节点.
+    IP HASH:
+        后端服务器节点宕机,对一次请求,选择节点来说,若哈希命中宕机节点则循环会始终命中到宕机节点,尝试20次,若该节点一直处于
+    宕机状态则采用平滑的加权轮询算法选择机器.
+    Consistent hashing:
+        在后端有真实节点宕机时,对一次请求,选择节点来说会命中到宕机节点,但循环中过滤掉宕机几点,hash++因此会选择
+    下一个节点,不会造成服务不可用的情况.
+#### 2、各算法的优劣势及应用场景?
+    smooth weighted round-robin balancing:
+        优:根据机器配置可均衡将负载分配到各机器,完全依靠后端实际情况选择.
+        缺:同一客户端的多次请求可能会被分配到不同的后端服务器处理,无法满足做会话保持的应用需求.
+    IP HASH
+        优:可做session保持,同一个ip始终由一台机器处理
+        缺:可能导致分配不均匀
+    Consistent hashing
+        优:解决动态增加机器问题

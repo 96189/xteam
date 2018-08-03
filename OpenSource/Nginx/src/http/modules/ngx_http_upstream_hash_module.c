@@ -13,7 +13,7 @@
 typedef struct {
     // 虚拟节点的hash值
     uint32_t                            hash;
-    // 虚拟节点归属的真实节点 对应真实节点的server成员
+    // 虚拟节点归属的真实节点 对应真实节点ngx_http_upstream_rr_peer_s的server成员
     ngx_str_t                          *server;
 } ngx_http_upstream_chash_point_t;
 
@@ -354,7 +354,7 @@ ngx_http_upstream_init_chash(ngx_conf_t *cf, ngx_http_upstream_srv_conf_t *us)
             goto done;
         }
 
-        // 把每个peer的server成员解析为host和port
+        // 把每个peer(后端服务器节点)的server成员解析为host和port
         for (j = 0; j < server->len; j++) {
             c = server->data[server->len - j - 1];
 
@@ -387,7 +387,7 @@ ngx_http_upstream_init_chash(ngx_conf_t *cf, ngx_http_upstream_srv_conf_t *us)
         // 对于归属同一个真实节点的虚拟节点 它们的base_hash值相同 而prev_hash不同
         // 第一个节点的prev_hash为0
         prev_hash.value = 0;
-        // 当前后端服务器真实节点对应的虚拟节点个数
+        // 当前单个后端服务器真实节点对应的虚拟节点个数
         npoints = peer->weight * 160;
 
         // 初始化当前后端真实节点对应的虚拟节点
@@ -397,6 +397,7 @@ ngx_http_upstream_init_chash(ngx_conf_t *cf, ngx_http_upstream_srv_conf_t *us)
             ngx_crc32_update(&hash, prev_hash.byte, 4);
             ngx_crc32_final(hash);
 
+            // 虚拟节点初始化
             // 虚拟节点的哈希值
             points->point[points->number].hash = hash;
             // 虚拟节点所归属的真实节点 对应真实节点的server成员
@@ -421,6 +422,7 @@ ngx_http_upstream_init_chash(ngx_conf_t *cf, ngx_http_upstream_srv_conf_t *us)
               ngx_http_upstream_chash_cmp_points);
 
     // 如果虚拟节点数组中 有多个元素的hash值相同 只保留第一个
+    // 有序数组去重
     for (i = 0, j = 1; j < points->number; j++) {
         if (points->point[i].hash != points->point[j].hash) {
             points->point[++i] = points->point[j];
@@ -562,7 +564,7 @@ ngx_http_upstream_get_chash_peer(ngx_peer_connection_t *pc, void *data)
     for ( ;; ) {
         // 在peer.init中，已根据请求的哈希值，找到顺时针方向最近的一个虚拟节点，
         // hash为该虚拟节点在数组中的索引。
-        // 一开始hash值肯定小于number，之后每尝试一个虚拟节点后，hash++。取模是为了防止越界访问
+        // 一开始hash值肯定小于number 之后每尝试一个虚拟节点后 hash++ 取模是为了防止越界访问
         server = point[hp->hash % points->number].server;
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, pc->log, 0,
@@ -600,6 +602,7 @@ ngx_http_upstream_get_chash_peer(ngx_peer_connection_t *pc, void *data)
             {
                 continue;
             }
+            // 以上保证当前遍历的真实后端server节点与选中的虚拟节点server一致
 
             // 在一段时间内 如果此真实节点的失败次数 超过了允许的最大值 那么不允许使用了
             if (peer->max_fails
@@ -635,6 +638,7 @@ ngx_http_upstream_get_chash_peer(ngx_peer_connection_t *pc, void *data)
         }
 
         // 增加虚拟节点的索引 即“沿着顺时针方向”
+        // 若有服务器宕机上一次选择没有命中 则这里hash会递增 尝试选取下一个机器
         hp->hash++;
         // 已经尝试的虚拟节点数
         hp->tries++;
@@ -642,6 +646,7 @@ ngx_http_upstream_get_chash_peer(ngx_peer_connection_t *pc, void *data)
         // 如果把所有的虚拟节点都尝试了一遍 还找不到可用的真实节点
         if (hp->tries >= points->number) {
             ngx_http_upstream_rr_peers_unlock(hp->rrp.peers);
+            // 502错误
             return NGX_BUSY;
         }
     }
