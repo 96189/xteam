@@ -8,8 +8,9 @@ typedef int Rank;
 #define ListNodePosi(T) ListNode<T>*
 
 template <typename T>
-struct ListNode 
+class ListNode 
 {
+public:
     T data;
     // 前驱
     ListNodePosi(T) pred;
@@ -17,16 +18,51 @@ struct ListNode
     ListNodePosi(T) succ;
 
     // 构造函数 针对header和trailer的构造
-    ListNode();
-    ListNode(T e, ListNodePosi(T) p = NULL, ListNodePosi(T) s = NULL);
+    ListNode() 
+    {
+        data = T();
+        pred = succ = NULL;
+    }
+    ListNode(T e, ListNodePosi(T) p = NULL, ListNodePosi(T) s = NULL)
+        : data(e), pred(p), succ(s) {}
 
-    // 操作接口
+// 操作接口
+    // 读取数据
+    T& getData() 
+    {
+        return data;
+    } 
+    void setData(T val)
+    {
+        data = val;
+    }
     // 在当前节点之前插入
-    ListNodePosi(T) insertAsPred(const T& e);
+    ListNodePosi(T) insertAsPred(const T& e)
+    {
+        ListNodePosi(T) pCur = new ListNode(e, this->pred, this);
+        if (this->pred)
+        {
+            this->pred->succ = pCur;
+        }
+        this->pred = pCur;
+        return pCur;
+    }
     // 在当前节点之后插入
-    ListNodePosi(T) insertAsSucc(const T& e);
+    ListNodePosi(T) insertAsSucc(const T& e)
+    {
+        ListNodePosi(T) pCur = new ListNode(e, this, this->succ);
+        if (this->succ)
+        {
+            this->succ->pred = pCur;
+        }
+        this->succ = pCur;
+        return pCur;
+    }
 };
 
+// 双向链表定义
+// 双向链表结束不以NULL为标记
+// 尾端存在trailer哨兵节点
 template <typename T>
 class List 
 {
@@ -114,7 +150,7 @@ public:
     void reverse();
 // 遍历
     // 函数指针遍历
-    void traverse(void (*pfun)(T& val));
+    void traverse(void (*visit)(T& val));
     // 函数对象遍历
     template <typename VST>
     void traverse(VST& funobj);
