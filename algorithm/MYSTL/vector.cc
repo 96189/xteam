@@ -1,20 +1,10 @@
 #include "vector.h"
-#include <string.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 namespace MYSTL
 {
-
-template <typename T>
-void swap(T& a, T& b)
-{
-    T tmp = a;
-    a = b;
-    b = tmp;
-}
-
+    
 // 复制数组A区间[lo,hi]
 template <typename T>
 void vector<T>::copyFrom(const T *A, Rank lo, Rank hi)
@@ -27,18 +17,18 @@ void vector<T>::copyFrom(const T *A, Rank lo, Rank hi)
     _size = count; 
 }
 // 空间不足时扩容
-template <typename T>
-void vector<T>::expand()
-{
-    if (_size == _capacity)
-    {
-        T* newAddr = new T[_capacity<<=1];
-        assert(newAddr);
-        memmove(newAddr, _elem, _size * sizeof(T));
-        delete[] _elem;
-        _elem = newAddr;
-    }
-}
+// template <typename T>
+// void vector<T>::expand()
+// {
+//     if (_size == _capacity)
+//     {
+//         T* newAddr = new T[_capacity<<=1];
+//         assert(newAddr);
+//         memmove(newAddr, _elem, _size * sizeof(T));
+//         delete[] _elem;
+//         _elem = newAddr;
+//     }
+// }
 // 装填因子过小时压缩
 template <typename T>
 void vector<T>::shrink()
@@ -301,12 +291,12 @@ Rank vector<T>::search(const T &e, Rank lo, Rank hi) const
     return --lo;
 }
 
-// 可写访问接口
-template <typename T>
-T &vector<T>::operator[](Rank r) const
-{
-    return *(static_cast<T*>(_elem + r));
-}
+// // 可写访问接口
+// template <typename T>
+// T &vector<T>::operator[](Rank r) const
+// {
+//     return *(static_cast<T*>(_elem + r));
+// }
 template <class T>
 vector<T>& vector<T>::operator=(const vector<T> &V)
 {
@@ -317,37 +307,37 @@ vector<T>& vector<T>::operator=(const vector<T> &V)
     return *this;
 }
 // 删除某一位置的值
-template <typename T>
-T vector<T>::remove(Rank r)
-{
-    T val = _elem[r];
-    remove(r, r + 1);
-    return val;
-}
+// template <typename T>
+// T vector<T>::remove(Rank r)
+// {
+//     T val = _elem[r];
+//     remove(r, r + 1);
+//     return val;
+// }
 // 删除一段区间
-template <typename T>
-int vector<T>::remove(Rank lo, Rank hi)
-{
-    if (lo == hi) return 0;
-    while (hi < _size)
-    {
-        _elem[lo++] = _elem[hi++];
-    }
-    _size -= (hi - lo);
-    return (hi - lo);
-}
+// template <typename T>
+// int vector<T>::remove(Rank lo, Rank hi)
+// {
+//     if (lo == hi) return 0;
+//     while (hi < _size)
+//     {
+//         _elem[lo++] = _elem[hi++];
+//     }
+//     _size -= (hi - lo);
+//     return (hi - lo);
+// }
 // 插入元素
-template <typename T>
-Rank vector<T>::insert(Rank r, const T &e)
-{
-    expand();
-    // 腾出r位置的空间
-    // memmove解决内存重叠问题
-    memmove(_elem + r + 1, _elem + r, (_size - r) * sizeof(T));
-    _elem[r] = e;
-    ++_size;
-    return 0;
-}
+// template <typename T>
+// Rank vector<T>::insert(Rank r, const T &e)
+// {
+//     expand();
+//     // 腾出r位置的空间
+//     // memmove解决内存重叠问题
+//     memmove(_elem + r + 1, _elem + r, (_size - r) * sizeof(T));
+//     _elem[r] = e;
+//     ++_size;
+//     return 0;
+// }
 
 // 区间排序
 template <typename T>
@@ -406,15 +396,15 @@ int vector<T>::uniquify()
     return i;
 }
 
-// 遍历
-template <typename T>
-void vector<T>::traverse(void (*visit)(T &val))
-{
-    for (Rank i = 0; i < _size; ++i)
-    {
-        visit(_elem[i]);
-    }
-}
+// // 遍历
+// template <typename T>
+// void vector<T>::traverse(void (*visit)(T &val))
+// {
+//     for (Rank i = 0; i < _size; ++i)
+//     {
+//         visit(_elem[i]);
+//     }
+// }
 // template <typename VST>
 // void vector<T>::traverse(VST &function)
 // {
@@ -423,6 +413,7 @@ void vector<T>::traverse(void (*visit)(T &val))
 
 };
 
+#if 0
 // [start, end)
 template<typename T>
 void checkvector(MYSTL::vector<T>& v, const T* arr, int start, int end)
@@ -509,3 +500,4 @@ int main(int argc, char* argv[])
     vv.traverse(PrintInt);
     return 0;
 }
+#endif

@@ -1,11 +1,21 @@
 #ifndef _VECTOR_H_
 #define _VECTOR_H_
 #include <cstddef>
-namespace MYSTL 
+#include <string.h>
+#include <assert.h>
+namespace MYSTL
 {
 
 typedef int Rank;
 #define DEFAULT_CAPACITY 3
+
+template <typename T>
+void swap(T& a, T& b)
+{
+    T tmp = a;
+    a = b;
+    b = tmp;
+}
 
 template <typename T>
 class vector
@@ -18,7 +28,17 @@ protected:
     // 复制数组A区间[lo,hi]
     void copyFrom(const T* A, Rank lo, Rank hi);
     // 空间不足时扩容
-    void expand();
+    void expand()
+    {
+        if (_size == _capacity)
+        {
+            T *newAddr = new T[_capacity <<= 1];
+            assert(newAddr);
+            memmove(newAddr, _elem, _size * sizeof(T));
+            delete[] _elem;
+            _elem = newAddr;
+        }
+    }
     // 装填因子过小时压缩
     void shrink();
     // 扫描交换
@@ -107,14 +127,46 @@ public:
     Rank search(const T& e, Rank lo, Rank hi) const;
 
 // 可写访问接口
-    T& operator[](Rank r) const;
+    T & operator[](Rank r) const
+    {
+        return *(static_cast<T*>(_elem + r));
+    }
     vector<T>& operator=(const vector<T>& V);
-    // 删除某一位置的值
-    T remove(Rank r);
+    void clear()
+    {
+        remove(0, _size);
+    }
     // 删除一段区间
-    int remove(Rank lo, Rank hi);
+    int remove(Rank lo, Rank hi)
+    {
+        if (lo == hi)
+            return 0;
+        while (hi < _size)
+        {
+            _elem[lo++] = _elem[hi++];
+        }
+        _size -= (hi - lo);
+        return (hi - lo);
+    }
+    // 删除某一位置的值
+    T remove(Rank r)
+    {
+        T val = _elem[r];
+        remove(r, r + 1);
+        return val;
+    }
+
     // 插入元素
-    Rank insert(Rank r, const T& e);
+    Rank insert(Rank r, const T &e)
+    {
+        expand();
+        // 腾出r位置的空间
+        // memmove解决内存重叠问题
+        memmove(_elem + r + 1, _elem + r, (_size - r) * sizeof(T));
+        _elem[r] = e;
+        ++_size;
+        return 0;
+    }
     // 默认作为末尾元素插入
     Rank insert(const T& e)
     {
@@ -138,9 +190,22 @@ public:
     int deduplicate();
     // 有序去重
     int uniquify();
-
+    // 逆置
+    void reverse()
+    {
+        for (int s = 0, e = _size - 1; e > s; ++s, --e)
+        {
+            swap(_elem[s], _elem[e]);
+        }
+    }
 // 遍历
-    void traverse(void (*visit)(T& val));
+    void traverse(void (*visit)(T &val))
+    {
+        for (Rank i = 0; i < _size; ++i)
+        {
+            visit(_elem[i]);
+        }
+    }
     template<typename VST>
     void traverse(VST& funcobj);
 };
