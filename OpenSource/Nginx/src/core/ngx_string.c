@@ -599,6 +599,7 @@ ngx_strncasecmp(u_char *s1, u_char *s2, size_t n)
     ngx_uint_t  c1, c2;
 
     while (n) {
+        // 
         c1 = (ngx_uint_t) *s1++;
         c2 = (ngx_uint_t) *s2++;
 

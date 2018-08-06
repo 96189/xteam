@@ -17,6 +17,8 @@ typedef void *            ngx_buf_tag_t;
 
 typedef struct ngx_buf_s  ngx_buf_t;
 
+// ngx_chain_t的节点数据的定义
+// 数据指内存缓冲区 文件的某一部分 或者纯元数据
 struct ngx_buf_s {
     u_char          *pos;
     u_char          *last;
@@ -56,9 +58,10 @@ struct ngx_buf_s {
 };
 
 
+// 链表
 struct ngx_chain_s {
-    ngx_buf_t    *buf;
-    ngx_chain_t  *next;
+    ngx_buf_t    *buf;                  // 指向实际的数据
+    ngx_chain_t  *next;                 // 链表的下个节点 
 };
 
 

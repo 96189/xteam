@@ -69,6 +69,8 @@ static ngx_log_t        ngx_exit_log;
 static ngx_open_file_t  ngx_exit_log_file;
 
 
+// 多进程模型的入口函数
+// 监控进程master主循环
 void
 ngx_master_process_cycle(ngx_cycle_t *cycle)
 {
@@ -84,7 +86,9 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     ngx_listening_t   *ls;
     ngx_core_conf_t   *ccf;
 
+    // 
     sigemptyset(&set);
+    //
     sigaddset(&set, SIGCHLD);
     sigaddset(&set, SIGALRM);
     sigaddset(&set, SIGIO);
@@ -96,11 +100,13 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     sigaddset(&set, ngx_signal_value(NGX_SHUTDOWN_SIGNAL));
     sigaddset(&set, ngx_signal_value(NGX_CHANGEBIN_SIGNAL));
 
+    // 
     if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "sigprocmask() failed");
     }
 
+    // 
     sigemptyset(&set);
 
 
@@ -127,6 +133,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
+    // fork产生子进程
     ngx_start_worker_processes(cycle, ccf->worker_processes,
                                NGX_PROCESS_RESPAWN);
     ngx_start_cache_manager_processes(cycle, 0);
@@ -136,6 +143,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     sigio = 0;
     live = 1;
 
+    // 主循环
     for ( ;; ) {
         if (delay) {
             if (ngx_sigalrm) {
@@ -160,6 +168,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "sigsuspend");
 
+        // 内部会调用信号处理函数
         sigsuspend(&set);
 
         ngx_time_update();
@@ -167,6 +176,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
         ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                        "wake up, sigio %i", sigio);
 
+        // SIGCHLD
         if (ngx_reap) {
             ngx_reap = 0;
             ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "reap children");
@@ -174,10 +184,12 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             live = ngx_reap_children(cycle);
         }
 
+        // SIGINT NGX_SHUTDOWN_SIGNAL
         if (!live && (ngx_terminate || ngx_quit)) {
             ngx_master_process_exit(cycle);
         }
 
+        // SIGINT
         if (ngx_terminate) {
             if (delay == 0) {
                 delay = 50;
@@ -200,6 +212,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             continue;
         }
 
+        // NGX_SHUTDOWN_SIGNAL
         if (ngx_quit) {
             ngx_signal_worker_processes(cycle,
                                         ngx_signal_value(NGX_SHUTDOWN_SIGNAL));
@@ -217,6 +230,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             continue;
         }
 
+        // NGX_RECONFIGURE_SIGNAL
         if (ngx_reconfigure) {
             ngx_reconfigure = 0;
 
@@ -252,6 +266,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
                                         ngx_signal_value(NGX_SHUTDOWN_SIGNAL));
         }
 
+        // 
         if (ngx_restart) {
             ngx_restart = 0;
             ngx_start_worker_processes(cycle, ccf->worker_processes,
@@ -260,6 +275,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             live = 1;
         }
 
+        // NGX_REOPEN_SIGNAL
         if (ngx_reopen) {
             ngx_reopen = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "reopening logs");
@@ -268,12 +284,14 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
                                         ngx_signal_value(NGX_REOPEN_SIGNAL));
         }
 
+        // NGX_CHANGEBIN_SIGNAL
         if (ngx_change_binary) {
             ngx_change_binary = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "changing binary");
             ngx_new_binary = ngx_exec_new_binary(cycle, ngx_argv);
         }
 
+        // NGX_NOACCEPT_SIGNAL
         if (ngx_noaccept) {
             ngx_noaccept = 0;
             ngx_noaccepting = 1;
@@ -423,11 +441,13 @@ ngx_start_cache_manager_processes(ngx_cycle_t *cycle, ngx_uint_t respawn)
 }
 
 
+// 新子进程创建通知之前创建的所有子进程
 static void
 ngx_pass_open_channel(ngx_cycle_t *cycle, ngx_channel_t *ch)
 {
     ngx_int_t  i;
 
+    // 遍历之前已经存在的子进程 告知新子进程ch信息
     for (i = 0; i < ngx_last_process; i++) {
 
         if (i == ngx_process_slot
@@ -437,6 +457,7 @@ ngx_pass_open_channel(ngx_cycle_t *cycle, ngx_channel_t *ch)
             continue;
         }
 
+        // ch信息包括 进程信息在全局数组里的存储下标 pid fd channel[0] 
         ngx_log_debug6(NGX_LOG_DEBUG_CORE, cycle->log, 0,
                       "pass channel s:%d pid:%P fd:%d to s:%i pid:%P fd:%d",
                       ch->slot, ch->pid, ch->fd,
@@ -723,6 +744,7 @@ ngx_master_process_exit(ngx_cycle_t *cycle)
 }
 
 
+// 工作进程worker处理循环
 static void
 ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 {
@@ -750,6 +772,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "worker cycle");
 
+        // worker进程的主要逻辑 I/O事件和定时器事件处理
         ngx_process_events_and_timers(cycle);
 
         if (ngx_terminate) {
@@ -780,6 +803,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 }
 
 
+// 子进程启动初始化函数
 static void
 ngx_worker_process_init(ngx_cycle_t *cycle, ngx_int_t worker)
 {
@@ -933,6 +957,10 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_int_t worker)
     ngx_last_process = 0;
 #endif
 
+    // channel[1]加入到读事件监听集合
+    // 子进程使用channel[1]
+    // ngx_pass_open_channel把新的子进程信息告知给前面已经生成的子进程
+    // 进程收到信息后执行回掉函数ngx_channel_handler
     if (ngx_add_channel_event(cycle, ngx_channel, NGX_READ_EVENT,
                               ngx_channel_handler)
         == NGX_ERROR)
@@ -1092,6 +1120,8 @@ ngx_channel_handler(ngx_event_t *ev)
 }
 
 
+// nginx cache管理进程
+// 只处理超时事件
 static void
 ngx_cache_manager_process_cycle(ngx_cycle_t *cycle, void *data)
 {
@@ -1106,6 +1136,8 @@ ngx_cache_manager_process_cycle(ngx_cycle_t *cycle, void *data)
      */
     ngx_process = NGX_PROCESS_HELPER;
 
+    // cache manager进程不接受客户端请求
+    // 关闭监听套接字
     ngx_close_listening_sockets(cycle);
 
     /* Set a moderate number of connections for a helper process. */
@@ -1117,6 +1149,7 @@ ngx_cache_manager_process_cycle(ngx_cycle_t *cycle, void *data)
     ev.handler = ctx->handler;
     ev.data = ident;
     ev.log = cycle->log;
+    // 把connect对象的fd字段设置为-1
     ident[3] = (void *) -1;
 
     ngx_use_accept_mutex = 0;
@@ -1172,6 +1205,7 @@ ngx_cache_manager_process_handler(ngx_event_t *ev)
 }
 
 
+// 执行每一个磁盘缓存管理对象的loader回调函数
 static void
 ngx_cache_loader_process_handler(ngx_event_t *ev)
 {
@@ -1189,10 +1223,12 @@ ngx_cache_loader_process_handler(ngx_event_t *ev)
         }
 
         if (path[i]->loader) {
+            // 执行loader函数
             path[i]->loader(path[i]->data);
             ngx_time_update();
         }
     }
 
+    // cache loader进程是一次性的 加载完成之后自动退出 
     exit(0);
 }

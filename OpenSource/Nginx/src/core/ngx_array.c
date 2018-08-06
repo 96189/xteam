@@ -8,7 +8,10 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+// 创建新的数组对象 并返回这个对象
+// p 数组分配内存使用的内存池
+// n 数组的初始容量大小
+// size 单个元素的大小 单位字节
 ngx_array_t *
 ngx_array_create(ngx_pool_t *p, ngx_uint_t n, size_t size)
 {
@@ -27,6 +30,7 @@ ngx_array_create(ngx_pool_t *p, ngx_uint_t n, size_t size)
 }
 
 
+// 销毁数组对象 释放其分配的内存到内存池
 void
 ngx_array_destroy(ngx_array_t *a)
 {
@@ -44,6 +48,8 @@ ngx_array_destroy(ngx_array_t *a)
 }
 
 
+// 在数组a上追加要给元素 并返回新元素的指针
+// 由调用者对指针执行类型转换并对元素成员赋值
 void *
 ngx_array_push(ngx_array_t *a)
 {
@@ -91,6 +97,7 @@ ngx_array_push(ngx_array_t *a)
 }
 
 
+// 在数组a上追加n个元素 并返回追加的n个元素的首地址
 void *
 ngx_array_push_n(ngx_array_t *a, ngx_uint_t n)
 {

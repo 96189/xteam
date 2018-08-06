@@ -13,6 +13,7 @@ static void *ngx_palloc_block(ngx_pool_t *pool, size_t size);
 static void *ngx_palloc_large(ngx_pool_t *pool, size_t size);
 
 
+// 创建大小为size的pool log为后续在该pool上进行操作时输出日志的对象
 ngx_pool_t *
 ngx_create_pool(size_t size, ngx_log_t *log)
 {
@@ -42,6 +43,7 @@ ngx_create_pool(size_t size, ngx_log_t *log)
 }
 
 
+// 释放pool中持有的所有内存
 void
 ngx_destroy_pool(ngx_pool_t *pool)
 {
@@ -49,7 +51,7 @@ ngx_destroy_pool(ngx_pool_t *pool)
     ngx_pool_large_t    *l;
     ngx_pool_cleanup_t  *c;
 
-    // 调用注册的资源清理函数遍历调用
+    // 调用注册的资源清理函数遍历调用 清理占用的资源
     for (c = pool->cleanup; c; c = c->next) {
         if (c->handler) {
             ngx_log_debug1(NGX_LOG_DEBUG_ALLOC, pool->log, 0,
@@ -97,6 +99,9 @@ ngx_destroy_pool(ngx_pool_t *pool)
 }
 
 
+// 释放pool中所有大块内存
+// 小块内存修改为可用
+// 不执行cleanup
 void
 ngx_reset_pool(ngx_pool_t *pool)
 {
@@ -124,6 +129,8 @@ ngx_reset_pool(ngx_pool_t *pool)
 }
 
 
+// 从pool中分配一块size大小的内存
+// 分配的内存起始地址按照NGX_ALIGNMENT进行对齐
 void *
 ngx_palloc(ngx_pool_t *pool, size_t size)
 {
@@ -163,6 +170,7 @@ ngx_palloc(ngx_pool_t *pool, size_t size)
 }
 
 
+// 从pool中分配一块size大小的内存 不对齐
 void *
 ngx_pnalloc(ngx_pool_t *pool, size_t size)
 {
@@ -280,6 +288,8 @@ ngx_palloc_large(ngx_pool_t *pool, size_t size)
 }
 
 
+// 在pool中按照指定对齐大小alignment来申请一块大小为size的内存
+// 获取的内存不管大小都将被置于大内存块链中管理
 void *
 ngx_pmemalign(ngx_pool_t *pool, size_t size, size_t alignment)
 {
@@ -305,6 +315,7 @@ ngx_pmemalign(ngx_pool_t *pool, size_t size, size_t alignment)
 }
 
 
+// 在内存池pool中的large中的大内存链表中搜索p指向的内存块 并释放
 ngx_int_t
 ngx_pfree(ngx_pool_t *pool, void *p)
 {
@@ -325,6 +336,8 @@ ngx_pfree(ngx_pool_t *pool, void *p)
 }
 
 
+// 从pool中申请size大小的内存
+// 对齐内存起始地址并将内存清零
 void *
 ngx_pcalloc(ngx_pool_t *pool, size_t size)
 {
@@ -338,7 +351,8 @@ ngx_pcalloc(ngx_pool_t *pool, size_t size)
     return p;
 }
 
-// 
+// 向内存池p中的cleanup链表添加节点
+// size表示ngx_pool_cleanup_t结构中data的大小
 ngx_pool_cleanup_t *
 ngx_pool_cleanup_add(ngx_pool_t *p, size_t size)
 {

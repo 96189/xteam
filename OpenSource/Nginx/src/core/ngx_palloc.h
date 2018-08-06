@@ -32,9 +32,9 @@ typedef void (*ngx_pool_cleanup_pt)(void *data);
 typedef struct ngx_pool_cleanup_s  ngx_pool_cleanup_t;
 
 struct ngx_pool_cleanup_s {
-    ngx_pool_cleanup_pt   handler;  // 函数指针
-    void                 *data;     // 函数参数
-    ngx_pool_cleanup_t   *next;
+    ngx_pool_cleanup_pt   handler;  // 函数指针 释放资源的函数
+    void                 *data;     // 节点对应的资源
+    ngx_pool_cleanup_t   *next;     // 链表下一个元素
 };
 
 
@@ -60,9 +60,9 @@ struct ngx_pool_s {
     ngx_pool_data_t       d;        // 内存池数据管理节点
     size_t                max;      // 小块内存的最大值(不包含管理节点所占的内存空间)
     ngx_pool_t           *current;  // 当前内存池管理单元(寻址方便) 
-    ngx_chain_t          *chain;    // todo
+    ngx_chain_t          *chain;    // 链表
     ngx_pool_large_t     *large;    // 析构函数,挂载内存释放时需要清理资源的一些必要操作
-    ngx_pool_cleanup_t   *cleanup;  // 资源释放链表
+    ngx_pool_cleanup_t   *cleanup;  // 资源释放链表 链表每一项记录着需要释放的资源 通过这个机制可以管理文件资源
     ngx_log_t            *log;
 };
 

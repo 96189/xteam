@@ -12,7 +12,9 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+// 字符串结束不由'/0'标记 而由长度控制
+// 优:计算长度O(1)时间复杂度 data指针的灵活性可以指向任意地址,长度len表示结束
+// 缺:glibc api函数无法使用
 typedef struct {
     size_t      len;
     u_char     *data;
@@ -36,11 +38,15 @@ typedef struct {
     u_char     *data;
 } ngx_variable_value_t;
 
-
+// 用常量字符串str构造ngx_str_t类型的对象
 #define ngx_string(str)     { sizeof(str) - 1, (u_char *) str }
+// 构造ngx_str_t类型的对象
 #define ngx_null_string     { 0, NULL }
+
+// 用常量字符串text设置ngx_str_t类型的str
 #define ngx_str_set(str, text)                                               \
     (str)->len = sizeof(text) - 1; (str)->data = (u_char *) text
+// 将ngx_str_t类型的对象置空
 #define ngx_str_null(str)   (str)->len = 0; (str)->data = NULL
 
 

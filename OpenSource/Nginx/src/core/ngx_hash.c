@@ -9,6 +9,9 @@
 #include <ngx_core.h>
 
 
+// name len 键的名称和长度
+// key 根据name生成的hash值
+// hash hash表
 void *
 ngx_hash_find(ngx_hash_t *hash, ngx_uint_t key, u_char *name, size_t len)
 {
@@ -49,6 +52,7 @@ ngx_hash_find(ngx_hash_t *hash, ngx_uint_t key, u_char *name, size_t len)
 }
 
 
+// 查询通配符在前的key的hash表 ".abc.com" "*.abc.com"
 void *
 ngx_hash_find_wc_head(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
 {
@@ -143,6 +147,7 @@ ngx_hash_find_wc_head(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
 }
 
 
+// 查询通配符在后的key的hash表 "mail.xxx.*" 
 void *
 ngx_hash_find_wc_tail(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
 {
@@ -207,6 +212,10 @@ ngx_hash_find_wc_tail(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
 }
 
 
+// hash	此组合hash表对象
+// key	根据name计算出的hash值
+// name	key的具体内容
+// len	name的长度
 void *
 ngx_hash_find_combined(ngx_hash_combined_t *hash, ngx_uint_t key, u_char *name,
     size_t len)
@@ -248,6 +257,9 @@ ngx_hash_find_combined(ngx_hash_combined_t *hash, ngx_uint_t key, u_char *name,
 #define NGX_HASH_ELT_SIZE(name)                                               \
     (sizeof(void *) + ngx_align((name)->key.len + 2, sizeof(void *)))
 
+// hinit 初始化参数集合
+// names 初始化ngx_hash_t所需的所有key的数组
+// nelts key个数
 ngx_int_t
 ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
 {
@@ -710,6 +722,10 @@ ngx_hash_keys_array_init(ngx_hash_keys_arrays_t *ha, ngx_uint_t type)
 }
 
 
+// flag
+// NGX_HASH_READONLY_KEY被设置的时候 在计算hash值的时候 key的值不会被转成小写字符 否则会
+// NGX_HASH_WILDCARD_KEY被设置的时候 说明key里面可能含有通配符 会进行相应的处理
+// 如果两个标志位都不设置 传0
 ngx_int_t
 ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
     ngx_uint_t flags)

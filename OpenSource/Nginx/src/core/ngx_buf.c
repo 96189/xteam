@@ -44,6 +44,8 @@ ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
 }
 
 
+// 从内存池pool的chain中取一个链表节点
+// 或者生成一个链表节点挂载到pool的chain并返回
 ngx_chain_t *
 ngx_alloc_chain_link(ngx_pool_t *pool)
 {

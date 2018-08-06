@@ -352,9 +352,11 @@ main(int argc, char *const *argv)
 
     ngx_use_stderr = 0;
 
+    // 单进程模式
     if (ngx_process == NGX_PROCESS_SINGLE) {
         ngx_single_process_cycle(cycle);
 
+    // 多进程模式
     } else {
         ngx_master_process_cycle(cycle);
     }

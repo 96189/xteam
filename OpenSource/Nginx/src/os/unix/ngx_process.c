@@ -12,9 +12,9 @@
 
 
 typedef struct {
-    int     signo;
-    char   *signame;
-    char   *name;
+    int     signo;      // 信号值
+    char   *signame;    // 信号名称
+    char   *name;       // 信号作用
     void  (*handler)(int signo);
 } ngx_signal_t;
 
@@ -114,6 +114,7 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
 
         /* Solaris 9 still has no AF_LOCAL */
 
+        // 创建一对socket描述符存放在ngx_processes[s].channel
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, ngx_processes[s].channel) == -1)
         {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
@@ -306,6 +307,8 @@ ngx_init_signals(ngx_log_t *log)
 }
 
 
+// 信号处理函数
+// 主要是置标记 ngx_master_process_cycle主循环根据标记来处理
 void
 ngx_signal_handler(int signo)
 {
