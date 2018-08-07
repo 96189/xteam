@@ -1,50 +1,11 @@
 #include "list.h"
-#include <string.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
+
 void PrintInt(int& val)
 {
     printf("%d ", val);
 }
 namespace MYSTL
 {
-// 创建列表时的初始化
-template <typename T>
-void List<T>::init()
-{
-    header = new ListNode<T>();
-    // trailer = new ListNode<T>();
-    trailer = header->insertAsSucc(T());
-    _size = 0;
-}
-// 清除所有节点
-template <typename T>
-int List<T>::clear()
-{
-    int count = 0;
-    for (ListNodePosi(T) pCur = header->succ; 
-         pCur != trailer;
-         pCur = pCur->succ)
-    {
-        delete pCur;
-        ++count;
-    }
-    assert(count == _size);
-    delete header; header = NULL;
-    delete trailer; trailer = NULL;
-    return count;
-}
-// 复制列表中自位置P起的n项
-template <typename T>
-void List<T>::copyNodes(ListNodePosi(T) p, int n)
-{
-    ListNodePosi(T) pCur = p->pred;
-    while ((pCur = pCur->succ) != trailer && n--)
-    {
-        this->insertAsLast(pCur->getData());
-    }
-}
 // 有序列表区间归并
 template <typename T>
 void List<T>::merge(ListNodePosi(T) &, int, List<T> &, ListNodePosi(T), int)
@@ -125,59 +86,6 @@ void List<T>::insertionSort(ListNodePosi(T) p, int n)
     }
 }
 
-// 构造函数
-// 默认
-template <typename T>
-List<T>::List()
-{
-    init();
-}
-// 整体复制列表L
-template <typename T>
-List<T>::List(const List<T> &L)
-{
-    init();
-    copyNodes(L.first(), L.size());
-}
-// 复制列表L中第r项起的n项 不包括第N项
-template <typename T>
-List<T>::List(const List<T> &L, Rank r, Rank n)
-{
-    init();
-    ListNodePosi(T) pCur = L.first();
-    while (r-- > 0)
-    {
-        pCur = pCur->succ;
-    }
-    copyNodes(pCur, n - r - 1);
-}
-// 复制列表中自位置p起的n项
-template <typename T>
-List<T>::List(ListNodePosi(T) p, int n)
-{
-    init();
-    copyNodes(p, n);
-}
-// 析构函数
-// 释放包含头尾哨兵在内的所有节点
-template <typename T>
-List<T>::~List()
-{
-    clear();
-}
-// 只读访问接口
-// 规模
-template <typename T>
-int List<T>::size() const
-{
-    return _size;
-}
-// 判空
-template <typename T>
-bool List<T>::empty() const
-{
-    return _size == 0;
-}
 // 重载[]支持寻秩访问
 template <typename T>
 T &List<T>::operator[](Rank r) const
@@ -190,18 +98,7 @@ T &List<T>::operator[](Rank r) const
     }
     return pCur->getData();
 }
-// 首节点位置
-template <typename T>
-ListNodePosi(T) List<T>::first() const
-{
-    return header->succ;
-}
-// 末节点位置
-template <typename T>
-ListNodePosi(T) List<T>::last() const
-{
-    return trailer->pred;
-}
+
 // 判断位置p是否对外合法
 template <typename T>
 bool List<T>::valid(ListNodePosi(T) p) const
@@ -284,20 +181,6 @@ T List<T>::selectMax()
     return selectMax(first(), _size);
 }
 // 可写访问接口
-// 将e当作首节点插入
-template <typename T>
-void List<T>::insertAsFirst(const T &e)
-{
-    first()->insertAsPred(e);
-    ++_size;
-}
-// 将e当作末节点插入
-template <typename T>
-void List<T>::insertAsLast(const T &e)
-{
-    last()->insertAsSucc(e);
-    ++_size;
-}
 // 将e当作p的前驱插入
 template <typename T>
 void List<T>::insertAsPred(ListNodePosi(T) p, const T &e)
@@ -311,21 +194,6 @@ void List<T>::insertAsSucc(ListNodePosi(T) p, const T &e)
 {
     p->insertAsSucc(e);
     ++_size;
-}
-// 删除合法位置p处的节点 返回被删除的节点
-template <typename T>
-T List<T>::remove(ListNodePosi(T) p)
-{
-    assert(p != header && p != trailer);
-    T val = p->getData();
-    ListNodePosi(T) prev = p->pred;
-    ListNodePosi(T) next = p->succ;
-    prev->succ = next;
-    next->pred = prev;
-    delete p;
-    p = NULL;
-    --_size;
-    return val;
 }
 // 全列表归并
 template <typename T>
@@ -410,17 +278,6 @@ void List<T>::reverse()
     }
 }
 // 遍历
-// 函数指针遍历
-template <typename T>
-void List<T>::traverse(void (*visit)(T &val))
-{
-    for (ListNodePosi(T) pCur = header->succ;
-         pCur != trailer;
-         pCur = pCur->succ)
-    {
-        visit(pCur->getData());
-    }
-}
 // 函数对象遍历
 template <typename VST>
 void traverse(VST &funobj)

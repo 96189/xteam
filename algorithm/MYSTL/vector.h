@@ -18,7 +18,7 @@ void swap(T& a, T& b)
 }
 
 template <typename T>
-class vector
+class Vector
 {
 private:
     Rank _size;
@@ -63,30 +63,30 @@ protected:
     void heapSort(Rank lo, Rank hi);
 public:
     // 构造函数
-    vector(int c = DEFAULT_CAPACITY, int s = 0, T v = T())
+    Vector(int c = DEFAULT_CAPACITY, int s = 0, T v = T())
     {
         _elem = new T[_capacity = c];
         for (_size = 0; _size < s; _elem[_size++] = v);
     }
-    vector(const T* A, Rank lo, Rank hi)
+    Vector(const T* A, Rank lo, Rank hi)
     {
         copyFrom(A, lo, hi);
     }
-    vector(const T* A, Rank n)
+    Vector(const T* A, Rank n)
     {
         copyFrom(A, 0, n);
     }
-    vector(const vector<T>& V, Rank lo, Rank hi)
+    Vector(const Vector<T>& V, Rank lo, Rank hi)
     {
         copyFrom(V._elem, lo, hi);
     }
     // 拷贝构造
-    vector(const vector<T>& V)
+    Vector(const Vector<T>& V)
     {
         copyFrom(V._elem, 0, V._size);
     }
     // 析构函数
-    ~vector()
+    ~Vector()
     {
         if (_elem)
         {
@@ -131,7 +131,7 @@ public:
     {
         return *(static_cast<T*>(_elem + r));
     }
-    vector<T>& operator=(const vector<T>& V);
+    Vector<T>& operator=(const Vector<T>& V);
     void clear()
     {
         remove(0, _size);

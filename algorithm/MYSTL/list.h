@@ -1,6 +1,10 @@
 #ifndef _LIST_H_
 #define _LIST_H_
 #include <cstddef>
+#include <assert.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 namespace MYSTL 
 {
 
@@ -72,11 +76,40 @@ private:
     ListNodePosi(T) trailer;
 protected:
     // 创建列表时的初始化
-    void init();
+    void init()
+    {
+        header = new ListNode<T>();
+        // trailer = new ListNode<T>();
+        trailer = header->insertAsSucc(T());
+        _size = 0;
+    }
     // 清除所有节点
-    int clear();
+    int clear()
+    {
+        int count = 0;
+        for (ListNodePosi(T) pCur = header->succ;
+             pCur != trailer;
+             pCur = pCur->succ)
+        {
+            delete pCur;
+            ++count;
+        }
+        assert(count == _size);
+        delete header;
+        header = NULL;
+        delete trailer;
+        trailer = NULL;
+        return count;
+    }
     // 复制列表中自位置P起的n项
-    void copyNodes(ListNodePosi(T) p, int n);
+    void copyNodes(ListNodePosi(T) p, int n)
+    {
+        ListNodePosi(T) pCur = p->pred;
+        while ((pCur = pCur->succ) != trailer && n--)
+        {
+            this->insertAsLast(pCur->getData());
+        }
+    }
     // 有序列表区间归并
     void merge(ListNodePosi(T)& , int , List<T>& ,ListNodePosi(T), int );
     // 对从p开始的连续n个节点归并排序
@@ -88,27 +121,62 @@ protected:
 public:
 // 构造函数
     // 默认
-    List();
+    List()
+    {
+        init();
+    }
     // 整体复制列表L
-    List(const List<T>& L);
+    List(const List<T>& L)
+    {
+        init();
+        copyNodes(L.first(), L.size());
+    }
     // 复制列表L中第r项起的n项
-    List(const List<T>& L, Rank r, Rank n);
+    List(const List<T>& L, Rank r, Rank n)
+    {
+        init();
+        ListNodePosi(T) pCur = L.first();
+        while (r-- > 0)
+        {
+            pCur = pCur->succ;
+        }
+        copyNodes(pCur, n - r - 1);
+    }
     // 复制列表中自位置p起的n项
-    List(ListNodePosi(T) p, int n);
-// 析构函数
+    List(ListNodePosi(T) p, int n)
+    {
+        init();
+        copyNodes(p, n);
+    }
+    // 析构函数
     // 释放包含头尾哨兵在内的所有节点
-    ~List();
-// 只读访问接口
+    ~List()
+    {
+        clear();
+    }
+    // 只读访问接口
     // 规模
-    int size() const;
+    int size() const
+    {
+        return _size;
+    }
     // 判空
-    bool empty() const;
+    bool empty() const
+    {
+        return _size == 0;
+    }
     // 重载[]支持寻秩访问
     T& operator[](Rank r) const;
     // 首节点位置
-    ListNodePosi(T) first() const;
+    ListNodePosi(T) first() const
+    {
+        return header->succ;
+    }
     // 末节点位置
-    ListNodePosi(T) last() const;
+    ListNodePosi(T) last() const
+    {
+        return trailer->pred;
+    }
     // 判断位置p是否对外合法
     bool valid(ListNodePosi(T) p) const;
     // 判断列表是否已经有序
@@ -127,15 +195,35 @@ public:
     T selectMax();
 // 可写访问接口
     // 将e当作首节点插入
-    void insertAsFirst(const T& e);
+    void insertAsFirst(const T& e)
+    {
+        first()->insertAsPred(e);
+        ++_size;
+    }
     // 将e当作末节点插入
-    void insertAsLast(const T& e);
+    void insertAsLast(const T& e)
+    {
+        last()->insertAsSucc(e);
+        ++_size;
+    }
     // 将e当作p的前驱插入
     void insertAsPred(ListNodePosi(T) p, const T& e);
     // 将e当作p的后继插入
     void insertAsSucc(ListNodePosi(T) p, const T& e);
     // 删除合法位置p处的节点 返回被删除的节点
-    T remove(ListNodePosi(T) p);
+    T remove(ListNodePosi(T) p)
+    {
+        assert(p != header && p != trailer);
+        T val = p->getData();
+        ListNodePosi(T) prev = p->pred;
+        ListNodePosi(T) next = p->succ;
+        prev->succ = next;
+        next->pred = prev;
+        delete p;
+        p = NULL;
+        --_size;
+        return val;
+    }
     // 全列表归并
     void merge(List<T>& L);
     // 列表区间排序
@@ -150,7 +238,15 @@ public:
     void reverse();
 // 遍历
     // 函数指针遍历
-    void traverse(void (*visit)(T& val));
+    void traverse(void (*visit)(T& val))
+    {
+        for (ListNodePosi(T) pCur = header->succ;
+             pCur != trailer;
+             pCur = pCur->succ)
+        {
+            visit(pCur->getData());
+        }
+    }
     // 函数对象遍历
     template <typename VST>
     void traverse(VST& funobj);

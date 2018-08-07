@@ -5,9 +5,9 @@
 namespace MYSTL 
 {
 
-// 基于vector的stack
+// 基于Vector的stack
 template <typename T>
-class VStack : public MYSTL::vector<T>
+class Stack : public MYSTL::Vector<T>
 {
 public:
     // default constructor
