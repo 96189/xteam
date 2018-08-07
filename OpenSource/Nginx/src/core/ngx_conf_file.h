@@ -76,12 +76,16 @@
 
 
 struct ngx_command_s {
-    ngx_str_t             name;
-    ngx_uint_t            type;
+    ngx_str_t             name;     // 配置指令名称
+    ngx_uint_t            type;     // 配置指令属性的集合
+    // set 函数指针
+    // cf 从配置文件中读取到的原始字符串及相关信息
+    // cmd 配置指令对应的ngx_command_t结构
+    // conf 存储配置值的结构体
     char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
-    ngx_uint_t            conf;
-    ngx_uint_t            offset;
-    void                 *post;
+    ngx_uint_t            conf;     // 当前配置项存储的内存位置(哪个内存池)
+    ngx_uint_t            offset;   // 配置项值的存放位置偏移
+    void                 *post;     // 指向在读取配置过程中需要的数据
 };
 
 #define ngx_null_command  { ngx_null_string, 0, NULL, 0, 0, NULL }
@@ -99,6 +103,8 @@ struct ngx_open_file_s {
 #define NGX_MODULE_V1          0, 0, 0, 0, 0, 0, 1
 #define NGX_MODULE_V1_PADDING  0, 0, 0, 0, 0, 0, 0, 0
 
+// 模块的定义
+// 配置信息 模块上下文信息
 struct ngx_module_s {
     ngx_uint_t            ctx_index;
     ngx_uint_t            index;

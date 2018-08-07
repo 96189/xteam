@@ -21,17 +21,26 @@ typedef struct {
 } ngx_http_conf_ctx_t;
 
 
+// 模块上下文结构
 typedef struct {
+    // 创建和读取模块配置信息之前被调用
     ngx_int_t   (*preconfiguration)(ngx_conf_t *cf);
+    // 创建和读取模块配置信息之后被调用
     ngx_int_t   (*postconfiguration)(ngx_conf_t *cf);
 
+    // 创建本模块位于http block的配置信息存储结构
     void       *(*create_main_conf)(ngx_conf_t *cf);
+    // 初始化本模块位于http block的配置信息存储结构
     char       *(*init_main_conf)(ngx_conf_t *cf, void *conf);
 
+    // 创建本模块位于http server block的配置信息存储结构
     void       *(*create_srv_conf)(ngx_conf_t *cf);
+    // http block中的配置与server block中的配置信息发生冲突的时候 就需要调用此函数进行合并
     char       *(*merge_srv_conf)(ngx_conf_t *cf, void *prev, void *conf);
 
+    // 创建本模块位于location block的配置信息存储结构
     void       *(*create_loc_conf)(ngx_conf_t *cf);
+    // 配置值合并
     char       *(*merge_loc_conf)(ngx_conf_t *cf, void *prev, void *conf);
 } ngx_http_module_t;
 

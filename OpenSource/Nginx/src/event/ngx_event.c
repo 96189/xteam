@@ -190,6 +190,7 @@ ngx_module_t  ngx_event_core_module = {
 };
 
 
+// nginx worker事件处理函数
 void
 ngx_process_events_and_timers(ngx_cycle_t *cycle)
 {
