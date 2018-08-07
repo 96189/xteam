@@ -315,7 +315,7 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
     选举流程及状态转移
         发起下线 -> 投票 -> 计票 -> 状态转移
     TILT模式
-    sentinel执行任务
+    sentinel执行脚本任务
 
 
     sentinel选举
