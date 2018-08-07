@@ -27,9 +27,14 @@
     支持带通配符的域名匹配(支持两种类型)
     "*.abc.com" ".abc.com" 或者"mail.xxx.*"
 
-## 链表ngx_chain_t
+## 链表
+### ngx_chain_t
     typedef struct ngx_buf_s  ngx_buf_t;
-    
+### ngx_list_t
+    链表节点 ngx_list_part_t
+
+## 队列ngx_queue_t
+
 ## 红黑树
 
 ## 基数树

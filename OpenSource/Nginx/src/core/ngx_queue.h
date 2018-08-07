@@ -12,24 +12,31 @@
 #ifndef _NGX_QUEUE_H_INCLUDED_
 #define _NGX_QUEUE_H_INCLUDED_
 
-
+// 如何声明一个带有数据的节点?
+// 将ngx_queue_t嵌入另外一个结构体中 比如ngx_http_upstream_keepalive_cache_t
 typedef struct ngx_queue_s  ngx_queue_t;
 
+// 队列中定义前向和后向指针 无数据节点
+// 使用时需要定义哨兵节点来对队列初始化 以便进行empty()
 struct ngx_queue_s {
     ngx_queue_t  *prev;
     ngx_queue_t  *next;
 };
 
-
+// 使用哨兵节点对队列进行初始化
+// 哨兵节点的next是队列头
+// 哨兵节点的prev是队列尾
 #define ngx_queue_init(q)                                                     \
     (q)->prev = q;                                                            \
     (q)->next = q
 
 
+// 队列判空
 #define ngx_queue_empty(h)                                                    \
     (h == (h)->prev)
 
 
+// 在h后插入x节点
 #define ngx_queue_insert_head(h, x)                                           \
     (x)->next = (h)->next;                                                    \
     (x)->next->prev = x;                                                      \
@@ -40,6 +47,7 @@ struct ngx_queue_s {
 #define ngx_queue_insert_after   ngx_queue_insert_head
 
 
+// 在h前插入x节点
 #define ngx_queue_insert_tail(h, x)                                           \
     (x)->prev = (h)->prev;                                                    \
     (x)->prev->next = x;                                                      \
@@ -47,22 +55,27 @@ struct ngx_queue_s {
     (h)->prev = x
 
 
+// 头结点
 #define ngx_queue_head(h)                                                     \
     (h)->next
 
 
+// 尾节点
 #define ngx_queue_last(h)                                                     \
     (h)->prev
 
 
+// 哨兵节点
 #define ngx_queue_sentinel(h)                                                 \
     (h)
 
 
+// q的下一个节点
 #define ngx_queue_next(q)                                                     \
     (q)->next
 
 
+// q的前一个节点
 #define ngx_queue_prev(q)                                                     \
     (q)->prev
 
@@ -77,6 +90,7 @@ struct ngx_queue_s {
 
 #else
 
+// 删除x节点
 #define ngx_queue_remove(x)                                                   \
     (x)->next->prev = (x)->prev;                                              \
     (x)->prev->next = (x)->next
