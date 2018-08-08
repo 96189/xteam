@@ -97,6 +97,7 @@ ngx_conf_param(ngx_conf_t *cf)
 }
 
 
+// 配置解析
 char *
 ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 {
@@ -204,6 +205,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 
 
     for ( ;; ) {
+        // 词法分析
         rc = ngx_conf_read_token(cf);
 
         /*
@@ -253,6 +255,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 
         /* rc == NGX_OK || rc == NGX_CONF_BLOCK_START */
 
+        // 解析自定义的指令
         if (cf->handler) {
 
             /*
@@ -265,6 +268,8 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
                 goto failed;
             }
 
+            // handler是自定义的解析函数指针
+            // handler_conf是conf的指针
             rv = (*cf->handler)(cf, NULL, cf->handler_conf);
             if (rv == NGX_CONF_OK) {
                 continue;
@@ -280,6 +285,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
         }
 
 
+        // 解析内建的指令
         rc = ngx_conf_handler(cf, rc);
 
         if (rc == NGX_ERROR) {
@@ -316,6 +322,7 @@ done:
 }
 
 
+// 内建指令解析
 static ngx_int_t
 ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 {
@@ -348,6 +355,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
             found = 1;
 
+            // 只有处理的模块的类型是NGX_CONF_MODULE或者是当前正在处理的模块类型 才可能被执行
             if (ngx_modules[i]->type != NGX_CONF_MODULE
                 && ngx_modules[i]->type != cf->module_type)
             {
@@ -356,10 +364,12 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
             /* is the directive's location right ? */
 
+            // 指令的Context必须当前解析Context相符
             if (!(cmd->type & cf->cmd_type)) {
                 continue;
             }
 
+            // 非块指令必须以“;”结尾
             if (!(cmd->type & NGX_CONF_BLOCK) && last != NGX_OK) {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                   "directive \"%s\" is not terminated by \";\"",
@@ -367,6 +377,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 return NGX_ERROR;
             }
 
+            // 块指令必须后接“{”
             if ((cmd->type & NGX_CONF_BLOCK) && last != NGX_CONF_BLOCK_START) {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "directive \"%s\" has no opening \"{\"",
@@ -376,6 +387,8 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
             /* is the directive's argument count right ? */
 
+            // 指令参数个数必须正确
+            // 指令参数有最大值NGX_CONF_MAX_ARGS 目前值为8
             if (!(cmd->type & NGX_CONF_ANY)) {
 
                 if (cmd->type & NGX_CONF_FLAG) {
@@ -410,9 +423,14 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
             conf = NULL;
 
+            // 取得指令工作的conf指针
+            // NGX_DIRECT_CONF常量单纯用来指定配置存储区的寻址方法 只用于core模块
             if (cmd->type & NGX_DIRECT_CONF) {
                 conf = ((void **) cf->ctx)[ngx_modules[i]->index];
 
+            // NGX_MAIN_CONF常量有两重含义
+            // 其一是指定指令的使用上下文是main（其实还是指core模块）
+            // 其二是指定配置存储区的寻址方法
             } else if (cmd->type & NGX_MAIN_CONF) {
                 conf = &(((void **) cf->ctx)[ngx_modules[i]->index]);
 
@@ -424,6 +442,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 }
             }
 
+            // 执行指令解析回调函数
             rv = cmd->set(cf, cmd, conf);
 
             if (rv == NGX_CONF_OK) {

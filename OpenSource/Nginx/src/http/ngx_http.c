@@ -116,6 +116,7 @@ ngx_module_t  ngx_http_module = {
 };
 
 
+// 
 static char *
 ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -134,6 +135,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     /* the main http context */
 
+    // 创建并初始化上下文环境
     ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_conf_ctx_t));
     if (ctx == NULL) {
         return NGX_CONF_ERROR;
@@ -239,6 +241,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     /* parse inside the http{} block */
 
+    // 调用通用解析流程解析
     cf->module_type = NGX_HTTP_MODULE;
     cf->cmd_type = NGX_HTTP_MAIN_CONF;
     rv = ngx_conf_parse(cf, NULL);
@@ -255,6 +258,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];
     cscfp = cmcf->servers.elts;
 
+    // 根据解析结果进行后续合并处理
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -281,6 +285,9 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     /* create location trees */
 
+    // location配置树
+    // 所有存放参数为NGX_HTTP_SRV_CONF_OFFSET的配置 配置仅在请求匹配的虚拟主机(server)上下文中生效
+    // 所有存放参数为NGX_HTTP_LOC_CONF_OFFSET的配置 配置仅在请求匹配的路径(location)上下文中生效
     for (s = 0; s < cmcf->servers.nelts; s++) {
 
         clcf = cscfp[s]->ctx->loc_conf[ngx_http_core_module.ctx_index];
@@ -671,6 +678,8 @@ ngx_http_merge_locations(ngx_conf_t *cf, ngx_queue_t *locations,
 }
 
 
+// nginx搜索路径时 正则匹配路径和其他的路径分开搜
+// nginx路径可以嵌套
 static ngx_int_t
 ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_http_core_loc_conf_t *pclcf)
@@ -726,6 +735,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 
 #endif
 
+        // 命名路径	named = 1
         if (clcf->named) {
             n++;
 
@@ -736,6 +746,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
             continue;
         }
 
+        // 无名路径	noname = 1
         if (clcf->noname) {
             break;
         }
@@ -770,6 +781,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 
 #if (NGX_PCRE)
 
+    // 正则路径	regex != NULL
     if (regex) {
 
         clcfp = ngx_palloc(cf->pool,

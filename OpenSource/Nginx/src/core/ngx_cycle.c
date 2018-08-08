@@ -33,6 +33,7 @@ static ngx_connection_t  dumb;
 /* STUB */
 
 
+// 配置解析接口
 ngx_cycle_t *
 ngx_init_cycle(ngx_cycle_t *old_cycle)
 {
@@ -62,6 +63,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     ngx_time_update();
 
 
+    // 准备错误日志
     log = old_cycle->log;
 
     pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, log);
@@ -149,7 +151,9 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         return NULL;
     }
 
-
+    
+    // 准备内存
+    // 统计上一次系统中分配多少块共享内存 本次按照这个数据量初始化当前cycle中共享内存的规模
     if (old_cycle->shared_memory.part.nelts) {
         n = old_cycle->shared_memory.part.nelts;
         for (part = old_cycle->shared_memory.part.next; part; part = part->next)
@@ -212,6 +216,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     ngx_strlow(cycle->hostname.data, (u_char *) hostname, cycle->hostname.len);
 
 
+    // 准备数据结构
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_CORE_MODULE) {
             continue;
@@ -248,7 +253,9 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
 
+    // 存放配置解析的上下文信息
     conf.ctx = cycle->conf_ctx;
+    // 存放所有core模块的配置
     conf.cycle = cycle;
     conf.pool = pool;
     conf.log = log;
@@ -259,12 +266,14 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     log->log_level = NGX_LOG_DEBUG_ALL;
 #endif
 
+    // 调用配置解析 命令行-g的配置
     if (ngx_conf_param(&conf) != NGX_CONF_OK) {
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
         return NULL;
     }
 
+    // 调用配置解析 配置文件
     if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
