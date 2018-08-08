@@ -236,5 +236,18 @@
     不同的负载均衡策略在这个基本框架下设置对应的回调函数完成功能
 ### 3、upstream整体流程与负载均衡
 ### 4、负载均衡的接入
-    
-## 五、
+
+## 五、event模块
+### epoll ET LT
+    Nginx大部分event采用epoll EPOLLET（边沿触发）的方法来触发事件 只有listen端口的读事件是EPOLLLT（水平触发）
+### epoll + 非阻塞i/o -> reactor
+### nginx对epoll的封装
+    modules
+### reactor统一定时器事件和信号事件
+    定时器底层数据结构 时间复杂度
+### 惊群问题与accept锁
+    多进程80端口共享 自旋锁 文件锁
+
+## 六、core模块
+    nginx进程启动及其初始化
+
