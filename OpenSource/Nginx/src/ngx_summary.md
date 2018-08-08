@@ -5,6 +5,8 @@
 ### 3、nginx是如何处理网络事件、信号、定时器的?
 ### 4、nginx架构与高性能的原因?
 
+## 参考: http://tengine.taobao.org/book/
+
 ## 一、handler模块
 ### 1、handler模块的挂载
 #### (1) http request处理的11个阶段
@@ -78,6 +80,7 @@
     按需挂载content handler
         clcf = ngx_http_conf_get_module_loc_conf(ngx_conf_t*, ngx_module_t)
         clcf->handler = ngx_http_<module name>_handler
+#### (7) 配置文件中配置
 
 ### 3、handler模块实例分析
 #### (1) http_access_module对特定客户端的访问控制
@@ -108,6 +111,7 @@
     模块处理函数    ngx_http_log_handler
 
 ## 二、filter模块
+    源码路径 src/*/ngx_http_xxx_filter_module.c
 ### 1、过滤模块的目标和实现方式
 #### (1) 过滤的目标
     修改http的header和body
@@ -176,3 +180,61 @@
     ngx_chain_get_free_buf  ngx_chain_update_chains
 #### (3) 其他
     发出子请求 主请求和子请求响应合并
+
+## 三、upstream模块
+    upstream接口回调函数完成请求构造和响应解析等具体的任务
+### 1、upstream模块接口定义
+#### (1)、ngx_http_upstream_s
+    相关回调函数完成业务逻辑 实现后端服务的协议解析
+    // 初始化input_filter上下文
+    ngx_int_t                      (*input_filter_init)(void *data);
+    // 处理后端服务器返回的响应正文
+    ngx_int_t                      (*input_filter)(void *data, ssize_t bytes);
+    // 生成发送到后端的服务器请求缓冲 初始化upstream用
+    ngx_int_t                      (*create_request)(ngx_http_request_t *r);
+    // nginx选定新的服务器后 执行重新初始化upstream 再次进行upstream连接
+    ngx_int_t                      (*reinit_request)(ngx_http_request_t *r);
+    // 处理后端服务器返回的信息头部
+    ngx_int_t                      (*process_header)(ngx_http_request_t *r);
+    // 客户端放弃请求时被调用  内部不需要关闭后端服务器连接
+    void                           (*abort_request)(ngx_http_request_t *r);
+    // 正常完成与后端服务器的请求后调用 内部不需要关闭后端服务器连接
+    void                           (*finalize_request)(ngx_http_request_t *r, ngx_int_t rc);
+    // 重写重定向
+    ngx_int_t                      (*rewrite_redirect)(ngx_http_request_t *r, ngx_table_elt_t *h, size_t prefix);
+    // 重写cookie
+    ngx_int_t                      (*rewrite_cookie)(ngx_http_request_t *r, ngx_table_elt_t *h);
+### 2、upstream模块实例解析
+    源码路径 http/modules/ngx_http_xxx_module.c
+#### (1)、memcached模块
+##### 接入memcached模块的步骤
+    模块配置信息自定义      typedef struct{...}     ngx_http_memcached_loc_conf_t
+    配置指令数组自定义      ngx_command_t           ngx_http_memcached_commands[]
+    模块上下文结构自定义    ngx_http_module_t       ngx_http_memcached_module_ctx
+    模块自定义             ngx_module_t            ngx_http_memcached_module
+    编写模块处理函数        ngx_int_t               ngx_http_memcached_handler(ngx_http_request_t *r)
+    挂载模块及处理函数 
+        clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module)
+        clcf->handler = ngx_http_memcached_handler
+    配置文件中配置
+##### upstream模块和handler模块的对比
+    相同点:模块接入方式一致
+    不同点:upstream模块处理函数handler编写存在固定的流程 详情见ngx_http_memcached_handler注释
+
+#### (2)、fastcgi模块
+#### (3)、proxy模块
+
+## 四、负载均衡模块
+    http://tengine.taobao.org/book/chapter_05.html
+### 1、upstream负载均衡模块的配置的内存布局
+### 2、负载均衡模块的回调函数体系
+    init_upstream -> init_peer -> peer.get -> peer.free
+    各函数主要功能:
+        init_peer负责建立每个请求使用的server列表
+        peer.get负责从server列表中选择某个server
+        peer.free负责server释放前的资源释放工作
+    不同的负载均衡策略在这个基本框架下设置对应的回调函数完成功能
+### 3、upstream整体流程与负载均衡
+### 4、负载均衡的接入
+    
+## 五、

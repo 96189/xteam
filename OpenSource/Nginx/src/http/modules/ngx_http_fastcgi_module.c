@@ -662,6 +662,7 @@ ngx_http_fastcgi_handler(ngx_http_request_t *r)
     ngx_http_fastcgi_main_conf_t  *fmcf;
 #endif
 
+    // 1、创建upstream数据结构
     if (ngx_http_upstream_create(r) != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -683,9 +684,11 @@ ngx_http_fastcgi_handler(ngx_http_request_t *r)
 
     u = r->upstream;
 
+    // 2、设置模块的tag和schema
     ngx_str_set(&u->schema, "fastcgi://");
     u->output.tag = (ngx_buf_tag_t) &ngx_http_fastcgi_module;
 
+    // 3、设置upstream的后端服务器列表
     u->conf = &flcf->upstream;
 
 #if (NGX_HTTP_CACHE)
@@ -695,6 +698,7 @@ ngx_http_fastcgi_handler(ngx_http_request_t *r)
     u->create_key = ngx_http_fastcgi_create_key;
 #endif
 
+    // 4、设置upstream回调函数
     u->create_request = ngx_http_fastcgi_create_request;
     u->reinit_request = ngx_http_fastcgi_reinit_request;
     u->process_header = ngx_http_fastcgi_process_header;
@@ -704,6 +708,7 @@ ngx_http_fastcgi_handler(ngx_http_request_t *r)
 
     u->buffering = flcf->upstream.buffering;
 
+    // 5、创建并设置upstream环境数据结构
     u->pipe = ngx_pcalloc(r->pool, sizeof(ngx_event_pipe_t));
     if (u->pipe == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
