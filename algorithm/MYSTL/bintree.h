@@ -1,114 +1,139 @@
 #ifndef _BIN_TREE_H_
 #define _BIN_TREE_H_
-#include <cstddef>
+#include "binnode.h"
 
 namespace MYSTL
 {
 
-// 节点位置
-#define BinNodePosi(T) BinNode<T>*
-// 节点高度(空树高度为-1)
-#define stature(p) ((p) ? p->height : -1)
-// 节点颜色
-typedef enum { RB_RED, RB_BLACK } RBColor;
-
-// 二叉树节点模板类
 template <typename T>
-class BinNode 
+class BinTree 
 {
+protected:
+// 
+    // 规模
+    int _size;
+    // 根节点
+    BinNodePosi(T) _root;
+
+// function
+    // 更新节点x的高度
+    virtual int updateHeight(BinNodePosi(T) x)
+    {
+        return 0;
+    }
+    // 更新节点x及其祖先的高度
+    void updateHeightAbove(BinNodePosi(T) x)
+    {
+
+    }
 public:
-// 成员
-    // 数值
-    T data;
-    // 父节点 左孩子 右孩子
-    BinNodePosi(T) parent;
-    BinNodePosi(T) lChild;
-    BinNodePosi(T) rChild;
-    // 高度
-    int height;
-    // Null Path Length 左式堆 也可直接用height代替
-    int npl;
-    // 颜色
-    RBColor color;
-// 构造函数
-    BinNode()
-        : parent(NULL), lChild(NULL), rChild(NULL), height(0), npl(1), color(RB_RED)
+    // 构造函数
+    BinTree() : _size(0), _root(NULL) { }
+    // 析构函数
+    ~BinTree()
     {
-
+        if (0 < _size)
+        {
+            remove(_root);
+        }
     }
-    BinNode(T e, BinNodePosi(T) p = NULL, BinNodePosi(T) lc = NULL, BinNodePosi(T) rc = NULL,
-            int h = 0, int l = 1, RBColor c = RB_RED)
+    // 规模
+    int size() const
     {
-
+        return _size;
+    } 
+    // 判空
+    bool empty() const 
+    {
+        return !_root;
     }
-// 操作接口
-    // 统计以当前节点为根的子树的规模
-    int size();
-    // 作为当前节点的左孩子插入新节点
-    BinNodePosi(T) insertAsLC(const T& e);
-    // 作为当前节点的右孩子插入新节点
-    BinNodePosi(T) insertAsRC(const T& e);
-    // 取当前节点的直接后继
-    BinNodePosi(T) succ();
-    // 子树层次遍历
-    template <typename VST>
-    void travLevel(VST& vst);
-    // 子树深度遍历
-    template <typename VST>
-    void travDepth(VST& vst);
-    // 子树先序遍历
-    template <typename VST>
-    void travPre(VST& vst);
-    // 子树中序遍历
-    template <typename VST>
-    void travIn(VST& vst);
-    // 子树后续遍历
-    template <typename VST>
-    void travPost(VST& vst);
-// 判等器 比较器
-    bool operator<(const BinNode& bn)
+    // 树根
+    BinNodePosi(T) root() const 
     {
-        return this->data < bn.data;
+        return _root;
     }
-    bool operator==(const BinNode& bn)
+    // 插入根节点
+    BinNodePosi(T) insertAsRoot(const T& e)
     {
-        return this->data == bn.data;
+        return NULL;
+    }
+    // 作为x的左孩子插入
+    BinNodePosi(T) insertAsLC(BinNodePosi(T) x, const T& e)
+    {
+        return NULL;
+    }
+    // 作为x的右孩子插入
+    BinNodePosi(T) insertAsRC(BinNodePosi(T) x, const T& e)
+    {
+        return NULL;
+    }
+    // t作为左子树接入
+    BinNodePosi(T) attachAsLC(BinNodePosi(T) x, BinTree<T>*& t)
+    {
+        return NULL;
+    }
+    // t作为右子树接入
+    BinNodePosi(T) attachAsRC(BinNodePosi(T) x, BinTree<T>*& t)
+    {
+        return NULL;
+    }
+    // 删除以位置x处节点为根的子树 返回该子树原先的规模
+    int remove(BinNodePosi(T) x)
+    {
+        return 0;
+    }
+    // 将子树x从当前树中摘除 并将其转换为一颗独立的子树
+    BinTree<T>* secede(BinNodePosi(T) x)
+    {
+        return NULL;
+    }
+    // 层次遍历
+    template <typename VST>
+    void travLevel(VST& visit)
+    {
+        if (_root)
+            _root->travLevel(visit);
+    }
+    // 深度遍历
+    template <typename VST>
+    void travDepth(VST& visit)
+    {
+        if (_root)
+            _root->travDepth(visit);
+    }
+    // 先序遍历
+    template <typename VST>
+    void travPre(VST& visit)
+    {
+        if (_root)
+            _root->travPre(visit);
+    }
+    // 中序遍历
+    template <typename VST>
+    void travIn(VST& visit)
+    {
+        if (_root)
+            _root->travIn(visit);
+    }
+    // 后续遍历
+    template <typename VST>
+    void travPost(VST& visit)
+    {
+        if (_root)
+            _root->travPost(visit);
+    }
+// 比较器 判等器
+    bool operator<(const BinTree<T>& t)
+    {
+        return _root && t._root && lt(_root, t._root);
+    }
+    bool operator==(const BinTree<T> t)
+    {
+        return _root && t._root && (_root == t._root);
     }
 };
 
-// BinNode状态与性质判断
-#define IsRoot(x) (!((x).parent))
-#define IsLChild(x) (!IsRoot(x) && (&(x) == (x).parent->lChild))
-#define IsRChild(x) (!IsRoot(x) && (&(x) == (x).parent->rChild))
-#define HasParent(x) (!IsRoot(x))
-#define HasLChild(x) ((x).lChild)
-#define HasRChild(x) ((x).rChild)
-#define HasChild(x) (HasLChild(x) || HasRChild(x))
-#define HasBothChild(x) (HasLChild(x) && HasRChild(x))
-#define IsLeaf(x) (!HasChild(x))
 
-// 与BinNode具有特定关系的节点及指针
-// 兄弟
-#define sibling(p) (    \
-    IsLChild(*(p)) ?    \
-        (p)->parent->rChild :   \
-        (p)->parent->lChild     \
-)
-
-// 叔叔
-#define uncle(x) (      \
-    IsLChild(*((x)->parent)) ?        \
-        (x)->parent->parent->rChild : \
-        (x)->parent->parent->lChild   \
-)
-
-// 来自父节点的指针
-#define FromParentTo(x) (       \
-    IsRoot(x) ? _root : (       \
-        IsLChild(x) ? (x).parent->lChild : (x).parent->rChild \
-    )                           \
-)
-
-};
+}; // MYSTL
 
 #endif

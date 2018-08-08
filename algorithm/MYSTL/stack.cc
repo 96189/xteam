@@ -142,6 +142,10 @@ void StackShuffling(MYSTL::Stack<int>& from, MYSTL::Stack<int>& to)
 
 // 栈混洗生成的序列检验
 
+// 中缀表达式转后缀表达式(逆波兰表达式RPN)
+
+// 逆波兰表达式计算值
+
 void PrintChar(char& c)
 {
     printf("%c", c);
