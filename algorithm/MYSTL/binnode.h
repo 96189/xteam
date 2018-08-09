@@ -44,16 +44,36 @@ public:
     }
 // 操作接口
     // 统计以当前节点为根的子树的规模
-    int size();
+    int size()
+    {
+        int size = 0;
+        if (!this)
+        {
+            return 0;
+        }
+        else if (IsLeaf(this))
+        {
+            return 1;
+        }
+        size += this->lChild->size();
+        size += this->rChild->size();
+        return size;
+    }
     // 作为当前节点的左孩子插入新节点
     BinNodePosi(T) insertAsLC(const T& e)
     {
-        return NULL;
+        BinNodePosi(T) node = new BinNode(e, this);
+        assert(node);
+        this->lChild = node;
+        return node;
     }
     // 作为当前节点的右孩子插入新节点
     BinNodePosi(T) insertAsRC(const T& e)
     {
-        return NULL;
+        BinNodePosi(T) node = new BinNode(e, this)
+        assert(node);
+        this->rChild = node;
+        return node;
     }
     // 取当前节点的直接后继
     BinNodePosi(T) succ()

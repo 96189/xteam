@@ -153,37 +153,53 @@ typedef struct ngx_http_phase_handler_s  ngx_http_phase_handler_t;
 typedef ngx_int_t (*ngx_http_phase_handler_pt)(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph);
 
+// 执行链节点 存储handler/checker 里面用next实现阶段的快速跳转
 struct ngx_http_phase_handler_s {
+    // 阶段的checker函数
     ngx_http_phase_handler_pt  checker;
+    // 每个模块自己的处理函数
     ngx_http_handler_pt        handler;
+    // 指向下一个阶段第一个模块在数组里的位置
+    // 可能跳跃到前面某个节点 也可能跳跃到后面某个节点
     ngx_uint_t                 next;
 };
 
 
+// 所有的http请求都要经过这个引擎处理
 typedef struct {
+    // 执行链 存储所有handler/checker的数组 里面用next实现阶段的快速跳转
     ngx_http_phase_handler_t  *handlers;
+    // server重写的跳转位置
     ngx_uint_t                 server_rewrite_index;
+    // location重写的跳转位置
     ngx_uint_t                 location_rewrite_index;
 } ngx_http_phase_engine_t;
 
 
+// 存储在ngx_http_core_main_conf_t里
+// 需要操作任何http请求的模块添加进这个数组
 typedef struct {
     ngx_array_t                handlers;
 } ngx_http_phase_t;
 
 
+// 存储server、监听端口、变量等信息
 typedef struct {
+    // 存储http{}里定义的所有server 元素是ngx_http_core_srv_conf_t
     ngx_array_t                servers;         /* ngx_http_core_srv_conf_t */
 
+    // 执行链 所有的http请求都要使用这个引擎处理 
     ngx_http_phase_engine_t    phase_engine;
 
     ngx_hash_t                 headers_in_hash;
 
     ngx_hash_t                 variables_hash;
 
+    // 存储http里定义的所有变量
     ngx_array_t                variables;       /* ngx_http_variable_t */
     ngx_uint_t                 ncaptures;
 
+    // server散列表设置
     ngx_uint_t                 server_names_hash_max_size;
     ngx_uint_t                 server_names_hash_bucket_size;
 
@@ -192,10 +208,16 @@ typedef struct {
 
     ngx_hash_keys_arrays_t    *variables_keys;
 
+    // http{}里定义的所有监听端口
     ngx_array_t               *ports;
 
     ngx_uint_t                 try_files;       /* unsigned  try_files:1 */
 
+    // 阶段数组 元素个数为阶段数目 每个元素对应一个阶段 
+    // 每个元素是一个动态数组 模块注册处理函数只需要在对应阶段的动态数组中增加一个元素用来保存处理函数的指针
+    // http handler模块需要向这个数组添加元素
+    // 在配置解析后的postconfiguration里向cmcf->phases数组注册
+    // 在处理请求时不使用此数组 而是用的phase_engine
     ngx_http_phase_t           phases[NGX_HTTP_LOG_PHASE + 1];
 } ngx_http_core_main_conf_t;
 

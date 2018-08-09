@@ -34,7 +34,7 @@ public:
     {
         if (0 < _size)
         {
-            remove(_root);
+            assert(remove(_root) == _size);
         }
     }
     // 规模

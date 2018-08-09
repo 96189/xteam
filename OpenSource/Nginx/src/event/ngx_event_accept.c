@@ -64,6 +64,7 @@ ngx_event_accept(ngx_event_t *ev)
             s = accept(lc->fd, (struct sockaddr *) sa, &socklen);
         }
 #else
+        // 从tcp已连接队列中取得连接对应的套接字描述符
         s = accept(lc->fd, (struct sockaddr *) sa, &socklen);
 #endif
 
@@ -138,6 +139,7 @@ ngx_event_accept(ngx_event_t *ev)
         ngx_accept_disabled = ngx_cycle->connection_n / 8
                               - ngx_cycle->free_connection_n;
 
+        // 为当前套接字描述符s分配连接connection c
         c = ngx_get_connection(s, ev->log);
 
         if (c == NULL) {
@@ -153,20 +155,24 @@ ngx_event_accept(ngx_event_t *ev)
         (void) ngx_atomic_fetch_add(ngx_stat_active, 1);
 #endif
 
+        // 为连接c分配内存池 默认大小256byte
         c->pool = ngx_create_pool(ls->pool_size, ev->log);
         if (c->pool == NULL) {
             ngx_close_accepted_connection(c);
             return;
         }
 
+        // 分配套接口地址 
         c->sockaddr = ngx_palloc(c->pool, socklen);
         if (c->sockaddr == NULL) {
             ngx_close_accepted_connection(c);
             return;
         }
 
+        // 将accept得到的对端地址拷贝在其中 保存对端的sockaddr字段
         ngx_memcpy(c->sockaddr, sa, socklen);
 
+        // 分配日志结构
         log = ngx_palloc(c->pool, sizeof(ngx_log_t));
         if (log == NULL) {
             ngx_close_accepted_connection(c);
@@ -175,6 +181,7 @@ ngx_event_accept(ngx_event_t *ev)
 
         /* set a blocking mode for iocp and non-blocking mode for others */
 
+        // 设置新连接套接字描述符为非阻塞模式
         if (ngx_inherited_nonblocking) {
             if (ngx_event_flags & NGX_USE_IOCP_EVENT) {
                 if (ngx_blocking(s) == -1) {
@@ -198,16 +205,19 @@ ngx_event_accept(ngx_event_t *ev)
 
         *log = ls->log;
 
+        // 设置connection c上的收发函数
         c->recv = ngx_recv;
         c->send = ngx_send;
         c->recv_chain = ngx_recv_chain;
         c->send_chain = ngx_send_chain;
 
+        // 保存日志结构
         c->log = log;
         c->pool->log = log;
 
         c->socklen = socklen;
         c->listening = ls;
+        // 在connection c中保存本地监听地址
         c->local_sockaddr = ls->sockaddr;
         c->local_socklen = ls->socklen;
 
@@ -227,8 +237,11 @@ ngx_event_accept(ngx_event_t *ev)
         rev = c->read;
         wev = c->write;
 
+        // 设置connection c上写事件就绪 (nginx默认连接第一次可写)
         wev->ready = 1;
 
+        // 如果监听套接字设置了TCP_DEFER_ACCEPT属性，
+        // 则表示该连接上已经有数据包过来 于是设置读事件为就绪
         if (ngx_event_flags & NGX_USE_IOCP_EVENT) {
             rev->ready = 1;
         }
@@ -353,6 +366,7 @@ ngx_event_accept(ngx_event_t *ev)
         log->data = NULL;
         log->handler = NULL;
 
+        // ls->handler为ngx_http_init_connection
         ls->handler(c);
 
         if (ngx_event_flags & NGX_USE_KQUEUE_EVENT) {

@@ -2,8 +2,40 @@
 ## Q
 ### 1、nginx的reload机制?
 ### 2、nginx是如何处理请求的?
+    http请求格式:请求行 请求头 请求体
+    http请求实例:
+    http请求处理过程:
+        [ ... ]表示函数是事件触发的回调 不是主动调用
+    请求头读取及处理过程:
+        ngx_event_process_init
+        [ ngx_event_accept ]
+            | -> ngx_http_init_connection
+        [ ngx_http_wait_request_handler ]
+            | -> c->recv(c, b->last, size)
+            | -> ngx_http_process_request_line
+                    | -> ngx_http_read_request_header
+                    | -> ngx_http_parse_request_line
+                    | -> ngx_http_process_request_headers
+                            | -> ngx_http_read_request_header
+                            | -> ngx_http_parse_header_line
+                            | -> ngx_http_process_request_header
+                            | -> ngx_http_process_request
+                                    | -> ngx_http_handler
+                                    |       | -> ngx_http_core_run_phases
+                                    |       |       | -> ph[r->phase_handler].checker(r, &ph[r->phase_handler])
+                                    | -> ngx_http_run_posted_requests
+                                            | -> write_event_handler <=> ngx_http_core_run_phases
+                                                    | -> ph[r->phase_handler].checker(r, &ph[r->phase_handler])
+
+    请求体读取及处理过程:
+        
+
+    ngx_http.c中ngx_http_init_phase_handlers(...)初始化引擎数组
+
+
 ### 3、nginx是如何处理网络事件、信号、定时器的?
 ### 4、nginx架构与高性能的原因?
+### 5、父请求与子请求
 
 ## 参考: http://tengine.taobao.org/book/
 
@@ -32,7 +64,7 @@
         // 访问权限检查提交阶段
         NGX_HTTP_POST_ACCESS_PHASE,
 
-        // 配置项 try_files处理阶段
+        // 配置项try_files处理阶段
         NGX_HTTP_TRY_FILES_PHASE,
         // 内容生产阶段
         NGX_HTTP_CONTENT_PHASE,

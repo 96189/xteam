@@ -603,10 +603,12 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     ngx_queue_init(&ngx_posted_accept_events);
     ngx_queue_init(&ngx_posted_events);
 
+    // 初始化用来管理所有定时器的红黑树
     if (ngx_event_timer_init(cycle->log) == NGX_ERROR) {
         return NGX_ERROR;
     }
 
+    // 初始化事件模型
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_EVENT_MODULE) {
             continue;
@@ -733,6 +735,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     /* for each listening socket */
 
     ls = cycle->listening.elts;
+    // 为每个监听套接字分配一个连接结构
     for (i = 0; i < cycle->listening.nelts; i++) {
 
 #if (NGX_HAVE_REUSEPORT)
@@ -741,6 +744,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         }
 #endif
 
+        // ngx_connection_t
         c = ngx_get_connection(ls[i].fd, cycle->log);
 
         if (c == NULL) {
@@ -755,6 +759,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         rev = c->read;
 
         rev->log = c->log;
+        // 标识此读事件为新请求连接事件
         rev->accept = 1;
 
 #if (NGX_HAVE_DEFERRED_ACCEPT)
@@ -819,8 +824,10 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #else
 
+        // 将读事件结构的处理函数设置为ngx_event_accept
         rev->handler = ngx_event_accept;
 
+        // 如果使用accept锁的话 要在后面抢到锁才能将监听句柄挂载上事件处理模型上
         if (ngx_use_accept_mutex
 #if (NGX_HAVE_REUSEPORT)
             && !ls[i].reuseport
@@ -830,6 +837,8 @@ ngx_event_process_init(ngx_cycle_t *cycle)
             continue;
         }
 
+        // 否则 将该监听句柄直接挂载上事件处理模型
+        // NGX_READ_EVENT epoll的LT模式
         if (ngx_add_event(rev, NGX_READ_EVENT, 0) == NGX_ERROR) {
             return NGX_ERROR;
         }
