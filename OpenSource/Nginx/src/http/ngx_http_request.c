@@ -331,10 +331,14 @@ ngx_http_init_connection(ngx_connection_t *c)
 
     sscf = ngx_http_get_module_srv_conf(hc->conf_ctx, ngx_http_ssl_module);
 
+    // sscf->enable对应指令ssl on 通常不使用
+    // hc->addr_conf->ssl对应listen xxx ssl
     if (sscf->enable || hc->addr_conf->ssl) {
 
         c->log->action = "SSL handshaking";
 
+        // nginx.conf中开启ssl协议(listen 443 ssl)
+        // 却没用设置服务器证书(ssl_certificate <certificate_path>
         if (hc->addr_conf->ssl && sscf->ssl.ctx == NULL) {
             ngx_log_error(NGX_LOG_ERR, c->log, 0,
                           "no \"ssl_certificate\" is defined "
@@ -3673,6 +3677,10 @@ ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
 }
 
 
+// 请求已经结束，调用log模块记录日志
+// 在ngx_http_free_request里调用
+// log handler不在引擎数组里
+// 不检查handler的返回值 直接调用 不使用checker
 static void
 ngx_http_log_request(ngx_http_request_t *r)
 {

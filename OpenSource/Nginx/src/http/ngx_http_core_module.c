@@ -876,20 +876,24 @@ ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 
     rc = ph->handler(r);
 
+    // 表示该阶段已经处理完成 需要转入下一个阶段
     if (rc == NGX_OK) {
         r->phase_handler = ph->next;
         return NGX_AGAIN;
     }
 
+    // 表示需要转入本阶段的下一个handler继续处理
     if (rc == NGX_DECLINED) {
         r->phase_handler++;
         return NGX_AGAIN;
     }
 
+    // 中断当前请求的执行链 等待事件发生之后继续执行该handler
     if (rc == NGX_AGAIN || rc == NGX_DONE) {
         return NGX_OK;
     }
 
+    // 表示发生了错误 需要结束该请求
     /* rc == NGX_ERROR || rc == NGX_HTTP_...  */
 
     ngx_http_finalize_request(r, rc);
@@ -908,11 +912,13 @@ ngx_http_core_rewrite_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 
     rc = ph->handler(r);
 
+    // 表示需要转入本阶段的下一个handler继续处理
     if (rc == NGX_DECLINED) {
         r->phase_handler++;
         return NGX_AGAIN;
     }
 
+    // 中断当前请求的执行链 等待事件发生之后继续执行该handler
     if (rc == NGX_DONE) {
         return NGX_OK;
     }
@@ -1365,6 +1371,21 @@ ngx_http_core_try_files_phase(ngx_http_request_t *r,
 }
 
 
+// 处理请求 产生响应内容 最常用的阶段
+// 这已经是处理的最后阶段了（log阶段不处理请求 不算）
+// 设置写事件为ngx_http_request_empty_handler
+// 即暂时不再进入ngx_http_core_run_phases
+// 之后发送数据时会改为ngx_http_set_write_handler
+// 但我们也可以修改 让写事件触发我们自己的回调
+// 检查请求是否有handler 也就是location里定义了handler
+// 调用location专用的内容处理handler
+// 返回值传递给ngx_http_finalize_request
+// 相当于处理完后结束请求
+//
+// 没有专门的handler
+// 调用每个模块自己的处理函数
+// 模块handler返回decline 表示不处理
+// 没有一个content模块可以处理 返回404
 ngx_int_t
 ngx_http_core_content_phase(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph)
@@ -1373,8 +1394,24 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
     ngx_int_t  rc;
     ngx_str_t  path;
 
+    // 按需挂载的handler
+    // 检查请求是否有handler 也就是location里定义了handler
     if (r->content_handler) {
+        // 设置写事件为ngx_http_request_empty_handler
+        // 即暂时不再进入ngx_http_core_run_phases
+        // 这是因为内容产生阶段已经是“最后”一个阶段了 不需要再走其他阶段
+        // 之后发送数据时会改为ngx_http_set_write_handler
+        // 但我们也可以修改 让写事件触发我们自己的回调
         r->write_event_handler = ngx_http_request_empty_handler;
+        // 调用location专用的内容处理handler
+        // 返回值传递给ngx_http_finalize_request
+        // 相当于处理完后结束请求
+        // 这种用法简化了客户代码 相当于模板方法模式
+        // rc = handler(r) ngx_http_finalize_request(rc);
+        //
+        // 结束请求
+        // 但如果count>1 则不会真正结束
+        // handler可能返回done、again 例如调用read body
         ngx_http_finalize_request(r, r->content_handler(r));
         return NGX_OK;
     }
@@ -1382,6 +1419,8 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "content phase: %ui", r->phase_handler);
 
+    // 没有专门的handler
+    // 调用每个模块自己的处理函数
     rc = ph->handler(r);
 
     if (rc != NGX_DECLINED) {
@@ -1391,10 +1430,15 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
 
     /* rc == NGX_DECLINED */
 
+    // 模块handler返回decline 表示不处理
     ph++;
 
+    // 这里要检查引擎数组是否结束 最后一个元素是空的
     if (ph->checker) {
+        // 继续在本阶段（rewrite）里查找下一个模块
+        // 索引加1
         r->phase_handler++;
+        // again继续引擎数组的循环
         return NGX_AGAIN;
     }
 
@@ -1407,13 +1451,16 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
                           "directory index of \"%s\" is forbidden", path.data);
         }
 
+        // 返回403
         ngx_http_finalize_request(r, NGX_HTTP_FORBIDDEN);
         return NGX_OK;
     }
 
     ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "no handler found");
 
+    // 返回404
     ngx_http_finalize_request(r, NGX_HTTP_NOT_FOUND);
+    // 结束引擎数组的循环
     return NGX_OK;
 }
 
@@ -1494,6 +1541,7 @@ ngx_http_update_location_config(ngx_http_request_t *r)
         r->limit_rate = clcf->limit_rate;
     }
 
+    // 注意这里 唯一设置请求在location里的专用处理handler的地方
     if (clcf->handler) {
         r->content_handler = clcf->handler;
     }
@@ -1941,6 +1989,10 @@ ngx_http_send_response(ngx_http_request_t *r, ngx_uint_t status,
 }
 
 
+// 发送头 调用ngx_http_top_header_filter
+// 如果请求处理有错误 修改输出的状态码
+// 状态行同时清空
+// 走过整个header过滤链表
 ngx_int_t
 ngx_http_send_header(ngx_http_request_t *r)
 {
@@ -1958,11 +2010,20 @@ ngx_http_send_header(ngx_http_request_t *r)
         r->headers_out.status = r->err_status;
         r->headers_out.status_line.len = 0;
     }
-
+    // 发送头 调用ngx_http_top_header_filter
+    // 走过整个header过滤链表
     return ngx_http_top_header_filter(r);
 }
 
 
+// 发送响应体 调用ngx_http_top_body_filter
+// 走过整个body过滤链表
+// 最后由ngx_http_write_filter真正的向客户端发送数据 调用send_chain
+// 也由ngx_http_set_write_handler设置epoll的写事件触发
+// 如果数据发送不完 就保存在r->out里 返回again
+// 需要再次发生可写事件才能发送
+// 不是last、flush 且数据量较小（默认1460）
+// 那么这次就不真正调用write发送 减少系统调用的次数 提高性能
 ngx_int_t
 ngx_http_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
@@ -1974,6 +2035,9 @@ ngx_http_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http output filter \"%V?%V\"", &r->uri, &r->args);
 
+    // 发送响应体 调用ngx_http_top_body_filter
+    // 走过整个body过滤链表
+    // 最后由ngx_http_write_filter真正的向客户端发送数据 调用send_chain
     rc = ngx_http_top_body_filter(r, in);
 
     if (rc == NGX_ERROR) {

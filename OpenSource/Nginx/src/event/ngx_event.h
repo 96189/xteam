@@ -27,6 +27,10 @@ typedef struct {
 #endif
 
 
+// nginx事件模块的核心结构体
+// 表示一个nginx事件（读/写/超时）
+// data表示事件相关的对象 通常是ngx_connection_t 用c = ev->data;
+// 重要的成员是handler 即事件发生时调用的函数
 struct ngx_event_s {
     void            *data;
 

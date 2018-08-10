@@ -1,4 +1,3 @@
-
 ## Q
 ### 1、nginx的reload机制?
 ### 2、nginx是如何处理请求的?
@@ -6,11 +5,11 @@
     http请求实例:
     http请求处理过程:
         [ ... ]表示函数是事件触发的回调 不是主动调用
-    请求头读取及处理过程:
+    (1)、请求头读取及处理过程:
         ngx_event_process_init
         [ ngx_event_accept ]
             | -> ngx_http_init_connection
-        [ ngx_http_wait_request_handler ]
+        [ ngx_http_ssl_handshake | ngx_http_wait_request_handler ]
             | -> c->recv(c, b->last, size)
             | -> ngx_http_process_request_line
                     | -> ngx_http_read_request_header
@@ -27,17 +26,35 @@
                                             | -> write_event_handler <=> ngx_http_core_run_phases
                                                     | -> ph[r->phase_handler].checker(r, &ph[r->phase_handler])
 
-    请求体读取及处理过程:
-        
+    (2)、请求体读取及处理过程:
+    由挂载的handler模块处理 请求体的读取一般发生在nginx的content handler中
+    读取请求体的接口 ngx_http_read_client_request_body(ngx_http_request_t *r,ngx_http_client_body_handler_pt post_handler)
+    该接口被以下函数调用
+        ngx_http_dav_handler(ngx_http_request_t *r)
+        ngx_http_fastcgi_handler(ngx_http_request_t *r)
+        ngx_http_proxy_handler(ngx_http_request_t *r)
+        ngx_http_scgi_handler(ngx_http_request_t *r)
+        ngx_http_uwsgi_handler(ngx_http_request_t *r)
 
-    ngx_http.c中ngx_http_init_phase_handlers(...)初始化引擎数组
+    (3)、多阶段请求处理 
+        ngx_http_core_run_phases
 
+        ngx_http.c中ngx_http_init_phase_handlers(...)初始化引擎数组
+
+    (4)、发送响应头和响应体
+        ngx_http_send_header(ngx_http_request_t *r) ngx_http_top_header_filter全局函数指针执行过滤响应头
+        ngx_http_output_filter(ngx_http_request_t *r, ngx_chain_t *in) ngx_http_top_body_filter全局函数指针执行过滤响应体
+        响应头和响应体中会有过滤模块进行操作
+    (5)、子请求解析原理
+    (6)、https支持
+    ssl握手ngx_http_ssl_handshake(ngx_event_t *rev) 
 
 ### 3、nginx是如何处理网络事件、信号、定时器的?
 ### 4、nginx架构与高性能的原因?
 ### 5、父请求与子请求
 
 ## 参考: http://tengine.taobao.org/book/
+        https://github.com/chronolaw/annotated_nginx
 
 ## 一、handler模块
 ### 1、handler模块的挂载
@@ -104,14 +121,15 @@
     函数原型 ngx_int_t ngx_http_<module name>_handler(ngx_http_request_t *r)
 
 #### (6) 挂载模块及处理函数
-    按阶段挂载content phase handlers
+    按阶段挂载 content phase handlers
         ngx_http_conf_get_module_main_conf(ngx_conf_t*, ngx_module_t)
         h = ngx_array_push(...)
         *h = ngx_http_<module name>_handler
 
-    按需挂载content handler
+    按需挂载 content handler
         clcf = ngx_http_conf_get_module_loc_conf(ngx_conf_t*, ngx_module_t)
         clcf->handler = ngx_http_<module name>_handler
+        NGX_HTTP_CONTENT_PHASE阶段检查location是否已经有对应的content handler模块 若存在则执行content handler跳过该阶段挂载的所有content phase handlers.
 #### (7) 配置文件中配置
 
 ### 3、handler模块实例分析
