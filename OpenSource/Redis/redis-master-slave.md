@@ -7,6 +7,14 @@
     SLAVEOF ip port     将当前服务器转变为指定(ip,port)服务器的slave节点
     SLAVEOF NO ONE      将当前slave节点提升为master节点,关闭复制功能,原来同步的数据集不会丢弃
 ## 一、主从复制流程 
+    1、slave与master握手
+    2、master向slave传输文件
+    3、master向slave传播命令
+    4、文件传输中断后重连如何处理?
+    5、命令传播中断后重连如何处理?
+    6、命令传播的实现机制?如何保证命令在主从都会执行(事务)?
+    7、slave状态转换
+    
     replicationCron() -> connectWithMaster()
                         replicationSendAck()
                         replicationFeedSlaves("PING")

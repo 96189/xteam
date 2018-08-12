@@ -1623,7 +1623,7 @@ void syncWithMaster(aeEventLoop *el, int fd, void *privdata, int mask) {
 
     /* Send a PING to check the master is able to reply without errors. */
     // 如果状态为 CONNECTING,那么在进行初次同步之前，
-    // 向主服务器发送一个非阻塞的 PONG 
+    // 向主服务器发送一个非阻塞的 PING
     // 因为接下来的 RDB 文件发送非常耗时,所以我们想确认主服务器真的能访问
     if (server.repl_state == REPL_STATE_CONNECTING) {
         serverLog(LL_NOTICE,"Non blocking connect for SYNC fired the event.");
@@ -1800,7 +1800,7 @@ void syncWithMaster(aeEventLoop *el, int fd, void *privdata, int mask) {
      * and the global offset, to try a partial resync at the next
      * reconnection attempt. */
     if (server.repl_state == REPL_STATE_SEND_PSYNC) {
-        // read_reply为0 同步写
+        // 第二个参数read_reply为0 同步写
         if (slaveTryPartialResynchronization(fd,0) == PSYNC_WRITE_ERROR) {
             err = sdsnew("Write error sending the PSYNC command.");
             goto write_error;
@@ -1818,7 +1818,7 @@ void syncWithMaster(aeEventLoop *el, int fd, void *privdata, int mask) {
         goto error;
     }
 
-    // read_reply为1 同步读
+    // 第二个参数read_reply为1 同步读
     psync_result = slaveTryPartialResynchronization(fd,1);
     if (psync_result == PSYNC_WAIT_REPLY) return; /* Try again later... */
 
