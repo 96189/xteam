@@ -10,11 +10,12 @@
     1、slave与master握手
     2、master向slave传输文件
     3、master向slave传播命令
-    4、文件传输中断后重连如何处理?
-    5、命令传播中断后重连如何处理?
-    6、命令传播的实现机制?如何保证命令在主从都会执行(事务)?
-    7、slave状态转换
-    
+## 二、主从复制的相关问题:
+    1、文件传输中断后重连如何处理?
+    2、命令传播中断后重连如何处理?
+    3、命令传播的实现机制?如何保证命令在主从都会执行(事务)?
+    4、slave状态转换
+
     replicationCron() -> connectWithMaster()
                         replicationSendAck()
                         replicationFeedSlaves("PING")
