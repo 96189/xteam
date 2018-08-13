@@ -129,7 +129,7 @@ public:
         while (!q.empty())
         {
             pCur = q.dequeue();
-            vst(pCur->data);
+            vst(pCur);
             if (pCur->lChild)
             {
                 q.enqueue(pCur->lChild);
@@ -148,7 +148,7 @@ public:
         {
             if (show)
             {
-                vst(x->data);
+                vst(x);
             }
             s.push(x);
             x = x->lChild;
@@ -171,7 +171,7 @@ public:
         // while (!s.empty())
         // {
         //     pCur = s.pop();
-        //     vst(pCur->data);
+        //     vst(pCur);
         //     // 记录沿途节点
         //     if (HasRChild(pCur))
         //     {
@@ -206,59 +206,95 @@ public:
     template <typename VST>
     void travIn(VST& vst)
     {
-        // version
-        // Stack<BinNodePosi(T)> s;
-        // s.push(this);
-        // BinNodePosi(T) pCur = NULL;
-        // BinNodePosi(T) visited = NULL;
-        // while (!s.empty())
-        // {
-        //     pCur = s.top();
-        //     // 沿左侧链 到达左侧链起始 记录沿途节点
-        //     while (!visited && HasLChild(pCur))
-        //     {
-        //         pCur = pCur->lChild;
-        //         s.push(pCur);
-        //     }
-            
-        //     // 左子树为空 
-        //     // 弹出当前子树根节点
-        //     pCur = s.pop();
-        //     vst(pCur->data);
-        //     visited = pCur;
-        //     // 当前子树是否存在右子树
-        //     if (pCur->rChild)
-        //     {
-        //         s.push(pCur->rChild);
-        //         // 新子树的左边尚未访问
-        //         visited = NULL;
-        //     }
-
-        //     // 向上回溯
-        // }
-        // version 2
+        // version 1
+        Stack<BinNodePosi(T)> s;
+        s.push(this);
+        BinNodePosi(T) pCur = NULL;
+        while (!s.empty())
         {
-            BinNodePosi(T) pCur = this;
-            Stack<BinNodePosi(T)> s;
-            while (true)
+            pCur = s.top();
+            while (pCur->lChild)
             {
-                // 左侧链 缓存根节点和左子树
-                goLeftChain(pCur, s, false, vst);
-                if (s.empty())
-                    break;
-                // 左子树为空 或者已访问过
-                // 访问根节点
-                vst(s.top()->data);
-                // 转向右子树
-                pCur = s.pop()->rChild;
+                s.push(pCur->lChild);
+                pCur = pCur->lChild;
             }
+            
+            while (!s.empty())
+            {
+                // 由于栈的性质 左子树必定先于根节点访问
+                pCur = s.pop();
+                vst(pCur);   
+                // 存在右子树 则处理右子树 始终保持右子树最后处理
+                if (pCur->rChild)
+                {
+                    s.push(pCur->rChild);       
+                    break;
+                }
+                // 否则 回溯将栈中缓存的数据弹出
+            }
+            // 以上保持 左子树 根节点 右子树的访问顺序
         }
+
+        // version 2
+        // {
+        //     BinNodePosi(T) pCur = this;
+        //     Stack<BinNodePosi(T)> s;
+        //     while (true)
+        //     {
+        //         // 左侧链 缓存根节点和左子树
+        //         goLeftChain(pCur, s, false, vst);
+        //         if (s.empty())
+        //             break;
+        //         // 左子树为空 或者已访问过
+        //         // 访问根节点
+        //         vst(s.top());
+        //         // 转向右子树
+        //         pCur = s.pop()->rChild;
+        //     }
+        // }
     }
     // 子树后续遍历
     template <typename VST>
     void travPost(VST& vst)
     {
-
+        Stack<BinNodePosi(T)> s;
+        BinNodePosi(T) pCur = NULL;
+        // 避免回溯时重复进入已经访问过的空间
+        BinNodePosi(T) visited = NULL;
+        s.push(this);
+        while (!s.empty())
+        {
+            pCur = s.top();
+            // 循环到此处必然时由于上一次切换到下一个右子树
+            while (pCur->lChild)
+            {
+                s.push(pCur->lChild);
+                pCur = pCur->lChild;
+            }
+            // 切换到右子树 需要1(根节点)次或者2次(根节点的左子树)
+            // 跳过叶子节点和子树的根节点
+            while (!s.empty())
+            {
+                pCur = s.top();
+                // 确保右子树已经访问过
+                // 在右子树已访问的前提下 访问左子树和根节点 由于栈的性质 左子树必定先于根节点访问
+                // 不存在右子树 或者 右子树已访问过 
+                if (!HasRChild(pCur) || pCur->rChild == visited)
+                {
+                    vst(pCur);
+                    s.pop();
+                    visited = pCur;
+                }
+                // 遇到右子树 则先访问右子树
+                // 存在右子树 且 右子树未访问过
+                else 
+                {
+                    s.push(pCur->rChild);
+                    break;
+                }
+            }
+            // 以上保证 左子树 右子树 根节点的访问顺序
+        }
     }
 // 判等器 比较器
     bool operator<(const BinNode& bn)
