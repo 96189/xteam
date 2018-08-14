@@ -7,7 +7,7 @@ namespace MYSTL
 
 // 基于Vector的stack
 template <typename T>
-class Stack : public MYSTL::Vector<T>
+class Stack : public Vector<T>
 {
 public:
     // default constructor
@@ -18,7 +18,7 @@ public:
     }
     T pop()
     {
-        return remove(this->size() - 1);
+        return this->remove(this->size() - 1);
     }
     T& top()
     {

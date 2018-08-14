@@ -75,6 +75,7 @@ public:
     }
     BinNode(T e, BinNodePosi(T) p = NULL, BinNodePosi(T) lc = NULL, BinNodePosi(T) rc = NULL,
             int h = 0, int l = 1, RBColor c = RB_RED)
+        : data(e), parent(p), lChild(lc), rChild(rc), height(h), npl(l), color(c)
     {
 
     }
@@ -114,15 +115,23 @@ public:
         this->rChild = node;
         return node;
     }
-    // 取当前节点的直接后继(中序遍历意义下)
+    // 取当前节点(非叶子节点)的直接后继(中序遍历意义下)
+    // 当前节点右子树的最左端的节点
     BinNodePosi(T) succ()
     {
-        return NULL;
+        assert(HasLChild(this));
+        BinNodePosi(T) pCur = this->rChild;
+        while (pCur)
+        {
+            pCur = pCur->lChild;
+        }
+        return pCur;
     }
     // 子树层次遍历
     template <typename VST>
-    void travLevel(VST& vst)
+    int travLevel(VST& vst)
     {
+        int counter = 0;
         Queue<BinNodePosi(T)> q;
         BinNodePosi(T) pCur = NULL;
         q.enqueue(this);
@@ -130,6 +139,7 @@ public:
         {
             pCur = q.dequeue();
             vst(pCur);
+            ++counter;
             if (pCur->lChild)
             {
                 q.enqueue(pCur->lChild);
@@ -139,6 +149,7 @@ public:
                 q.enqueue(pCur->rChild);
             }
         }
+        return counter;
     }
     // 栈中存储左侧链 根据参数决定是否在遍历时打印
     template <typename VST>
@@ -156,15 +167,16 @@ public:
     }
     // 子树深度遍历
     template <typename VST>
-    void travDepth(VST& vst)
+    int travDepth(VST& vst)
     {
-        return;
+        return 0;
     }
     // 子树先序遍历
     template <typename VST>
-    void travPre(VST& vst)
+    int travPre(VST& vst)
     {
         // version 1
+        // int counter = 0;
         // Stack<BinNodePosi(T)> s;
         // BinNodePosi(T) pCur = NULL;
         // s.push(this);
@@ -172,6 +184,7 @@ public:
         // {
         //     pCur = s.pop();
         //     vst(pCur);
+        //     ++counter;
         //     // 记录沿途节点
         //     if (HasRChild(pCur))
         //     {
@@ -184,9 +197,11 @@ public:
         //     }
         //     // 向上回溯
         // }
+        // return counter;
 
         // version 2
         {
+            int counter = 0;
             BinNodePosi(T) pCur = this;
             Stack<BinNodePosi(T)> s;
             while (true)
@@ -199,14 +214,17 @@ public:
                     break;
                 // 已访问根节点和左子树 下一次访问右子树
                 pCur = s.pop()->rChild;
+                ++counter;
             }
+            return counter;
         }
     }
     // 子树中序遍历
     template <typename VST>
-    void travIn(VST& vst)
+    int travIn(VST& vst)
     {
         // version 1
+        int counter = 0;
         Stack<BinNodePosi(T)> s;
         s.push(this);
         BinNodePosi(T) pCur = NULL;
@@ -223,7 +241,8 @@ public:
             {
                 // 由于栈的性质 左子树必定先于根节点访问
                 pCur = s.pop();
-                vst(pCur);   
+                vst(pCur); 
+                ++counter;  
                 // 存在右子树 则处理右子树 始终保持右子树最后处理
                 if (pCur->rChild)
                 {
@@ -234,9 +253,11 @@ public:
             }
             // 以上保持 左子树 根节点 右子树的访问顺序
         }
+        return counter;
 
         // version 2
         // {
+        //     int counter = 0;
         //     BinNodePosi(T) pCur = this;
         //     Stack<BinNodePosi(T)> s;
         //     while (true)
@@ -248,15 +269,18 @@ public:
         //         // 左子树为空 或者已访问过
         //         // 访问根节点
         //         vst(s.top());
+        //         ++counter;
         //         // 转向右子树
         //         pCur = s.pop()->rChild;
         //     }
         // }
+        // return counter;
     }
     // 子树后续遍历
     template <typename VST>
-    void travPost(VST& vst)
+    int travPost(VST& vst)
     {
+        int counter = 0;
         Stack<BinNodePosi(T)> s;
         BinNodePosi(T) pCur = NULL;
         // 避免回溯时重复进入已经访问过的空间
@@ -282,6 +306,7 @@ public:
                 if (!HasRChild(pCur) || pCur->rChild == visited)
                 {
                     vst(pCur);
+                    ++counter;
                     s.pop();
                     visited = pCur;
                 }
@@ -295,6 +320,7 @@ public:
             }
             // 以上保证 左子树 右子树 根节点的访问顺序
         }
+        return counter;
     }
 // 判等器 比较器
     bool operator<(const BinNode& bn)

@@ -110,11 +110,9 @@ public:
     // 删除以位置x处节点为根的子树 返回该子树原先的规模
     int remove(BinNodePosi(T) x)
     {
-        int sz = size();
         // 遍历释放节点
         ReleaseNode<T> rn;
-        travPre(rn);
-        return sz;
+        return travPre(rn);
     }
     // 将子树x从当前树中摘除 并将其转换为一颗独立的子树
     BinTree<T>* secede(BinNodePosi(T) x)
@@ -123,38 +121,43 @@ public:
     }
     // 层次遍历
     template <typename VST>
-    void travLevel(VST& visit)
+    int travLevel(VST& visit)
     {
         if (_root)
-            _root->travLevel(visit);
+            return _root->travLevel(visit);
+        return 0;
     }
     // 深度遍历
     template <typename VST>
-    void travDepth(VST& visit)
+    int travDepth(VST& visit)
     {
         if (_root)
             _root->travDepth(visit);
+        return 0;
     }
     // 先序遍历
     template <typename VST>
-    void travPre(VST& visit)
+    int travPre(VST& visit)
     {
         if (_root)
-            _root->travPre(visit);
+            return _root->travPre(visit);
+        return 0;
     }
     // 中序遍历
     template <typename VST>
-    void travIn(VST& visit)
+    int travIn(VST& visit)
     {
         if (_root)
-            _root->travIn(visit);
+            return _root->travIn(visit);
+        return 0;
     }
     // 后续遍历
     template <typename VST>
-    void travPost(VST& visit)
+    int travPost(VST& visit)
     {
         if (_root)
-            _root->travPost(visit);
+            return _root->travPost(visit);
+        return 0;
     }
 // 比较器 判等器
     bool operator<(const BinTree<T>& t)
@@ -231,6 +234,53 @@ public:
     {
         _root = buildTreePosIn(p, 0, plen-1, i, 0, ilen-1);
         updateHeight(_root);
+    }
+// 搜索
+    BinNodePosi(T) &searchIn(BinNodePosi(T)& v, const T& e, BinNodePosi(T)& hot)
+    {
+        if (!v || v->data == e) return v;
+        // hot指向最终匹配节点的父节点 若树中无匹配节点则指向搜素中最后访问的节点
+        hot = v;
+        return searchIn((e < v->data ? v->lChild : v->rChild), e, hot);
+    }
+// 删除
+    // 删除位置x的节点 x由查找算法确定 调用者确保x不为NULL
+    // 返回值指向实际被删除节点的接替者 hot指向实际被删除节点的父节点
+    BinNodePosi(T) removeAt(BinNodePosi(T)& x, BinNodePosi(T)& hot)
+    {
+        // 实际被删除的节点
+        BinNodePosi(T) w = x;
+        // 实际被删除节点的接替者
+        BinNodePosi(T) succ = NULL;
+        // 不存在右子树(考虑极端情况退化为链表)
+        if (!HasRChild(x))
+        {
+            succ = x = x->lChild;
+        }    
+        // 不存在左子树(考虑极端情况退化为链表)
+        else if (!HasLChild(x))
+        {
+            succ = x = x->rChild;
+        }    
+        // 左子树右子树都存在(考虑删除的是根节点的情况)
+        else 
+        {
+            w = w->succ();
+            swap(x->data, w->data);
+            BinNodePosi(T) u = w->parent;
+            // u == x 则w是x的右孩子
+            // u != x 则w是u的孩子 u是x的子孙节点
+            ((u == x) ? u->rChild : u->lChild) = succ = w->rChild;
+        }
+        hot = w->parent;
+        if (succ) succ->parent = hot;
+
+        // if (w == hot->rChild) hot->rChild = w->lChild;
+        // if (w == hot->lChild) hot->lChild = w->rChild;
+        delete w;
+        --_size;
+        updateHeightAbove(hot);
+        return succ;
     }
 };
 
