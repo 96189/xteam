@@ -6,6 +6,13 @@
     sigprocmask
     sigsuspend
 ### nginx自定义信号及信号处理函数
+    NGX_SHUTDOWN_SIGNAL
+    NGX_TERMINATE_SIGNAL
+    NGX_NOACCEPT_SIGNAL
+    NGX_RECONFIGURE_SIGNAL
+    NGX_REOPEN_SIGNAL
+    NGX_CHANGEBIN_SIGNAL
+
     ngx_master_process_cycle
 
 ### 如何不终止服务实现配置更新
@@ -13,6 +20,7 @@
 
 ## 进程间通信
 ### unix域套接字socketpair
+    master和worker之间的通信
 
 ### 共享内存
     全局共享内存链表shared_memory
@@ -25,4 +33,5 @@
 
 ## fork
     子进程和父进程共享的资源及各自独占的资源
-    同一级的子进程间通信(进程间文件描述符的传递)
+    同一级的子进程间通信(进程间文件描述符的传递)worker间通信
+    

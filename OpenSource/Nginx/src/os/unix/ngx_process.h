@@ -19,20 +19,25 @@ typedef pid_t       ngx_pid_t;
 
 typedef void (*ngx_spawn_proc_pt) (ngx_cycle_t *cycle, void *data);
 
+// nginx进程结构
 typedef struct {
     ngx_pid_t           pid;
+    // 进程的退出状态(主要在waitpid进行处理)
     int                 status;
+    // 进程channel(sockerpair创建的两个句柄)
     ngx_socket_t        channel[2];
 
+    // 进程的执行函数
     ngx_spawn_proc_pt   proc;
     void               *data;
     char               *name;
 
-    unsigned            respawn:1;
-    unsigned            just_spawn:1;
-    unsigned            detached:1;
-    unsigned            exiting:1;
-    unsigned            exited:1;
+    // 进程状态 关闭时用
+    unsigned            respawn:1;      // 重新生成的新进程
+    unsigned            just_spawn:1;   // 进程刚刚产生
+    unsigned            detached:1;     // 进程已经与父进程分离
+    unsigned            exiting:1;      // 进程正在退出
+    unsigned            exited:1;       // 进程已经退出
 } ngx_process_t;
 
 

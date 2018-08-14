@@ -14,11 +14,12 @@
 #include <ngx_event.h>
 
 
+// 封装父子进程之间传递的信息
 typedef struct {
-     ngx_uint_t  command;
-     ngx_pid_t   pid;
-     ngx_int_t   slot;
-     ngx_fd_t    fd;
+     ngx_uint_t  command;   // 对端需要执行的命令
+     ngx_pid_t   pid;       // 当前新子进程的pid
+     ngx_int_t   slot;      // 全局进程数组最后使用的位置(先于当前进程产生的进程总数,遍历用)
+     ngx_fd_t    fd;        // 当前新子进程的fd
 } ngx_channel_t;
 
 
