@@ -31,31 +31,26 @@ public:
     // 插入
     virtual BinNodePosi(T) insert(const T& e)
     {
-        BinNodePosi(T) p = search(e);
+        // 变量为引用
+        BinNodePosi(T)& p = search(e);
         // 已存在直接返回
         if (p) return p;
-        if (e < _hot->data)
-        {
-            return insertAsLC(_hot, e);
-        }
-        else if (_hot->data < e)
-        {
-            return insertAsRC(_hot, e);
-        }
-        else 
-        {
-            assert(false);
-            return NULL;
-        }
+        p = new BinNode<T>(e, _hot);
+        ++this->_size;
+        updateHeightAbove(_hot);
+        return p;
     }
     // 删除
     virtual bool remove(const T& e)
     {
-        BinNodePosi(T) p = search(e);
+        // 变量为引用
+        BinNodePosi(T)& p = search(e);
         // 值不存在
         if (!p) return false;
         // 
         removeAt(p, _hot);
+        --this->_size;
+        updateHeightAbove(_hot);
         return true;
     }
 };

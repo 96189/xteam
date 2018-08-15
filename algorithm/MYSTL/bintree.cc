@@ -20,7 +20,7 @@ class Iterator
 public:
     void operator()(BinNodePosi(T) p)
     {
-        printf("%d ", p->data);
+        printf("parent:%p data:%d lChild:%p rChild:%p height:%d\n", p->parent,p->data,p->lChild,p->rChild,p->height);
     }
 };
 
@@ -68,6 +68,9 @@ void TestBinSearchTree()
     bst.travPre(iter);
     printf("\n");
     bst.remove(19);
+    bst.travPre(iter);
+    printf("\n");
+    bst.remove(1);
     bst.travPre(iter);
     printf("\n");
     bst.remove(5);

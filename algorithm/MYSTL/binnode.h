@@ -121,7 +121,7 @@ public:
     {
         assert(HasLChild(this));
         BinNodePosi(T) pCur = this->rChild;
-        while (pCur)
+        while (pCur->lChild)
         {
             pCur = pCur->lChild;
         }

@@ -12,7 +12,7 @@ class ReleaseNode
 public:
     void operator()(BinNodePosi(T) p)
     {
-        printf("delete %p\n", p);
+        // printf("delete %p\n", p);
         delete p;
         p = NULL;
     }
@@ -207,6 +207,8 @@ public:
         }
         int index = -1;
         BinNodePosi(T) root = new BinNode<T>();
+        BinNodePosi(T) lChild = NULL;
+        BinNodePosi(T) rChild = NULL;
         // 在中序序列i中查找后序序列的p[end]项 查找得到中序序列中的下标idx
         for (int idx = istart; idx <= iend; ++idx)
         {
@@ -215,9 +217,13 @@ public:
                 root->data = i[idx];
                 ++_size;
                 // 分解问题规模
-                root->lChild = buildTreePosIn(p, pstart, pstart+(idx-istart)-1, i, istart, idx-1);
+                lChild = buildTreePosIn(p, pstart, pstart+(idx-istart)-1, i, istart, idx-1);
+                root->lChild = lChild;
+                if (lChild) lChild->parent = root;
                 // 分解问题规模
-                root->rChild = buildTreePosIn(p, pstart+(idx-istart), pend-1, i, idx+1, iend);
+                rChild = buildTreePosIn(p, pstart+(idx-istart), pend-1, i, idx+1, iend);
+                root->rChild = rChild;
+                if (rChild) rChild->parent = root;
                 //  找到 提前结束循环
                 break;
             }
@@ -252,34 +258,37 @@ public:
         BinNodePosi(T) w = x;
         // 实际被删除节点的接替者
         BinNodePosi(T) succ = NULL;
-        // 不存在右子树(考虑极端情况退化为链表)
-        if (!HasRChild(x))
-        {
-            succ = x = x->lChild;
-        }    
         // 不存在左子树(考虑极端情况退化为链表)
-        else if (!HasLChild(x))
+        if (!HasLChild(x))
         {
+            // 断链 x引用类型参数 
             succ = x = x->rChild;
-        }    
+        } 
+        // 不存在右子树(考虑极端情况退化为链表)
+        else if (!HasRChild(x))
+        {
+            // 断链 x引用类型参数
+            succ = x = x->lChild;
+        }       
         // 左子树右子树都存在(考虑删除的是根节点的情况)
         else 
         {
+            // w中序遍历意义下的直接后继
             w = w->succ();
+            // 转移待删除数据
             swap(x->data, w->data);
+            // 实际待删除数据的父节点
             BinNodePosi(T) u = w->parent;
+            assert(u != NULL);
             // u == x 则w是x的右孩子
             // u != x 则w是u的孩子 u是x的子孙节点
+            // 断链
             ((u == x) ? u->rChild : u->lChild) = succ = w->rChild;
         }
+        // 后继不为空 维护后继的父指针
         hot = w->parent;
         if (succ) succ->parent = hot;
-
-        // if (w == hot->rChild) hot->rChild = w->lChild;
-        // if (w == hot->lChild) hot->lChild = w->rChild;
         delete w;
-        --_size;
-        updateHeightAbove(hot);
         return succ;
     }
 };
