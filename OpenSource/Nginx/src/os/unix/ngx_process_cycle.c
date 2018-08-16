@@ -93,9 +93,10 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     ngx_listening_t   *ls;
     ngx_core_conf_t   *ccf;
 
-    // 
+    // 置空信号集合
     sigemptyset(&set);
-    // 添加master进程关注的信号
+    // 添加master进程希望阻塞的信号
+    // 以下信号都被设置信号处理函数ngx_signal_handler
     sigaddset(&set, SIGCHLD);
     sigaddset(&set, SIGALRM);
     sigaddset(&set, SIGIO);
@@ -107,13 +108,13 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     sigaddset(&set, ngx_signal_value(NGX_SHUTDOWN_SIGNAL));
     sigaddset(&set, ngx_signal_value(NGX_CHANGEBIN_SIGNAL));
 
-    // 
+    // 为当前进程 屏蔽 set指向的信号屏蔽字(当前阻塞而不能递送给进程的信号集)
     if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "sigprocmask() failed");
     }
 
-    // 
+    // 置空信号集合
     sigemptyset(&set);
 
 
@@ -184,7 +185,10 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "sigsuspend");
 
-        // 核心操作是sigsuspend 暂时挂起进程 不占用CPU 只有收到信号时才被唤醒
+        // 核心操作是sigsuspend 用set给出的掩码替换调用进程的掩码 暂停进程直到传递一个信号
+        // 若信号终止进程 函数不会返回
+        // 若信号被捕获 则函数在信号处理程序之后返回 
+        // 暂时挂起进程 不占用CPU 只有收到信号时才被唤醒
         // 收到SIGALRM就检查子进程是否都已经处理完了
         sigsuspend(&set);
 
