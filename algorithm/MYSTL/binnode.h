@@ -18,14 +18,15 @@ typedef enum { RB_RED, RB_BLACK } RBColor;
 
 // BinNode状态与性质判断
 #define IsRoot(x) (!((x)->parent))
-#define IsLChild(x) (!IsRoot(x) && (&(x) == (x)->parent->lChild))
-#define IsRChild(x) (!IsRoot(x) && (&(x) == (x)->parent->rChild))
+#define IsLChild(x) (!IsRoot(x) && ((x) == (x)->parent->lChild))
+#define IsRChild(x) (!IsRoot(x) && ((x) == (x)->parent->rChild))
 #define HasParent(x) (!IsRoot(x))
 #define HasLChild(x) ((x)->lChild)
 #define HasRChild(x) ((x)->rChild)
 #define HasChild(x) (HasLChild(x) || HasRChild(x))
 #define HasBothChild(x) (HasLChild(x) && HasRChild(x))
 #define IsLeaf(x) (!HasChild(x))
+
 
 // 与BinNode具有特定关系的节点及指针
 // 兄弟
@@ -42,12 +43,6 @@ typedef enum { RB_RED, RB_BLACK } RBColor;
         (x)->parent->parent->lChild   \
 )
 
-// 来自父节点的指针
-#define FromParentTo(x) (       \
-    IsRoot(x) ? _root : (       \
-        IsLChild(x) ? (x)->parent->lChild : (x)->parent->rChild \
-    )                           \
-)
 
 // 二叉树节点模板类
 template <typename T>

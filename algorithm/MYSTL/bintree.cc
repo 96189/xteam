@@ -20,7 +20,7 @@ class Iterator
 public:
     void operator()(BinNodePosi(T) p)
     {
-        printf("parent:%p data:%d lChild:%p rChild:%p height:%d\n", p->parent,p->data,p->lChild,p->rChild,p->height);
+        printf("addr:%p parent:%p data:%d lChild:%p rChild:%p height:%d\n", p, p->parent,p->data,p->lChild,p->rChild,p->height);
     }
 };
 
@@ -78,9 +78,31 @@ void TestBinSearchTree()
     printf("\n");
 }
 
+#include "avlTree.h"
+void TestAvlTree()
+{
+    Iterator<int> iter;
+    AVL<int> avl;
+    for (int i = 0; i < inlen; ++i)
+    {
+        avl.insert(inOrder[i]);
+        // 先序遍历
+        avl.travPre(iter);
+        printf("\n");
+    }
+    assert(avl.size() == 7);
+    avl.remove(1);
+    avl.remove(2);
+    avl.remove(3);
+    printf("\n");
+    avl.travPre(iter);
+    printf("\n");
+}
+
 int main(int argc, char* argv[])
 {
     // TestBinTree();
-    TestBinSearchTree();
+    // TestBinSearchTree();
+    TestAvlTree();
     return 0;
 }

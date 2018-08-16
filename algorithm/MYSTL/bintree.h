@@ -29,6 +29,31 @@ protected:
     BinNodePosi(T) _root;
 
 // function
+    // 来自父节点的引用
+    BinNodePosi(T)& FromParentTo(BinNodePosi(T)& x)
+    {
+        return IsRoot(x) ? _root : IsLChild(x) ? (x)->parent->lChild : (x)->parent->rChild;
+    }
+    BinNodePosi(T) tallerChild(BinNodePosi(T) x) 
+    {
+        BinNodePosi(T) p = NULL;
+        /* 左子树高 左子树优先 */
+        if (stature((x)->lChild) > stature((x)->rChild))
+        {
+            p = (x)->lChild;
+        }
+        /* 右子树高 右子树优先 */
+        else if (stature((x)->lChild) < stature((x)->rChild))
+        {
+            p = (x)->rChild;
+        }
+        /* 左右子树同高 与父节点同侧者优先 */
+        else
+        {
+            p = IsLChild(x) ? (x)->lChild : (x)->rChild;
+        }
+        return p;
+    }
     // 更新节点x的高度
     virtual int updateHeight(BinNodePosi(T) x)
     {
@@ -57,7 +82,8 @@ public:
     {
         if (0 < _size)
         {
-            assert(remove(_root) == _size);
+            int n = remove(_root);
+            assert(n == _size);
         }
     }
     // 规模
@@ -107,7 +133,7 @@ public:
     {
         return NULL;
     }
-    // 删除以位置x处节点为根的子树 返回该子树原先的规模
+    // 删除以位置x处节点为根的子树 返回实际删除的节点个数
     int remove(BinNodePosi(T) x)
     {
         // 遍历释放节点
