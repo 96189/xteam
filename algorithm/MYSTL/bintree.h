@@ -124,21 +124,25 @@ public:
         return x->rChild;
     }
     // t作为左子树接入
-    BinNodePosi(T) attachAsLC(BinNodePosi(T) x, BinTree<T>*& t)
+    void attachAsLC(BinNodePosi(T) x, BinNodePosi(T) t)
     {
-        return NULL;
+        x->lChild = t;
+        if (t) t->parent = x;
     }
     // t作为右子树接入
-    BinNodePosi(T) attachAsRC(BinNodePosi(T) x, BinTree<T>*& t)
+    void attachAsRC(BinNodePosi(T) x, BinNodePosi(T) t)
     {
-        return NULL;
+        x->rChild = t;
+        if (t) t->parent = x;
     }
     // 删除以位置x处节点为根的子树 返回实际删除的节点个数
     int remove(BinNodePosi(T) x)
     {
         // 遍历释放节点
         ReleaseNode<T> rn;
-        return travPre(rn);
+        // 删除不能调用travPre() 此函数左侧链遍历时会删除节点 后序流程无法继续
+        // 会造成对一个地址两次释放
+        return x->travLevel(rn);
     }
     // 将子树x从当前树中摘除 并将其转换为一颗独立的子树
     BinTree<T>* secede(BinNodePosi(T) x)

@@ -99,10 +99,37 @@ void TestAvlTree()
     printf("\n");
 }
 
+#include "splayTree.h"
+void TestSplayTree()
+{
+    Iterator<int> iter;
+    Splay<int> spt;
+    for (int i = 1; i <= 7; ++i)
+    {
+        spt.insert(i);
+    }
+    spt.travPre(iter);
+    printf("\n");
+    assert(spt.root()->data == 7);
+    for (int i = 1; i <= 1; ++i)
+    {
+        spt.search(i);
+    }
+    spt.travPre(iter);
+    printf("\n");    
+    spt.search(8);
+    assert(spt.root()->data == 7);
+    spt.remove(3);
+    assert(spt.root()->data == 4);
+    spt.search(5);
+    assert(spt.root()->data == 5);
+}
+
 int main(int argc, char* argv[])
 {
     // TestBinTree();
     // TestBinSearchTree();
-    TestAvlTree();
+    // TestAvlTree();
+    TestSplayTree();
     return 0;
 }
