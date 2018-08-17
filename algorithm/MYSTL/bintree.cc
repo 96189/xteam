@@ -125,11 +125,18 @@ void TestSplayTree()
     assert(spt.root()->data == 5);
 }
 
+#include "B-Tree.h"
+void TestBTree()
+{
+    BTree<int> bt;
+}
+
 int main(int argc, char* argv[])
 {
     // TestBinTree();
     // TestBinSearchTree();
     // TestAvlTree();
-    TestSplayTree();
+    // TestSplayTree();
+    TestBTree();
     return 0;
 }
