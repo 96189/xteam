@@ -131,12 +131,21 @@ void TestBTree()
     BTree<int> bt;
 }
 
+#include "redBlackTree.h"
+void TestRBTree()
+{
+    RBTree<int> rbt;
+    rbt.insert(1);
+    rbt.remove(1);
+}
+
 int main(int argc, char* argv[])
 {
     // TestBinTree();
     // TestBinSearchTree();
     // TestAvlTree();
     // TestSplayTree();
-    TestBTree();
+    // TestBTree();
+    TestRBTree();
     return 0;
 }

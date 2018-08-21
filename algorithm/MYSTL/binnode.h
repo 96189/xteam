@@ -27,6 +27,12 @@ typedef enum { RB_RED, RB_BLACK } RBColor;
 #define HasBothChild(x) (HasLChild(x) && HasRChild(x))
 #define IsLeaf(x) (!HasChild(x))
 
+#define IsBlack(x) ((!x) || ((x)->color == RB_BLACK))
+#define IsRed(x) ((x) && (x)->color == RB_RED)
+#define BlackHeightUpdated(x) ( /*RedBlack高度更新条件*/ \
+    ( stature( (x)->lChild ) == stature( (x)->rChild ) ) && \
+    ( (x)->height == ( IsRed(x) ? stature( (x)->lChild ) : stature( (x)->lChild ) + 1 ) ) \
+)
 
 // 与BinNode具有特定关系的节点及指针
 // 兄弟
@@ -38,7 +44,7 @@ typedef enum { RB_RED, RB_BLACK } RBColor;
 
 // 叔叔
 #define uncle(x) (      \
-    IsLChild(*((x)->parent)) ?        \
+    IsLChild(((x)->parent)) ?        \
         (x)->parent->parent->rChild : \
         (x)->parent->parent->lChild   \
 )
