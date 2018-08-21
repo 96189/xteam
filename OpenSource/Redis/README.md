@@ -36,3 +36,7 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
 
     15、sentinel和cluster的区别
         sentinel解决HA(高可用)问题,实现监控、通知、自动故障恢复,cluster解决sharding(分片)问题,满足扩展性
+
+    16、如何做到将redis读请求分配到只读的slave节点 写请求分配到master节点?
+
+    17、redis如何做到主从一致性?会不会存在master写成功,slave写失败的情况?

@@ -1393,6 +1393,7 @@ void processInputBuffer(client *c) {
 
 // 命令请求处理器
 // read
+// 增量同步时 slave的处理函数
 void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask) {
     client *c = (client*) privdata;
     int nread, readlen;

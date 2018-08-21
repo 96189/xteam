@@ -271,10 +271,12 @@ void replicationFeedSlaves(list *slaves, int dictid, robj **argv, int argc) {
         // 那么在初次 SYNC 完成之前,主服务器发送的内容会被放进一个缓冲区里面
 
         /* Add the multi bulk length. */
+        // 向slave发送命令长度
         addReplyMultiBulkLen(slave,argc);
 
         /* Finally any additional argument that was not stored inside the
          * static buffer if any (from j to argc). */
+        // 向slave发送命令
         for (j = 0; j < argc; j++)
             addReplyBulk(slave,argv[j]);
     }
@@ -495,12 +497,15 @@ int masterTryPartialResynchronization(client *c) {
             serverLog(LL_NOTICE,"Full resync requested by slave %s",
                 replicationGetSlaveName(c));
         }
+        // 全量同步
         goto need_full_resync;
     }
 
     /* We still have the data our slave is asking for? */
     if (!server.repl_backlog ||
+        /* 想要恢复的数据已经被覆盖 */
         psync_offset < server.repl_backlog_off ||
+        /* 大于服务端所保存的数据偏移量 */
         psync_offset > (server.repl_backlog_off + server.repl_backlog_histlen))
     {
         serverLog(LL_NOTICE,
@@ -1090,10 +1095,12 @@ void replicationEmptyDbCallback(void *privdata) {
 /* Once we have a link with the master and the synchroniziation was
  * performed, this function materializes the master client we store
  * at server.master, starting from the specified file descriptor. */
+// rdb文件同步完成后 slave修改master信息 开始接收master命令传播
 void replicationCreateMasterClient(int fd, int dbid) {
     server.master = createClient(fd);
     server.master->flags |= CLIENT_MASTER;
     server.master->authenticated = 1;
+    // master的同步缓冲区的总量
     server.master->reploff = server.master_initial_offset;
     server.master->read_reploff = server.master->reploff;
     memcpy(server.master->replid, server.master_replid,
@@ -1430,6 +1437,7 @@ char *sendSynchronousCommand(int flags, int fd, ...) {
 #define PSYNC_FULLRESYNC 3
 #define PSYNC_NOT_SUPPORTED 4
 #define PSYNC_TRY_LATER 5
+// 部分同步 增量同步
 int slaveTryPartialResynchronization(int fd, int read_reply) {
     char *psync_replid;
     char psync_offset[32];
@@ -1512,6 +1520,7 @@ int slaveTryPartialResynchronization(int fd, int read_reply) {
         return PSYNC_FULLRESYNC;
     }
 
+    // 即将进行增量同步
     if (!strncmp(reply,"+CONTINUE",9)) {
         /* Partial resync was accepted. */
         serverLog(LL_NOTICE,
@@ -1551,6 +1560,7 @@ int slaveTryPartialResynchronization(int fd, int read_reply) {
 
         /* Setup the replication to continue. */
         sdsfree(reply);
+        // slave设置回调接口 等待master发送增量同步数据
         replicationResurrectCachedMaster(fd);
 
         /* If this instance was restarted and we read the metadata to
@@ -2299,6 +2309,7 @@ void replicationResurrectCachedMaster(int newfd) {
 
     /* Re-add to the list of clients. */
     listAddNodeTail(server.clients,server.master);
+    // 安装增量同步回调函数
     if (aeCreateFileEvent(server.el, newfd, AE_READABLE,
                           readQueryFromClient, server.master)) {
         serverLog(LL_WARNING,"Error resurrecting the cached master, impossible to add the readable handler: %s", strerror(errno));
@@ -2623,13 +2634,13 @@ void replicationCron(void) {
     /* Send ACK to master from time to time.
      * Note that we do not send periodic acks to masters that don't
      * support PSYNC and replication offsets. */
-    // 定期向主服务器发送 ACK 命令
+    // 定期向主服务器发送 ACK 命令 和 同步进度
     if (server.masterhost && server.master &&
         !(server.master->flags & CLIENT_PRE_PSYNC))
         replicationSendAck();
 
     /* If we have attached slaves, PING them from time to time.
-     * 如果服务器有从服务器,定时向它们发送 PING
+     * 如果服务器有从服务器 定时向它们发送 PING 检测slave的存活
      * So slaves can implement an explicit timeout to masters, and will
      * be able to detect a link disconnection even if the TCP connection
      * will not actually go down. */
@@ -2678,7 +2689,7 @@ void replicationCron(void) {
     }
 
     /* Disconnect timedout slaves. */
-    // 断开超时slave
+    // master断开超时slave
     if (listLength(server.slaves)) {
         listIter li;
         listNode *ln;
