@@ -20,13 +20,21 @@ void swap(T& a, T& b)
 template <typename T>
 class Vector
 {
-private:
+protected:
     Rank _size;
     int _capacity;
     T* _elem;
 protected:
     // 复制数组A区间[lo,hi]
-    void copyFrom(const T* A, Rank lo, Rank hi);
+    void copyFrom(const T* A, Rank lo, Rank hi)
+    {
+        Rank count = hi - lo;
+        _capacity = count << 1;
+        _elem = new T[_capacity];
+        assert(_elem);
+        memmove(_elem, A + lo, count * sizeof(T));
+        _size = count;
+    }
     // 空间不足时扩容
     void expand()
     {

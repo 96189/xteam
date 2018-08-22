@@ -5,17 +5,17 @@
 namespace MYSTL
 {
     
-// 复制数组A区间[lo,hi]
-template <typename T>
-void Vector<T>::copyFrom(const T *A, Rank lo, Rank hi)
-{
-    Rank count = hi - lo;
-    _capacity = count << 1;
-    _elem = new T[_capacity];
-    assert(_elem);
-    memmove(_elem, A + lo, count * sizeof(T));
-    _size = count; 
-}
+// // 复制数组A区间[lo,hi]
+// template <typename T>
+// void Vector<T>::copyFrom(const T *A, Rank lo, Rank hi)
+// {
+//     Rank count = hi - lo;
+//     _capacity = count << 1;
+//     _elem = new T[_capacity];
+//     assert(_elem);
+//     memmove(_elem, A + lo, count * sizeof(T));
+//     _size = count; 
+// }
 // 装填因子过小时压缩
 template <typename T>
 void Vector<T>::shrink()
