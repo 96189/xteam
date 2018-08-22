@@ -1,14 +1,17 @@
 # 主从同步
     官方文档 https://redis.io/topics/replication
+
 ## 命令
     SYNC                slave节点请求同步
     PSYNC               slave节点请求部分同步
     SLAVEOF ip port     将当前服务器转变为指定(ip,port)服务器的slave节点
     SLAVEOF NO ONE      将当前slave节点提升为master节点,关闭复制功能,原来同步的数据集不会丢弃
+
 ## 一、主从复制流程 
     1、slave与master握手
     2、master向slave传输文件
     3、master向slave传播命令
+
 ## 二、主从复制的相关问题:
     1、文件传输中断后重连如何处理?
     2、命令传播中断后重连如何处理?
@@ -24,6 +27,7 @@
     主从复制是异步复制 弱一致性 最终一致性 短时间内是有可能不一致 但最终会达到一致
     全量同步(或增量同步)+命令传播
     先尝试 增量同步 服务端不允许增量同步 则全量同步
+
 ### 数据同步
 #### 全量同步
     rdb文件传输
@@ -49,10 +53,12 @@
                             | -> addReplyReplicationBacklog // 发送server.repl_backlog积压缓冲区
 
     slave回调(master传输积压缓冲区中的命令 master相当于slave的客户端)
-        readQueryFromClient
+        readQueryFromClient // 从slave的client的输出缓冲区读出命令
+                | -> processInputBuffer // 更新reploff复制偏移量
 
 #### 积压空间的空间分配及回收以及内容收发
     master的积压空间repl_backlog是所有slave共享的
+
 ##### 积压缓冲区空间申请 createReplicationBacklog
     master的syncCommand函数中调用
     ? slave为什么需要积压缓冲区 ? 
@@ -64,11 +70,13 @@
 
 ##### 填充数据到积压缓冲区 feedReplicationBacklog
     propagate
-        | -> replicationFeedSlaves // 命令写入积压缓冲区 传播命令到slave节点
+        | -> replicationFeedSlaves // 命令写入积压缓冲区 传播命令到slave节点的client的输出缓冲区
     propagateExpire
-        | -> replicationFeedSlaves // 命令写入积压缓冲区 传播命令到slave节点
+        | -> replicationFeedSlaves // 命令写入积压缓冲区 传播命令到slave节点的client的输出缓冲区
+
 ##### 积压缓冲区数据读取
-    addReplyReplicationBacklog
+    masterTryPartialResynchronization
+                    | -> addReplyReplicationBacklog
 
 ### 命令传播
     客户端发给master的命令 都将被传播到slave节点 异步发送且master并不关心slave的执行结果 slave判断是master发来的命令处理后也不会有返回
@@ -76,17 +84,19 @@
 #### 写命令传播
     call
       | -> propagate
-                  | -> replicationFeedSlaves
+                  | -> replicationFeedSlaves // 命令写入积压缓冲区 传播命令到slave节点的client的输出缓冲区
 
 #### 键过期传播
     expireIfNeeded
         | -> propagateExpire
-                    | -> replicationFeedSlaves
+                    | -> replicationFeedSlaves // 命令写入积压缓冲区 传播命令到slave节点的client的输出缓冲区
 
 ### 定时任务保证命令传播的正确性
     replicationCron
-                 | -> replicationSendAck() // slave定期向主服务器发送 ACK 命令 和 同步进度reploff
-                 | -> replicationFeedSlaves("PING") // master定时向它们发送 PING 检测slave的存活
+            | -> replicationSendAck() // slave定期向主服务器发送 REPL ACK 命令 和 同步复制偏移量reploff
+            | -> replicationFeedSlaves("PING") // master定时向它们发送 PING 检测slave的存活
+    
+    replconfCommand // 更新master的复制偏移量
 
     
     

@@ -276,7 +276,7 @@ void replicationFeedSlaves(list *slaves, int dictid, robj **argv, int argc) {
 
         /* Finally any additional argument that was not stored inside the
          * static buffer if any (from j to argc). */
-        // 向slave发送命令
+        // 将所有的参数列表添加到从节点的输出缓冲区
         for (j = 0; j < argc; j++)
             addReplyBulk(slave,argv[j]);
     }
@@ -828,6 +828,8 @@ void replconfCommand(client *c) {
                 c->slave_capa |= SLAVE_CAPA_EOF;
             else if (!strcasecmp(c->argv[j+1]->ptr,"psync2"))
                 c->slave_capa |= SLAVE_CAPA_PSYNC2;
+        // 从服务器发来 REPLCONF ACK <offset> 命令
+        // 告知主服务器 从服务器已处理的复制流的偏移量
         } else if (!strcasecmp(c->argv[j]->ptr,"ack")) {
             /* REPLCONF ACK is used by slave to inform the master the amount
              * of replication stream that it processed so far. It is an
@@ -837,6 +839,7 @@ void replconfCommand(client *c) {
             if (!(c->flags & CLIENT_SLAVE)) return;
             if ((getLongLongFromObject(c->argv[j+1], &offset) != C_OK))
                 return;
+            // 如果 offset 已改变 那么更新
             if (offset > c->repl_ack_off)
                 c->repl_ack_off = offset;
             c->repl_ack_time = server.unixtime;

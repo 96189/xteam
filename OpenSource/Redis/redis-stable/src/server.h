@@ -734,19 +734,29 @@ typedef struct client {
     int flags;              /* Client flags: CLIENT_* macros. */
     // 1已通过身份验证 0未通过身份验证
     int authenticated;      /* When requirepass is non-NULL. */
+    // 复制状态
     int replstate;          /* Replication state if this is a slave. */
     int repl_put_online_on_ack; /* Install slave write handler on ACK. */
+    // 用于保存master发送的rdb文件的描述符
     int repldbfd;           /* Replication DB file descriptor. */
+    // 读取master传来的rdb文件的偏移量
     off_t repldboff;        /* Replication DB file offset. */
+    // master传来的rdb文件的大小
     off_t repldbsize;       /* Replication DB file size. */
     sds replpreamble;       /* Replication DB preamble. */
+    
     long long read_reploff; /* Read replication offset if this is a master. */
+    // 对slave来说是master的复制偏移量
     long long reploff;      /* Applied replication offset if this is a master. */
+    // 对master来说是slave最后一次发送 REPLCONF ACK 时的偏移量
     long long repl_ack_off; /* Replication ack offset, if this is a slave. */
+    // slave最后一次发送 REPLCONF ACK 的时间
     long long repl_ack_time;/* Replication ack time, if this is a slave. */
     long long psync_initial_offset; /* FULLRESYNC reply offset other slaves
                                        copying this slave output buffer
                                        should use. */
+    // 主服务器的 master run ID
+    // 保存在客户端 用于执行部分重同步
     char replid[CONFIG_RUN_ID_SIZE+1]; /* Master replication ID (if master). */
     int slave_listening_port; /* As configured with: SLAVECONF listening-port */
     char slave_ip[NET_IP_STR_LEN]; /* Optionally given by REPLCONF ip-address */
