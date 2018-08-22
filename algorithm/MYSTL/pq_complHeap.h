@@ -93,11 +93,6 @@ public:
         percolateDown(this->_size, 0);    // 对新堆顶实施下滤调整
         return maxElem;
     }
-// 测试用
-    void showData(void (*visit)(T &val))
-    {
-        this->traverse(visit);
-    }
 }; // PQ_ComplHeap
 
 }; // MYSTL
