@@ -1722,7 +1722,7 @@ int rdbLoad(char *filename, rdbSaveInfo *rsi) {
     rio rdb;
     int retval;
 
-    // 打开本都rdb文件
+    // 打开本地rdb文件
     if ((fp = fopen(filename,"r")) == NULL) return C_ERR;
     // 调整服务器状态为载入状态
     startLoading(fp);
@@ -2043,6 +2043,7 @@ int rdbSaveToSlavesSockets(rdbSaveInfo *rsi) {
     return C_OK; /* Unreached. */
 }
 
+// SAVE
 void saveCommand(client *c) {
     if (server.rdb_child_pid != -1) {
         addReplyError(c,"Background save already in progress");
