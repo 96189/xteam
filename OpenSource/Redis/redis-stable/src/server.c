@@ -2589,6 +2589,7 @@ int processCommand(client *c) {
         c->cmd->proc != execCommand && c->cmd->proc != discardCommand &&
         c->cmd->proc != multiCommand && c->cmd->proc != watchCommand)
     {
+        // 事务命令排队
         queueMultiCommand(c);
         addReply(c,shared.queued);
     } else {
