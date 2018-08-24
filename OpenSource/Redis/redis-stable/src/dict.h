@@ -61,7 +61,7 @@ typedef struct dictEntry {
     struct dictEntry *next;
 } dictEntry;
 
-// // 64位: 48Byte
+// 64位: 48Byte
 typedef struct dictType {
     // 计算hash值
     uint64_t (*hashFunction)(const void *key);

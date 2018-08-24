@@ -29,13 +29,112 @@
     redis跳跃表的几个特点(score可相同,后退指针)
 
 ## 五、哈希表
+    hash函数的设计原则
+        确定性 随机性 均匀性 
+    murmurhash2算法
     hash函数生成算法 siphash https://en.wikipedia.org/wiki/SipHash
     hash冲突解决:链地址法
     hash表的扩展与收缩
-    redis的渐进式rehash算法(重新散列算法)
+    
 
-## 六、字典
-    哈希表实现字典
+### 1、哈希表节点(桶中元素类型)
+    struct dictEntry 
+    {
+        void *key;  // 键
+        union       // 值
+        {     
+            void *val;
+            uint64_t u64;
+            int64_t s64;
+            double d;
+        } v;
+        struct dictEntry *next; // 链式结构(构成桶单元) 链地址法解决hash冲突 头插法O(1)效率
+    }
+
+### 2、哈希表
+    struct dictht 
+    {
+        dictEntry **table;  // 表项数组(桶单元数组)
+        unsigned long size; // 数组大小(桶单元个数)
+        unsigned long sizemask; // 大小掩码 计算索引值(桶单元) 值为(size-1)
+        unsigned long used; // 所有表项挂载的节点总数
+    }
+
+    hash(key)函数的O(1)查找时间复杂度,是建立在hash表地址空间M足够大,足以映射数据集R,假设常用到的数据集为N
+    则存在 N < M >> R,实际应用中N和R都是增长的但M无法实时改变,因此随着数据规模的不断增长,必然导致hash冲突加剧,连地址法无法保证查询效率,因此为了提高数据的访问效率,需要增大M重新对数据进行哈希(即rehash)
+
+    ht[0].used >= ht[0].size 意味着哈希地址空间M漫射 有可能需要扩展哈希地址空间
+    used/size为哈希空间的装填因子(利用率) 漫射时需要扩张 保持N < M 利用率不足时需要收缩空间
+    无论时扩张还是收缩 都需要经过rehash重新散列
+
+## 六、字典(symbol table/associative array/map)
+### 1、基础数据结构
+    用途:存储key-value-pair
+    底层实现:2个哈希表和相关的hash函数
+    字典:
+    struct dict 
+    {
+        dictType *type; // 键值操作函数集合
+        void *privdata;
+        dictht ht[2];   // 哈希表数组 一般只使用ht[0] ht[1]在对哈希表进行rehash时使用
+        long rehashidx; // rehash索引
+        ... 
+    }
+    ht[1]相当于备用表,当数据过多时,由于桶个数较少 每一个桶单元内的元素必然线性增多 桶单元内的查找等操作效率必然线性增长,此时需要更大的地址空间,将较多的数据尽量映射均匀.也就是rehash来解决哈希冲突.
+
+### 2、redis的渐进式rehash
+    若是由于数据量增长ht[0].used >= ht[0].size且ht[0].used/ht[0].size>dict_force_resize_ratio,则是将ht[0]小数据集迁移到更大的数据集ht[1],是一种哈希空间扩张
+    若是由于哈希空间利用率不足ht[0].used/ht[0].size < 10% 则是将较大数据集迁移ht[0]迁移到较小数据集ht[1]中,哈希空间收缩
+
+#### rehash的执行过程
+    int dictRehash(dict *d, int n)
+    {
+        while (n--)
+        {
+            de = d->ht[0].table[d->rehashidx];  // 定位待迁移数据位置
+            while(de)
+            {
+                h = dictHashKey(d, de->key) & d->ht[1].sizemask // 执行hash算法 定义rehash后的数据位置
+                d->ht[1].table[h] = de  // 数据迁移到指定位置
+                de = nextde  // 迭代下一个数据
+            }
+        }
+        if (d->ht[0].used == 0) // ht[0]的rehash数据迁移完毕
+        {
+            d->ht[0] = d->ht[1] // 备用表切换为正在使用表
+        }
+    }
+
+#### rehash操作的ht[1]空间是何时分配的
+    dictAddRaw  // 向hash表中添加元素
+        | ->_dictKeyIndex   // 检查是否需要扩展hash表
+                | -> _dictExpandIfNeeded    // (d->ht[0].used >= d->ht[0].size && (dict_can_resize || d->ht[0].used/d->ht[0].size > dict_force_resize_ratio)
+                                | -> dictExpand
+
+
+#### 何为渐进式rehash -> 分散(均摊)rehash操作到n个操作中而不是集中一次性rehash
+##### 定时rehash
+    databasesCron
+        | -> incrementallyRehash
+                    | -> dictRehashMilliseconds
+                                    | -> dictRehash
+
+##### 数据库增删改查操作过程中rehash
+    dictAddRaw          // 增
+    dictGenericDelete   // 删
+    dictFind            // 查
+    dictGetRandomKey    // 随机获取
+    dictGetSomeKeys     // 获取
+            | -> _dictRehashStep
+                        | -> dictRehash
+
+### 3、尝试缩小字典
+    定时尝试缩小字典
+    databasesCron
+        | -> tryResizeHashTables
+                    | 若字典利用率ht[0].used/ht[0].size < 10%则以下缩小字典
+                    | -> dictResize(db->dict)
+                    | -> dictResize(db->expires)
 
 ## 七、整数集合
 
