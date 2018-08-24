@@ -2480,7 +2480,9 @@ int processCommand(client *c) {
      * First we try to free some memory if possible (if there are volatile
      * keys in the dataset). If there are not the only thing we can do
      * is returning an error. */
+    // 已配置最大内存限制 
     if (server.maxmemory) {
+        // 检查是否超过内存 限制 若超过 则尝试释放一部分内存
         int retval = freeMemoryIfNeeded();
         /* freeMemoryIfNeeded may flush slave output buffers. This may result
          * into a slave, that may be the active client, to be freed. */

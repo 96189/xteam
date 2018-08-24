@@ -380,6 +380,7 @@ size_t freeMemoryGetNotCountedMemory(void) {
     return overhead;
 }
 
+// 检查是否超过内存 限制 若超过 则尝试释放一部分内存
 int freeMemoryIfNeeded(void) {
     size_t mem_reported, mem_used, mem_tofree, mem_freed;
     mstime_t latency, eviction_latency;
@@ -409,7 +410,7 @@ int freeMemoryIfNeeded(void) {
     if (mem_used <= server.maxmemory) return C_OK;
 
     /* Compute how much memory we need to free. */
-    // 应该释放的内存量
+    // 最小应该释放的内存量(超过限制的内存量)
     mem_tofree = mem_used - server.maxmemory;
     // 实际释放的内存量
     mem_freed = 0;
@@ -445,8 +446,7 @@ int freeMemoryIfNeeded(void) {
                 for (i = 0; i < server.dbnum; i++) {
                     db = server.db+i;
                     // allkeys(db->dict) or volatile(db->expires)
-                    dict = (server.maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) ?
-                            db->dict : db->expires;
+                    dict = (server.maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) ? db->dict : db->expires;
                     if ((keys = dictSize(dict)) != 0) {
                         // 内部区分是lru lfu volatile-ttl配置策略 
                         // 随机采样
@@ -457,7 +457,7 @@ int freeMemoryIfNeeded(void) {
                 if (!total_keys) break; /* No keys to evict. */
 
                 /* Go backward from best to worst element to evict. */
-                // 淘汰样本集符合 算法的key
+                // 淘汰样本集 符合算法的key
                 // pool是按照升序排列的 倒序遍历
                 for (k = EVPOOL_SIZE-1; k >= 0; k--) {
                     if (pool[k].key == NULL) continue;
@@ -502,8 +502,8 @@ int freeMemoryIfNeeded(void) {
             for (i = 0; i < server.dbnum; i++) {
                 j = (++next_db) % server.dbnum;
                 db = server.db+j;
-                dict = (server.maxmemory_policy == MAXMEMORY_ALLKEYS_RANDOM) ?
-                        db->dict : db->expires;
+                dict = (server.maxmemory_policy == MAXMEMORY_ALLKEYS_RANDOM) ? db->dict : db->expires;
+
                 if (dictSize(dict) != 0) {
                     de = dictGetRandomKey(dict);
                     bestkey = dictGetKey(de);
