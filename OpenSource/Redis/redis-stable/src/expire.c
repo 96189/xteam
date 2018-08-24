@@ -169,7 +169,7 @@ void activeExpireCycle(int type) {
     long total_sampled = 0;
     long total_expired = 0;
 
-    // 遍历数据库
+    // 遍历数据库 [0-15]号
     for (j = 0; j < dbs_per_call && timelimit_exit == 0; j++) {
         int expired;
         redisDb *db = server.db+(current_db % server.dbnum);
@@ -200,7 +200,7 @@ void activeExpireCycle(int type) {
              * keys is expensive, so stop here waiting for better times...
              * The dictionary will be resized asap. */
             // 这个数据库的使用率低于 1%,扫描起来太费力了（大部分都会 MISS）
-            // 跳过，等待字典收缩程序运行
+            // 跳过 等待字典收缩程序运行
             if (num && slots > DICT_HT_INITIAL_SIZE &&
                 (num*100/slots < 1)) break;
 
@@ -266,8 +266,7 @@ void activeExpireCycle(int type) {
             }
             /* We don't repeat the cycle if there are less than 25% of keys
              * found expired in the current DB. */
-        // 如果已删除的过期键占当前总数据库带过期时间的键数量的 25 %
-        // 那么不再遍历
+        // 若超过25%的键过期 则继续过期
         } while (expired > ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP/4);
     }
 

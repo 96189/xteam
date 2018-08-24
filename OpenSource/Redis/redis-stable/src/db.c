@@ -1292,10 +1292,11 @@ int expireIfNeeded(redisDb *db, robj *key) {
     // 从而保证数据的同步    
     if (server.masterhost != NULL) return now > when;
 
-    // 当前服务器为主节点且键带有过期时间
+    // 当前服务器为主节点且键带有过期时间 且未过期
     /* Return when this key has not expired */
     if (now <= when) return 0;
 
+    // 已过期
     /* Delete the key */
     server.stat_expiredkeys++;
     // 向aof文件和附属节点传播过期信息

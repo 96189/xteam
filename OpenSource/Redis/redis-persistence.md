@@ -66,7 +66,7 @@
 #### 命令追加到aof_buf(每一个写命令执行后会被追加到aof_buf缓冲区)
         lookupKeyRead/Write -> expireIfNeeded -> propagateExpire -> feedAppendOnlyFile
 
-#### 文件写入(事件循环结束之前,aof_buf内存缓冲区存aof文件)
+#### 文件写入(每次事件分派之前执行,aof_buf内存缓冲区存aof文件)
         beforeSleep -> flushAppendOnlyFile
 
 #### 文件同步(根据appendfsync选项决定文件数据何时刷新到磁盘)
