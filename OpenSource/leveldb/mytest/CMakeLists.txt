@@ -12,8 +12,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_definitions("-Wall -g")
 
-include_directories("/home/lihao/xteam/OpenSource/leveldb/include")
-link_directories("/home/lihao/build_leveldb")
+include_directories("/home/96189/xteam/OpenSource/leveldb/include")
+link_directories("/home/96189/build_leveldb")
 
 find_package(Threads)
 
