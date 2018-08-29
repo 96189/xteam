@@ -44,7 +44,7 @@
 void updateLFU(robj *val) {
     unsigned long counter = LFUDecrAndReturn(val);
     counter = LFULogIncr(counter);
-    val->lru = (LFUGetTimeInMinutes()<<8) | counter;
+    val->lru = (LFUGetTimeInMinutes()<<8) | counter;    // 低8位为频率计数器
 }
 
 /* Low level key lookup API, not actually called directly from commands
