@@ -56,11 +56,13 @@ template <typename K, typename V>
 class LFUCache : public CacheInterface<K, V>
 {
 private:
+    // cache节点的物理存储视角
     // Cache表 hash map 查询效率O(1)
     std::unordered_map<K, Cache<K, V>*> values_;                // key -> node             key到对应节点的映射
     // cache节点->频率表 hash map 查询效率O(1) 此表的存在是为了中间层转换实现key->counts->lists的查询
     std::unordered_map<K, int> counts_;                         // key -> counts_          key到频率的映射
-    // 频率->cache节点列表的表 sorted map 频率相同时 优先驱逐先存入map中的cache
+    // cache节点的逻辑存储视角
+    // 频率->cache节点列表的表 sorted map 按照频率排序 频率相同时 优先驱逐先存入map中的cache
     std::map<int, std::list<Cache<K, V>*>*> frequencies_;       // counts_ -> value list 频率到节点列表的映射
     int max_capacity_;
     int used_;
@@ -83,6 +85,17 @@ public:
     }
     ~LFUCache()
     {
+        // 手动释放new过的内存
+        for (typename std::unordered_map<K, Cache<K, V>*>::iterator it = values_.begin();
+             it != values_.end(); ++it)
+        {
+            delete it->second;
+        }
+        for (typename std::map<int, std::list<Cache<K, V>*>*>::iterator lit = frequencies_.begin();
+             lit != frequencies_.end(); ++lit)
+        {
+            lit->second->clear();
+        }
         values_.clear();
         counts_.clear();
         frequencies_.clear();      
@@ -212,6 +225,124 @@ public:
             }
             std::cout << std::endl;
         }
+    }
+};
+
+template <typename K, typename V>
+class LRUCache : public CacheInterface<K, V>
+{
+private:
+    // hash map cache节点逻辑存储视角 O(1)查询
+    std::unordered_map<K, Cache<K, V>*> values_;
+    // cache节点物理存储视角 列表节点的排列按照由新到旧的顺序
+    std::list<Cache<K, V>*> logiclists_;
+    int max_capacity_;
+    int used_;
+
+public:
+// 构造与析构
+    LRUCache(int cap = CACHE_COUNT_MAX)
+        : max_capacity_(cap), used_(0)
+    {
+        values_.clear();
+        logiclists_.clear();
+    } 
+    ~LRUCache()
+    {
+        // 手动释放new过的内存
+        for (typename std::list<Cache<K, V>*>::iterator it = logiclists_.begin();
+             it != logiclists_.end(); ++it)
+        {
+            delete (*it);
+        }
+        values_.clear();
+        logiclists_.clear();        
+    }
+// 接口实现
+    virtual void New()
+    {
+        return;
+    }
+    virtual bool Get(K key, V& v) 
+    {
+        typename std::unordered_map<K, Cache<K, V>*>::iterator it = values_.find(key);
+        if (it == values_.end())     
+        {
+            v = V();
+            return false;
+        }    
+        // 查询到key对应的cache节点 将对应节点移动到链表最前端 保持由新到旧的顺序
+        v = it->second->value;
+        Cache<K, V> *node = new Cache<K,V>(key, v);
+
+        logiclists_.remove(it->second);
+        logiclists_.push_front(node);
+
+        values_[key] = node;
+        return true;
+    }
+    virtual void Set(K key, V value) 
+    {
+        Cache<K, V> *node = NULL;
+        typename std::unordered_map<K, Cache<K, V>*>::iterator it = values_.find(key);
+        // 已存在更新值
+        if (it != values_.end())     
+        {
+            it->second->value = value;
+            // 已在链表最前端(已最新)
+            if (logiclists_.front() == it->second) return;
+            // 不在链表前端 需要调整cache节点位置 
+            logiclists_.remove(it->second);
+        }
+        // 否则生成新cache节点
+        node = new Cache<K,V>(key, value);
+        // 检查是否驱逐缓存
+        if (values_.size() >= max_capacity_)
+        {
+            Evict(values_.size() - max_capacity_);
+        }
+
+        logiclists_.push_front(node);
+
+        values_[key] = node;
+        ++used_;
+    }
+    virtual void Evict(int count)
+    {
+        // 链表总是保持由新到旧 驱逐缓存 操作链表末尾即可
+        // 缓存刚满 此时count为0 插入新值需要驱逐一块缓存
+        while (count-- >= 0)
+        {
+            values_.erase(logiclists_.back()->key);
+            logiclists_.pop_back();
+            --used_;
+        }
+    }
+    virtual int Used() 
+    {
+        return used_;
+    }
+// 
+    int Size() const 
+    {
+        return max_capacity_;
+    }
+// 测试
+// 测试
+    void PrintTable()
+    {
+        typename std::unordered_map<K, Cache<K, V>*>:: iterator it = values_.begin();
+        for ( ; it != values_.end(); ++it)
+        {
+            std::cout << "key: " << it->first <<  " -> k: "  << it->second->key <<  " v: " << it->second->value << std::endl;
+        }
+        for (typename std::list<Cache<K, V> *>::iterator lit = logiclists_.begin();
+             lit != logiclists_.end();
+             ++lit)
+        {
+            std::cout << "node: k: " << (*lit)->key << " v: " << (*lit)->value << " => ";
+        }
+        std::cout << std::endl;
     }
 };
 

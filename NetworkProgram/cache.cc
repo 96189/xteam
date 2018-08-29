@@ -42,8 +42,46 @@ void TestLFU()
     lfu.PrintTable();
 }
 
+void TestLRU()
+{
+    // LRUCache<int,int> lru;
+    // int v;
+    // lru.Set(1,11);
+    // lru.Set(2,22);
+    // lru.Set(3,33);
+    // lru.Get(1,v);
+    // lru.Get(1,v);
+    // lru.Get(1,v);
+    // lru.Get(1,v);
+    // lru.Get(2,v);
+    // lru.Get(3,v);
+    // lru.Set(4,44);
+    // lru.Set(5,55);
+    // lru.PrintTable();
+
+    LRUCache<std::string,std::string> lru;
+    std::string v;
+    lru.Set("qwe", "123");
+    lru.Set("asd", "123");
+    lru.Set("zxc", "123");
+    lru.Get("qwe", v);
+    lru.Get("qwe", v);
+    lru.Get("qwe", v);
+    lru.Get("qwe", v);
+    lru.Get("qwe", v);
+
+    lru.Get("asd", v);
+    lru.Get("zxc", v);
+    lru.Get("zxc", v);
+    lru.Set("qaz", "111");
+    lru.Get("qaz", v);
+    std::cout << v << std::endl;
+    lru.PrintTable();
+}
+
 int main(int argc, char *argv[])
 {
     TestLFU();
+    TestLRU();
     return 0;
 }
