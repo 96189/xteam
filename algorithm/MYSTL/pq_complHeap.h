@@ -37,7 +37,7 @@ template <typename T>
 class PQ_ComplHeap : public PQ<T>, public Vector<T> 
 {
 protected:
-    // 逻辑上的结构为完全二叉树
+    // 逻辑上的结构为完全二叉树 维护堆序性
     Rank percolateDown(Rank n, Rank i) // 下滤
     {
         Rank j; // i及其孩子中最大的
@@ -48,7 +48,7 @@ protected:
         }
         return i;
     }
-    // 逻辑上的结构为完全二叉树
+    // 逻辑上的结构为完全二叉树 维护堆序性
     Rank percolateUp(Rank i) // 上滤
     {
         while (ParentValid(i))
@@ -78,7 +78,7 @@ public:
     // 将词条插入完全二叉堆中
     void insert(T e)
     {
-        this->insert(e); // 在向量末尾插入
+        this->insert(e); // 在向量末尾插入 打破堆序性
         percolateUp(this->_size - 1); // 上滤调整
     }
     // 获取非空完全二叉堆中优先级最高的词条
@@ -89,7 +89,7 @@ public:
     T delMax()
     {
         T maxElem = this->_elem[0];   // 备份堆顶元素
-        this->_elem[0] = this->remove(this->_size - 1);   // 以堆末尾元素替换堆顶(删除堆末尾元素)
+        this->_elem[0] = this->remove(this->_size - 1);   // 以堆末尾元素替换堆顶(删除堆末尾元素) 打破结构性和堆序性
         percolateDown(this->_size, 0);    // 对新堆顶实施下滤调整
         return maxElem;
     }
