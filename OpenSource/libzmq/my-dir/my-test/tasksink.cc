@@ -4,6 +4,8 @@
 // 任务收集器
 // 绑定PULL套接字至tcp://localhost:5558端点
 // 从worker处收集结果
+// 添加发布-订阅消息流 用于向worker发送自杀信号
+// 打开的套接字未显式关闭 会阻断进程的退出
 
 #include <zmq.h>
 #include <assert.h>
@@ -29,6 +31,11 @@ int main(int argc, char* argv[])
     int ret = zmq_bind(recevier, "tcp://*:5558");
     assert(ret != -1);
 
+    // 用于发送控制信息的套接字
+    void *controller = zmq_socket(context, ZMQ_PUB);
+    ret = zmq_bind(controller, "tcp://*:5559");
+    assert(ret != -1);
+
     // 等待任务分发器发来的开始信号
     char buf[1];
     int n = zmq_recv(recevier, buf, 1, 0);
@@ -47,11 +54,15 @@ int main(int argc, char* argv[])
             printf(":");
         else 
             printf(".");
-        fflush(stdout);
+        fflush(stdout);                                   
     }
     // 计算并输出总执行时间
     printf("\nexecution time: %llu ms\n", (timeInMilliseconds() - start_time));
+    
+    zmq_send(controller, "KILL", 4, 0);
+
     zmq_close(recevier);
+    zmq_close(controller);
     zmq_term(context);
     return 0;
 }

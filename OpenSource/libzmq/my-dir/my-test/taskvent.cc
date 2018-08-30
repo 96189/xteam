@@ -56,7 +56,10 @@ int main(int argc, char* argv[])
         n = zmq_send(sender, buf, strlen(buf), 0);
         assert(n > 0);
     }
+
     printf("Estimated execution time: %d ms\n", total_msec);
+
+    sleep(1);
 
     zmq_close(sink);
     zmq_close(sender);
