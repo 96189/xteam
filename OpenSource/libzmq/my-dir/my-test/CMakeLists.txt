@@ -23,6 +23,8 @@ add_executable(rrclient rrclient.cc)
 add_executable(rrserver rrserver.cc)
 add_executable(rrbroker rrbroker.cc)
 
+add_executable(msgqueue msgqueue.cc)
+
 
 
 
@@ -43,3 +45,5 @@ target_link_libraries(wuproxy zmq)
 target_link_libraries(rrclient zmq)
 target_link_libraries(rrserver zmq)
 target_link_libraries(rrbroker zmq)
+
+target_link_libraries(msgqueue zmq)
