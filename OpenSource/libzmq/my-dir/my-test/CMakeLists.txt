@@ -35,6 +35,10 @@ add_executable(syncsub syncsub.cc)
 add_executable(psenvpub psenvpub.cc)
 add_executable(psenvsub psenvsub.cc)
 
+add_executable(durasub durasub.cc)
+add_executable(durapub durapub.cc)
+
+
 
 target_link_libraries(hwserver zmq)
 target_link_libraries(hwclient zmq)
@@ -64,3 +68,6 @@ target_link_libraries(syncsub zmq)
 
 target_link_libraries(psenvpub zmq)
 target_link_libraries(psenvsub zmq)
+
+target_link_libraries(durasub zmq)
+target_link_libraries(durapub zmq)
