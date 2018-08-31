@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
         assert(n > 0);
         printf("recv request : %s\n", buf);
 
-        // do somethin
+        // do something
 
         // response
         n = zmq_send(responder, "world", 5, 0);

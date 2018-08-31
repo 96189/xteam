@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.9)
 
 add_definitions("-Wall -g")
 
+find_package(Threads)
+
 link_directories("/usr/local/lib")
 
 add_executable(hwserver hwserver.cc)
@@ -24,6 +26,8 @@ add_executable(rrserver rrserver.cc)
 add_executable(rrbroker rrbroker.cc)
 
 add_executable(msgqueue msgqueue.cc)
+
+add_executable(mtserver mtserver.cc)
 
 
 
@@ -47,3 +51,6 @@ target_link_libraries(rrserver zmq)
 target_link_libraries(rrbroker zmq)
 
 target_link_libraries(msgqueue zmq)
+
+target_link_libraries(mtserver zmq)
+target_link_libraries(mtserver ${CMAKE_THREAD_LIBS_INIT})
