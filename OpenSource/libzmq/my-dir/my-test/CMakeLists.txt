@@ -32,6 +32,8 @@ add_executable(mtserver mtserver.cc)
 add_executable(syncpub syncpub.cc)
 add_executable(syncsub syncsub.cc)
 
+add_executable(psenvpub psenvpub.cc)
+add_executable(psenvsub psenvsub.cc)
 
 
 target_link_libraries(hwserver zmq)
@@ -59,3 +61,6 @@ target_link_libraries(mtserver ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(syncpub zmq)
 target_link_libraries(syncsub zmq)
+
+target_link_libraries(psenvpub zmq)
+target_link_libraries(psenvsub zmq)
