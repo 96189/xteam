@@ -29,6 +29,8 @@ add_executable(msgqueue msgqueue.cc)
 
 add_executable(mtserver mtserver.cc)
 
+add_executable(syncpub syncpub.cc)
+add_executable(syncsub syncsub.cc)
 
 
 
@@ -54,3 +56,6 @@ target_link_libraries(msgqueue zmq)
 
 target_link_libraries(mtserver zmq)
 target_link_libraries(mtserver ${CMAKE_THREAD_LIBS_INIT})
+
+target_link_libraries(syncpub zmq)
+target_link_libraries(syncsub zmq)

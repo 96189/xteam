@@ -21,7 +21,7 @@ static void *worker_routine(void *context)
         char buf[256] = {'\0'};
         int n = zmq_recv(recevier, buf, 255, 0);
         assert(n >= 0);
-        printf("server %d thread recv : %s\n", pthread_self(), buf);
+        printf("server %lu thread recv : %s\n", pthread_self(), buf);
         n = zmq_send(recevier, "world", 6, 0);
         assert(n >= 0);
     }
