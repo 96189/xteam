@@ -4,14 +4,14 @@ namespace MYSTL
 {
 
 template <typename T>
-class Queue : public MYSTL::List<T>
+class Queue : public List<T>
 {
 public:
     // default constructor
 public:
     void enqueue(const T& e)
     {
-        insertAsLast(e);
+        List<T>::insertAsLast(e);
     }
     T dequeue()
     {

@@ -235,7 +235,6 @@ public:
         {
             return NULL;
         }
-        int index = -1;
         BinNodePosi(T) root = new BinNode<T>();
         BinNodePosi(T) lChild = NULL;
         BinNodePosi(T) rChild = NULL;

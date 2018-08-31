@@ -125,7 +125,7 @@ void TestSplayTree()
     assert(spt.root()->data == 5);
 }
 
-#include "B-Tree.h"
+#include "BTree.h"
 void TestBTree()
 {
     BTree<int> bt;

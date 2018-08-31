@@ -72,8 +72,8 @@ protected:
     }
 public:
     PQ_ComplHeap() { } // 默认构造
-    PQ_ComplHeap(T* A, Rank lo, Rank hi) { copyFrom(A, lo, hi); heapify(hi - lo); } // 批量构造
-    PQ_ComplHeap(T* A, Rank n) { copyFrom(A, 0, n); heapify(n); } // 批量构造
+    PQ_ComplHeap(T* A, Rank lo, Rank hi) { Vector<T>::copyFrom(A, lo, hi); heapify(hi - lo); } // 批量构造
+    PQ_ComplHeap(T* A, Rank n) { Vector<T>::copyFrom(A, 0, n); heapify(n); } // 批量构造
 // 接口实现
     // 将词条插入完全二叉堆中
     void insert(T e)

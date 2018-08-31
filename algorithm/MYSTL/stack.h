@@ -14,7 +14,7 @@ public:
 public:
     void push(const T& e)
     {
-        insert(this->size(), e);
+        Vector<T>::insert(this->size(), e);
     }
     T pop()
     {

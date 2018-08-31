@@ -27,21 +27,21 @@ protected:
                 {
                     // 伸展树双层旋转的特点 从祖父节点开始旋转
                     // 子树重接
-                    attachAsLC(g, p->rChild);
-                    attachAsLC(p, v->rChild);
+                    BinTree<T>::attachAsLC(g, p->rChild);
+                    BinTree<T>::attachAsLC(p, v->rChild);
                     // g做p的右孩子
-                    attachAsRC(p, g);
+                    BinTree<T>::attachAsRC(p, g);
                     // p做v的左孩子
-                    attachAsRC(v, p);
+                    BinTree<T>::attachAsRC(v, p);
                 }
                 // 左侧折线
                 else 
                 {
                     // 与AVL双旋转一样
-                    attachAsLC(p, v->rChild);
-                    attachAsRC(g, v->lChild);
-                    attachAsLC(v, g);
-                    attachAsRC(v, p);
+                    BinTree<T>::attachAsLC(p, v->rChild);
+                    BinTree<T>::attachAsRC(g, v->lChild);
+                    BinTree<T>::attachAsLC(v, g);
+                    BinTree<T>::attachAsRC(v, p);
                 }
             }
             // 右侧直线
@@ -49,39 +49,40 @@ protected:
             {
                 // 伸展树双层旋转的特点 从祖父节点开始旋转
                 // 子树重接
-                attachAsRC(g, p->lChild);
-                attachAsRC(p, v->lChild);
+                BinTree<T>::attachAsRC(g, p->lChild);
+                BinTree<T>::attachAsRC(p, v->lChild);
                 // g做p的左孩子
-                attachAsLC(p, g);
+                BinTree<T>::attachAsLC(p, g);
                 // p做v的左孩子
-                attachAsLC(v, p);
+                BinTree<T>::attachAsLC(v, p);
             }
             // 右侧折线
             else 
             {
                 // 与AVL双旋转一样
-                attachAsRC(p, v->lChild);
-                attachAsLC(g, v->rChild);
-                attachAsRC(v, g);
-                attachAsLC(v, p);
+                BinTree<T>::attachAsRC(p, v->lChild);
+                BinTree<T>::attachAsLC(g, v->rChild);
+                BinTree<T>::attachAsRC(v, g);
+                BinTree<T>::attachAsLC(v, p);
             }
             // 曾祖父为空
             if (!gg) v->parent = NULL;
             // 曾祖父不为空
             else 
-                (g == gg->lChild) ? attachAsLC(gg, v) : attachAsRC(gg, v);
+                (g == gg->lChild) ? BinTree<T>::attachAsLC(gg, v) : BinTree<T>::attachAsRC(gg, v);
             // 调整完更新3个节点的高度
-            updateHeight(g);
-            updateHeight(p);
-            updateHeight(v);
+            BinTree<T>::updateHeight(g);
+            BinTree<T>::updateHeight(p);
+            BinTree<T>::updateHeight(v);
         } // 双层伸展结束 必有g == NULL 但p可能非空
         // 若p非空 额外再做一次单旋转
-        if (p = v->parent)
+        p = v->parent;
+        if (p)
         {
-            if (IsLChild(v)) { attachAsLC(p, v->rChild); attachAsRC(v, p); }
-            else { attachAsRC(p, v->lChild); attachAsLC(v, p); }
-            updateHeight(p);
-            updateHeight(v);
+            if (IsLChild(v)) { BinTree<T>::attachAsLC(p, v->rChild); BinTree<T>::attachAsRC(v, p); }
+            else { BinTree<T>::attachAsRC(p, v->lChild); BinTree<T>::attachAsLC(v, p); }
+            BinTree<T>::updateHeight(p);
+            BinTree<T>::updateHeight(v);
         }
         // v到达根节点 父指针置空
         v->parent = NULL;
@@ -91,7 +92,7 @@ public:
     // 在伸展树中查找关键码e
     BinNodePosi(T) &search(const T& e)
     {
-        BinNodePosi(T) &p = searchIn(this->_root, e, this->_hot=NULL);
+        BinNodePosi(T) &p = BinTree<T>::searchIn(this->_root, e, this->_hot=NULL);
         // 将最后一个被访问的节点伸展至树根
         this->_root = splay(p ? p : this->_hot);
         return this->_root;
@@ -134,7 +135,7 @@ public:
                 t->lChild = NULL;
             }
         }
-        updateHeightAbove(t);
+        BinTree<T>::updateHeightAbove(t);
         return this->_root;
     }
     // 从伸展树中删除关键码e
@@ -172,7 +173,7 @@ public:
         delete w;
         --this->_size;
         if (this->_root)
-            updateHeight(this->_root);
+            BinTree<T>::updateHeight(this->_root);
         return true;
     }
 };

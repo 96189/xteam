@@ -64,6 +64,15 @@ public:
     }
 };
 
+
+template <typename T>
+void swap(ListNodePosi(T) first, ListNodePosi(T) last)
+{
+    T val = first->getData();
+    first->setData(last->getData());
+    last->setData(val);
+}
+
 // 双向链表定义
 // 双向链表结束不以NULL为标记
 // 尾端存在trailer哨兵节点
@@ -111,13 +120,80 @@ protected:
         }
     }
     // 有序列表区间归并
-    void merge(ListNodePosi(T)& , int , List<T>& ,ListNodePosi(T), int );
+    void merge(ListNodePosi(T)& , int , List<T>& ,ListNodePosi(T), int )
+    {
+
+    }
     // 对从p开始的连续n个节点归并排序
-    void mergeSort(ListNodePosi(T)& , int);
+    void mergeSort(ListNodePosi(T)& , int)
+    {
+
+    }
     // 对从p开始的连续n个节点选择排序
-    void selectionSort(ListNodePosi(T), int);
+    void selectionSort(ListNodePosi(T) p, int n)
+    {
+        int count = n;
+        ListNodePosi(T) ofirst = p;
+        while (--count)
+        {
+            ofirst = ofirst->succ;
+        }
+        for (ListNodePosi(T) ulast = ofirst; /* 初始状态有序空间为0 无序空间占据整个空间 */
+             ulast != p;                     /* 有序空间未填充整个无序空间 */
+             ulast = ulast->pred)            /* 每次循环有序空间增长 无序空间减小 */
+        {
+            // 在[ufirst, ulast]区间中找最大值
+            ListNodePosi(T) pMax = p;
+            for (ListNodePosi(T) ufirst = p;
+                 ufirst != ulast->succ;
+                 ufirst = ufirst->succ)
+            {
+                if (ufirst->getData() >= pMax->getData())
+                {
+                    pMax = ufirst;
+                }
+            }
+            // 同一位置不交换(已在有序空间)
+            if (pMax != ulast)
+            {
+                swap(pMax, ulast);
+            }
+        }
+    }
     // 对从p开始的连续n个节点插入排序
-    void insertionSort(ListNodePosi(T), int);
+    void insertionSort(ListNodePosi(T) p, int n)
+    {
+        ListNodePosi(T) olast = p;
+        ListNodePosi(T) ufirst = olast->succ;
+        int oCount = 1;
+        ListNodePosi(T) pos = NULL;
+        ListNodePosi(T) del = NULL;
+        while (ufirst != trailer)
+        {
+            pos = search(ufirst->getData(), oCount, olast);
+            // 在有序区间找到待插入元素的插入位置
+            if (pos != olast)
+            {
+                // 有序空间增长
+                insertAsSucc(pos, ufirst->getData());
+                // 无序空间减小
+                del = ufirst;
+                ufirst = ufirst->succ;
+                // 删除已排序插入的节点
+                remove(del);
+            }
+            // 待插入元素和有序空间最后一个元素已经相邻 无需做任何操作
+            else
+            {
+                // 无序空间减小
+                ufirst = ufirst->succ;
+                // 有序空间增长
+                olast = olast->succ;
+            }
+            //
+            ++oCount;
+        }
+    }
 public:
 // 构造函数
     // 默认
@@ -166,7 +242,16 @@ public:
         return _size == 0;
     }
     // 重载[]支持寻秩访问
-    T& operator[](Rank r) const;
+    T& operator[](Rank r) const
+    {
+        assert(r < _size);
+        ListNodePosi(T) pCur = header->succ;
+        while (r-- > 0)
+        {
+            pCur = pCur->succ;
+        }
+        return pCur->getData();
+    }
     // 首节点位置
     ListNodePosi(T) first() const
     {
@@ -178,21 +263,79 @@ public:
         return trailer->pred;
     }
     // 判断位置p是否对外合法
-    bool valid(ListNodePosi(T) p) const;
+    bool valid(ListNodePosi(T) p) const
+    {
+        return (p && p != header && p != trailer);
+    }
     // 判断列表是否已经有序
-    int disordered() const;
+    int disordered() const
+    {
+        int count = 0;
+        for (ListNodePosi(T) pCur = header->succ;
+             pCur->succ != trailer;
+             pCur = pCur->succ)
+        {
+            count += pCur->getData() > pCur->succ->getData() ? 1 : 0;
+        }
+        return count;
+    }
     // 无序列表查找
-    ListNodePosi(T) find(const T& e) const;
+    ListNodePosi(T) find(const T& e) const
+    {
+         return find(e, _size, last());
+    }
     // 无序区间查找
-    ListNodePosi(T) find(const T& e, int n, ListNodePosi(T) p) const;
+    ListNodePosi(T) find(const T& e, int n, ListNodePosi(T) p) const
+    {
+        assert(n > 0 && p);
+        ListNodePosi(T) pCur = p->succ;
+        while ((pCur = pCur->pred) != trailer && --n)
+        {
+            if (pCur->getData() == e)
+                break;
+        }
+        if (n == 0 && pCur->getData() != e)
+        {
+            return NULL;
+        }
+        return pCur;
+    }
     // 有序列表查找
-    ListNodePosi(T) search(const T& e);
+    ListNodePosi(T) search(const T& e)
+    {
+        return search(e, _size, last());
+    }
     // 有序区间查找
-    ListNodePosi(T) search(const T& e, int n, ListNodePosi(T) p) const;
+    ListNodePosi(T) search(const T& e, int n, ListNodePosi(T) p) const
+    {
+        assert(n > 0 && p);
+        ListNodePosi(T) pCur = p->succ;
+        while ((pCur = pCur->pred) != trailer && --n)
+        {
+            if (pCur->getData() <= e)
+                break;
+        }
+        return pCur;
+    }
     // 在p及其n-1个后继中选出最大者
-    T selectMax(ListNodePosi(T) p, int n);
+    T selectMax(ListNodePosi(T) p, int n)
+    {
+        ListNodePosi(T) pCur = p;
+        T maxVal = pCur->getData();
+        while ((pCur = pCur->succ) != trailer && --n)
+        {
+            if (pCur->getData() > maxVal)
+            {
+                maxVal = pCur->getData();
+            }
+        }
+        return maxVal;
+    }
     // 整体最大者
-    T selectMax();
+    T selectMax()
+    {
+        return selectMax(first(), _size);
+    }
 // 可写访问接口
     // 将e当作首节点插入
     void insertAsFirst(const T& e)
@@ -207,9 +350,17 @@ public:
         ++_size;
     }
     // 将e当作p的前驱插入
-    void insertAsPred(ListNodePosi(T) p, const T& e);
+    void insertAsPred(ListNodePosi(T) p, const T& e)
+    {
+        p->insertAsPred(e);
+        ++_size;
+    }
     // 将e当作p的后继插入
-    void insertAsSucc(ListNodePosi(T) p, const T& e);
+    void insertAsSucc(ListNodePosi(T) p, const T& e)
+    {
+        p->insertAsSucc(e);
+        ++_size;
+    }
     // 删除合法位置p处的节点 返回被删除的节点
     T remove(ListNodePosi(T) p)
     {
@@ -225,18 +376,74 @@ public:
         return val;
     }
     // 全列表归并
-    void merge(List<T>& L);
+    void merge(List<T>& L)
+    {
+
+    }
     // 列表区间排序
-    void sort(ListNodePosi(T) s, int n);
+    void sort(ListNodePosi(T) s, int n)
+    {
+        selectionSort(s, n);
+    }
     // 列表整体排序
-    void sort();
+    void sort()
+    {
+        sort(header->succ, _size);
+    }
     // 无序去重
-    int deduplicate();
+    int deduplicate()
+    {
+        // 有序区间的最后一个节点的指针
+        ListNodePosi(T) olast = first();
+        // 无序区间第一个节点节点的指针
+        ListNodePosi(T) ufirst = olast->succ;
+        ListNodePosi(T) pos = NULL;
+        ListNodePosi(T) del = NULL;
+        int oCount = 1;
+        int delCount = 0;
+        while (ufirst != trailer)
+        {
+            pos = find(ufirst->getData(), oCount, olast);
+            if (pos)
+            {
+                // 有序区间存在与无序区间重复的值
+                del = ufirst;
+            }
+            ufirst = ufirst->succ;
+            if (del)
+            {
+                // 删除无序区间中重复的值
+                ++delCount;
+                remove(del);
+            }
+            else
+            {
+                // 有序区间增长
+                ++oCount;
+                olast = olast->succ;
+            }
+            del = NULL;
+        }
+        return delCount;
+    }
     // 有序去重
-    int uniquify();
+    int uniquify()
+    {
+        return 0;
+    }
     // 前后逆置
-    void reverse();
-// 遍历
+    void reverse()
+    {
+        ListNodePosi(T) f = first();
+        ListNodePosi(T) l = last();
+        while (f != l && f->pred != l)
+        {
+            swap(f, l);
+            f = f->succ;
+            l = l->pred;
+        }
+    }
+    // 遍历
     // 函数指针遍历
     void traverse(void (*visit)(T& val))
     {

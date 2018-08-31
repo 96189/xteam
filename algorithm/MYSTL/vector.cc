@@ -1,9 +1,9 @@
 #include "vector.h"
-#include <stdlib.h>
+
 #include <stdio.h>
 
-namespace MYSTL
-{
+// namespace MYSTL
+// {
     
 // // 复制数组A区间[lo,hi]
 // template <typename T>
@@ -17,18 +17,18 @@ namespace MYSTL
 //     _size = count; 
 // }
 // 装填因子过小时压缩
-template <typename T>
-void Vector<T>::shrink()
-{
-    if (_size * 2 < _capacity)
-    {
-        T* newAddr = new T[_capacity>>=1];
-        assert(newAddr);
-        memmove(newAddr, _elem, _size * sizeof(T));
-        delete[] _elem;
-        _elem = newAddr;        
-    }
-}
+// template <typename T>
+// void Vector<T>::shrink()
+// {
+//     if (_size * 2 < _capacity)
+//     {
+//         T* newAddr = new T[_capacity>>=1];
+//         assert(newAddr);
+//         memmove(newAddr, _elem, _size * sizeof(T));
+//         delete[] _elem;
+//         _elem = newAddr;        
+//     }
+// }
 // // 扫描交换
 // bool Vector<T>::bubble(Rank lo, Rank hi)
 // {
@@ -52,272 +52,269 @@ void Vector<T>::shrink()
 //     return while(!bubble(lo, hi--));
 // }
 // 优化版扫描交换
-template <typename T>
-int Vector<T>::bubble(Rank lo, Rank hi)
-{
-    Rank lastSwap = lo;
-    Rank idx = lo + 1;
-    while (idx < hi)
-    {
-        if (_elem[idx-1] > _elem[idx])
-        {
-            lastSwap = idx;
-            swap(_elem[idx-1], _elem[idx]);
-        }
-        ++idx;
-    }
-    return lastSwap;
-}
+// template <typename T>
+// int Vector<T>::bubble(Rank lo, Rank hi)
+// {
+//     Rank lastSwap = lo;
+//     Rank idx = lo + 1;
+//     while (idx < hi)
+//     {
+//         if (_elem[idx-1] > _elem[idx])
+//         {
+//             lastSwap = idx;
+//             swap(_elem[idx-1], _elem[idx]);
+//         }
+//         ++idx;
+//     }
+//     return lastSwap;
+// }
 // 优化版冒泡排序
-template <typename T>
-void Vector<T>::bubbleSort(Rank lo, Rank hi)
-{
-    // 若前半部有序 则中途结束循环
-    // 若后缀中已经有序 则快速跳过后缀中有序的部分 避免低效率的挨个比较
-    while (lo < (hi = bubble(lo, hi)));
-}
+// template <typename T>
+// void Vector<T>::bubbleSort(Rank lo, Rank hi)
+// {
+//     // 若前半部有序 则中途结束循环
+//     // 若后缀中已经有序 则快速跳过后缀中有序的部分 避免低效率的挨个比较
+//     while (lo < (hi = bubble(lo, hi)));
+// }
 // 选取最大元素
-template <typename T>
-Rank Vector<T>::max(Rank lo, Rank hi)
-{
-    Rank maxIdx = hi - 1;
-    for (int idx = maxIdx - 1; idx >= lo; --idx)
-    {
-        if (_elem[idx] > _elem[maxIdx])
-        {
-            maxIdx = idx;
-        }
-    }
-    return maxIdx;
-}
+// template <typename T>
+// Rank Vector<T>::max(Rank lo, Rank hi)
+// {
+//     Rank maxIdx = hi - 1;
+//     for (int idx = maxIdx - 1; idx >= lo; --idx)
+//     {
+//         if (_elem[idx] > _elem[maxIdx])
+//         {
+//             maxIdx = idx;
+//         }
+//     }
+//     return maxIdx;
+// }
 // 插入排序
-template <typename T>
-void Vector<T>::insertionSort(Rank lo, Rank hi)
-{
-    // for (Rank uIdx = lo + 1; uIdx < hi; ++uIdx)
-    // {
-    //     swap(_elem[search(_elem[uIdx], lo, uIdx) + 1], _elem[uIdx]);
-    // }
+// template <typename T>
+// void Vector<T>::insertionSort(Rank lo, Rank hi)
+// {
+//     // for (Rank uIdx = lo + 1; uIdx < hi; ++uIdx)
+//     // {
+//     //     swap(_elem[search(_elem[uIdx], lo, uIdx) + 1], _elem[uIdx]);
+//     // }
 
-    // 可优化
-    for (Rank uIdx = lo + 1; uIdx < hi; ++uIdx)
-    {
-        for (Rank oIdx = uIdx; oIdx > lo; --oIdx)
-        {
-            if (_elem[oIdx - 1] > _elem[oIdx])
-            {
-                swap(_elem[oIdx - 1], _elem[oIdx]);
-            }
-            else 
-            {
-                break;
-            }
-        }
-    }
-}
+//     // 可优化
+//     for (Rank uIdx = lo + 1; uIdx < hi; ++uIdx)
+//     {
+//         for (Rank oIdx = uIdx; oIdx > lo; --oIdx)
+//         {
+//             if (_elem[oIdx - 1] > _elem[oIdx])
+//             {
+//                 swap(_elem[oIdx - 1], _elem[oIdx]);
+//             }
+//             else 
+//             {
+//                 break;
+//             }
+//         }
+//     }
+// }
 // 选择排序
-template <typename T>
-void Vector<T>::selectionSort(Rank lo, Rank hi)
-{
-    Rank maxIdx;
-    for (Rank last = hi - 1; last >= lo; --last)
-    {
-        maxIdx = lo;
-        for (Rank idx = lo; idx <= last; ++idx)
-        {
-            // 算法稳定性保证 取得靠右位置的最大值
-            if (_elem[idx] >= _elem[maxIdx])
-            {
-                maxIdx = idx;
-            }
-        }
-        // 算法稳定性保证 最大的数已经在当前轮靠后的位置不再交换
-        if (maxIdx != last)
-        {
-            swap(_elem[maxIdx],_elem[last]);
-        }
-    }
-}
+// template <typename T>
+// void Vector<T>::selectionSort(Rank lo, Rank hi)
+// {
+//     Rank maxIdx;
+//     for (Rank last = hi - 1; last >= lo; --last)
+//     {
+//         maxIdx = lo;
+//         for (Rank idx = lo; idx <= last; ++idx)
+//         {
+//             // 算法稳定性保证 取得靠右位置的最大值
+//             if (_elem[idx] >= _elem[maxIdx])
+//             {
+//                 maxIdx = idx;
+//             }
+//         }
+//         // 算法稳定性保证 最大的数已经在当前轮靠后的位置不再交换
+//         if (maxIdx != last)
+//         {
+//             swap(_elem[maxIdx],_elem[last]);
+//         }
+//     }
+// }
 // 归并算法
-template <typename T>
-void Vector<T>::merge(Rank lo, Rank mi, Rank hi)
-{
-    int lenB = mi - lo;
-    int lenC = hi - mi;
-    T *B = new T[lenB];
-    assert(B);
-    T *C = new T[lenC];
-    assert(C);
-    memmove(B, _elem + lo, sizeof(T) * (lenB));
-    // 
-    memmove(C, _elem + mi, sizeof(T) * (lenC));
+// template <typename T>
+// void Vector<T>::merge(Rank lo, Rank mi, Rank hi)
+// {
+//     int lenB = mi - lo;
+//     int lenC = hi - mi;
+//     T *B = new T[lenB];
+//     assert(B);
+//     T *C = new T[lenC];
+//     assert(C);
+//     memmove(B, _elem + lo, sizeof(T) * (lenB));
+//     // 
+//     memmove(C, _elem + mi, sizeof(T) * (lenC));
    
-    int b = 0;
-    int c = 0;
-    while (b < lenB && c < lenC)
-    {
-        _elem[lo++] = B[b] < C[c] ? B[b++] : C[c++];
-    }
-    // B
-    while (b < lenB)
-    {
-        _elem[lo++] = B[b++];
-    }
-    // C 
-    while (c < lenC)
-    {
-        _elem[lo++] = C[c++];
-    }
-    delete[] B;
-    delete[] C;
-}
+//     int b = 0;
+//     int c = 0;
+//     while (b < lenB && c < lenC)
+//     {
+//         _elem[lo++] = B[b] < C[c] ? B[b++] : C[c++];
+//     }
+//     // B
+//     while (b < lenB)
+//     {
+//         _elem[lo++] = B[b++];
+//     }
+//     // C 
+//     while (c < lenC)
+//     {
+//         _elem[lo++] = C[c++];
+//     }
+//     delete[] B;
+//     delete[] C;
+// }
 // 归并排序
-template <typename T>
-void Vector<T>::mergeSort(Rank lo, Rank hi)
-{
-    if (lo + 1 >= hi)
-    {
-        return;
-    }
-    int mi = (lo + hi) >> 1;
-    mergeSort(lo, mi);
-    mergeSort(mi, hi);
-    merge(lo, mi, hi);
-}
+// template <typename T>
+// void Vector<T>::mergeSort(Rank lo, Rank hi)
+// {
+//     if (lo + 1 >= hi)
+//     {
+//         return;
+//     }
+//     int mi = (lo + hi) >> 1;
+//     mergeSort(lo, mi);
+//     mergeSort(mi, hi);
+//     merge(lo, mi, hi);
+// }
 // 轴点构造算法
-template <typename T>
-Rank Vector<T>::partition(Rank lo, Rank hi)
-{
-    return 0;
-}
-// 快速排序算法
-template <typename T>
-void Vector<T>::quickSort(Rank lo, Rank hi)
-{
+// template <typename T>
+// Rank Vector<T>::partition(Rank lo, Rank hi)
+// {
+//     return 0;
+// }
+// // 快速排序算法
+// template <typename T>
+// void Vector<T>::quickSort(Rank lo, Rank hi)
+// {
 
-}
+// }
 // 堆排序算法
-#define parent(n) (n / 2)
-#define leftchild(n) (2 * n + 1)
-#define rightChild(n) (2 * n + 2)
-template <typename T>
-void Vector<T>::heapSort(Rank lo, Rank hi)
-{
-    
-}
+// template <typename T>
+// void Vector<T>::heapSort(Rank lo, Rank hi)
+// {
+
+// }
 
 // 判断向量是否已排序(升序)
 // 0 已排序 
 // > 0 未排序(逆序对的个数)
-template <typename T>
-int Vector<T>::disordered() const
-{
-    int counter = 0;
-    for (Rank idx = 1; idx < _size; ++idx)
-    {
-        counter += _elem[idx - 1] > _elem[idx] ? 1 : 0;
-    }
-    return counter;
-}
+// template <typename T>
+// int Vector<T>::disordered() const
+// {
+//     int counter = 0;
+//     for (Rank idx = 1; idx < _size; ++idx)
+//     {
+//         counter += _elem[idx - 1] > _elem[idx] ? 1 : 0;
+//     }
+//     return counter;
+// }
 // 无需向量区间查找
-template <typename T>
-Rank Vector<T>::find(const T &e, Rank lo, Rank hi) const
-{
-    Rank pos = -1;
-    for (int i = lo; i < hi; ++i)
-    {
-        if (_elem[i] == e)
-        {
-            pos = i;
-            break;
-        }
-    }
-    return pos;
-}
+// template <typename T>
+// Rank Vector<T>::find(const T &e, Rank lo, Rank hi) const
+// {
+//     Rank pos = -1;
+//     for (int i = lo; i < hi; ++i)
+//     {
+//         if (_elem[i] == e)
+//         {
+//             pos = i;
+//             break;
+//         }
+//     }
+//     return pos;
+// }
 // 有序向量区间查找
 // 查找目标元素e 返回不大于e且秩最大的元素的秩
-template <typename T>
-Rank Vector<T>::search(const T &e, Rank lo, Rank hi) const
-{
-    Rank mi = 0;
-    while (lo < hi)
-    {
-        mi = (lo + hi) >> 1;
-        // 区间划分两半
-        // e划分到左半段
-        // 右半段值大于e
-        _elem[mi] <= e ? lo = mi + 1 : hi = mi; 
-    }
-    return --lo;
-}
+// template <typename T>
+// Rank Vector<T>::search(const T &e, Rank lo, Rank hi) const
+// {
+//     Rank mi = 0;
+//     while (lo < hi)
+//     {
+//         mi = (lo + hi) >> 1;
+//         // 区间划分两半
+//         // e划分到左半段
+//         // 右半段值大于e
+//         _elem[mi] <= e ? lo = mi + 1 : hi = mi; 
+//     }
+//     return --lo;
+// }
 
 // // 可写访问接口
-template <class T>
-Vector<T>& Vector<T>::operator=(const Vector<T> &V)
-{
-    if (this == &V) return;
-    copyFrom(V._elem, 0, V._size);
-    delete[] V._elem;
-    V._elem = NULL;
-    return *this;
-}
+// template <class T>
+// Vector<T>& Vector<T>::operator=(const Vector<T> &V)
+// {
+//     if (this == &V) return;
+//     copyFrom(V._elem, 0, V._size);
+//     delete[] V._elem;
+//     V._elem = NULL;
+//     return *this;
+// }
 
 // 区间排序
-template <typename T>
-void Vector<T>::sort(Rank lo, Rank hi)
-{
-    int c = rand() % 1;
-    switch(c)
-    {
-        default:
-            insertionSort(lo, hi);
-            // mergeSort(lo, hi);
-            // selectionSort(lo, hi);
-            // bubbleSort(lo, hi);
-            break;
-    }
-}
+// template <typename T>
+// void Vector<T>::sort(Rank lo, Rank hi)
+// {
+//     int c = rand() % 1;
+//     switch(c)
+//     {
+//         default:
+//             insertionSort(lo, hi);
+//             // mergeSort(lo, hi);
+//             // selectionSort(lo, hi);
+//             // bubbleSort(lo, hi);
+//             break;
+//     }
+// }
 
 // 区间置乱
-template <typename T>
-void Vector<T>::unsort(Rank lo, Rank hi)
-{
-    T* V = _elem + lo;
-    for (Rank i = hi - lo; i > 0; --i)
-    {
-        swap(V[i - 1], V[rand() % i]);
-    }
-}
+// template <typename T>
+// void Vector<T>::unsort(Rank lo, Rank hi)
+// {
+//     T* V = _elem + lo;
+//     for (Rank i = hi - lo; i > 0; --i)
+//     {
+//         swap(V[i - 1], V[rand() % i]);
+//     }
+// }
 
 // 无序去重
 // O(n^2)优化
-template <typename T>
-int Vector<T>::deduplicate()
-{
-    Rank idx = 1;
-    Rank pos = 0;
-    Rank oldSize = _size;
-    while (idx < _size)
-    {
-        (pos = find(_elem[idx], 0, idx-1)) > -1 ? remove(pos) : idx++;
-    }
-    return oldSize - _size;
-}
+// template <typename T>
+// int Vector<T>::deduplicate()
+// {
+//     Rank idx = 1;
+//     Rank pos = 0;
+//     Rank oldSize = _size;
+//     while (idx < _size)
+//     {
+//         (pos = find(_elem[idx], 0, idx-1)) > -1 ? remove(pos) : idx++;
+//     }
+//     return oldSize - _size;
+// }
 // 有序去重
-template <typename T>
-int Vector<T>::uniquify()
-{
-    Rank i = 0;
-    for (int j = 1; j < _size; ++j)
-    {
-        if (_elem[i] != _elem[j])
-        {
-            _elem[++i] = _elem[j];
-        }
-    }
-    _size = i;
-    return i;
-}
+// template <typename T>
+// int Vector<T>::uniquify()
+// {
+//     Rank i = 0;
+//     for (int j = 1; j < _size; ++j)
+//     {
+//         if (_elem[i] != _elem[j])
+//         {
+//             _elem[++i] = _elem[j];
+//         }
+//     }
+//     _size = i;
+//     return i;
+// }
 
 // template <typename VST>
 // void Vector<T>::traverse(VST &function)
@@ -325,7 +322,7 @@ int Vector<T>::uniquify()
 
 // }
 
-};
+// };
 
 
 // [start, end)
@@ -349,6 +346,7 @@ void PrintInt(int& val)
 {
     printf("%d ", val);
 }
+
 int main(int argc, char* argv[])
 {
     const int n = 11;

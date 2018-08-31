@@ -20,13 +20,13 @@ protected:
     )
     {
         a->lChild = T0; if (T0) T0->parent = a;
-        a->rChild = T1; if (T1) T1->parent = a; updateHeight(a);
+        a->rChild = T1; if (T1) T1->parent = a; BinTree<T>::updateHeight(a);
 
         c->lChild = T2; if (T2) T2->parent = c;
-        c->rChild = T3; if (T3) T3->parent = c; updateHeight(c);
+        c->rChild = T3; if (T3) T3->parent = c; BinTree<T>::updateHeight(c);
         
         b->lChild = a; a->parent = b;
-        b->rChild = c; c->parent = b; updateHeight(b);
+        b->rChild = c; c->parent = b; BinTree<T>::updateHeight(b);
         // 新子树的根节点
         return b;
     }
@@ -74,7 +74,7 @@ public:
     virtual BinNodePosi(T) &search(const T& e)
     {
         // 返回目标节点的引用 以便后序插入删除
-        return searchIn(this->_root, e, _hot = NULL);
+        return BinTree<T>::searchIn(this->_root, e, _hot = NULL);
     }
     // 插入
     // 子类重写本函数 接收search()的变量必须是引用变量
@@ -86,7 +86,7 @@ public:
         if (p) return p;
         p = new BinNode<T>(e, _hot);
         ++this->_size;
-        updateHeightAbove(_hot);
+        BinTree<T>::updateHeightAbove(_hot);
         return p;
     }
     // 删除
@@ -98,9 +98,9 @@ public:
         // 值不存在
         if (!p) return false;
         // 
-        removeAt(p, _hot);
+        BinTree<T>::removeAt(p, _hot);
         --this->_size;
-        updateHeightAbove(_hot);
+        BinTree<T>::updateHeightAbove(_hot);
         return true;
     }
 };

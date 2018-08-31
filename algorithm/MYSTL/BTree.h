@@ -11,8 +11,8 @@ template <typename T>
 class BTree 
 {
 protected:
-    int _size;              // 存放的关键码的总数
-    int _order;             // B-树的阶次(分支数) 至少为3
+    int _size;          // 存放的关键码的总数
+    int _order;         // B-树的阶次(分支数) 至少为3
     BTNodePosi(T) _root;    // 根节点
     BTNodePosi(T) _hot;     // search()最后访问的非空节点位置
     
@@ -165,7 +165,7 @@ protected:
 public:
     // 构造函数 默认为最低的3阶
     BTree(int order = 3) 
-        : _order(order), _size(0)
+        : _size(0), _order(order)
     {
         _root = new BTNode<T>();
     }

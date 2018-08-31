@@ -20,7 +20,7 @@ public:
     BinNodePosi(T) insert(const T& e)
     {
         // 引用类型
-        BinNodePosi(T) & x = search(e);
+        BinNodePosi(T) & x = BST<T>::search(e);
         // 已存在e值
         if (x) return x;
         BinNodePosi(T) xx = x = new BinNode<T>(e, this->_hot);
@@ -32,14 +32,14 @@ public:
             if (!AvlBalanced(g))
             {
                 // v p g节点
-                FromParentTo(g) = rotateAt(tallerChild(tallerChild(g)));
+                BinTree<T>::FromParentTo(g) = BST<T>::rotateAt(BinTree<T>::tallerChild(BinTree<T>::tallerChild(g)));
                 // 插入节点调整一次必然平衡
                 break;
             }
             // 未失衡更新树高度
             else 
             {
-                updateHeight(g);
+                BinTree<T>::updateHeight(g);
             }
         }
         return xx;
@@ -48,9 +48,9 @@ public:
     bool remove(const T& e)
     {
         // 引用类型
-        BinNodePosi(T)& x = search(e);
+        BinNodePosi(T)& x = BST<T>::search(e);
         if (!x) return false;
-        removeAt(x, this->_hot);
+        BinTree<T>::removeAt(x, this->_hot);
         --this->_size;
         // 重平衡 从父节点向上回溯调整
         for (BinNodePosi(T) g = this->_hot; g; g = g->parent)
@@ -58,11 +58,12 @@ public:
             if (!AvlBalanced(g))
             {
                 // v p g节点
-                g = FromParentTo(g) = rotateAt(tallerChild(tallerChild(g)));
+                g = BinTree<T>::FromParentTo(g) = BST<T>::rotateAt(BinTree<T>::tallerChild(BinTree<T>::tallerChild(g)));
             }
-            updateHeight(g);
+            BinTree<T>::updateHeight(g);
             // 需要一直向上调整 最坏情况下 调整log(n)次
         }
+        return true;
     }
 };
 

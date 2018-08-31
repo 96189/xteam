@@ -46,7 +46,7 @@ protected:
             g->color = RB_RED;
             BinNodePosi(T) gg = g->parent;
             // 树结构调整一次 3+4重构
-            BinNodePosi(T) r = FromParentTo(g) = rotateAt(x);
+            BinNodePosi(T) r = BinTree<T>::FromParentTo(g) = BST<T>::rotateAt(x);
             // 调整之后的新子树 与原曾祖父连接
             r->parent = gg;
         }
@@ -91,7 +91,7 @@ protected:
             {                                                      //黑s有红孩子：BB-1
                 RBColor oldColor = p->color;                       //备份原子树根节点p颜色，并对t及其父亲、祖父
                                                                    // 以下，通过旋转重平衡，并将新子树的左、右孩子染黑
-                BinNodePosi(T) b = FromParentTo(p) = rotateAt(t); //旋转
+                BinNodePosi(T) b = BinTree<T>::FromParentTo(p) = BST<T>::rotateAt(t); //旋转
                 if (HasLChild(b))
                 {
                     b->lChild->color = RB_BLACK;
@@ -126,7 +126,7 @@ protected:
             p->color = RB_RED;                               //s转黑，p转红
             BinNodePosi(T) t = IsLChild(s) ? s->lChild : s->rChild; //取t与其父s同侧
             this->_hot = p;
-            FromParentTo(p) = rotateAt(t); //对t及其父亲、祖父做平衡调整
+            BinTree<T>::FromParentTo(p) = BST<T>::rotateAt(t); //对t及其父亲、祖父做平衡调整
             solveDoubleBlack(r);            //继续修正r处双黑——此时的p已转红，故后续只能是BB-1或BB-2R
         }
     }
@@ -141,7 +141,7 @@ protected:
 public:
     BinNodePosi(T) insert(const T &e)
     {
-        BinNodePosi(T) & x = search(e);
+        BinNodePosi(T) & x = BST<T>::search(e);
         if (x) return x;
         // 创建红节点x 以this->_hot为父 黑高度-1
         x = new BinNode<T>(e, this->_hot, NULL, NULL, -1);
@@ -152,11 +152,11 @@ public:
     }
     bool remove(const T &e)
     {
-        BinNodePosi(T) & x = search(e);
+        BinNodePosi(T) & x = BST<T>::search(e);
         if (!x) return false;
         // r为x在树中(中序遍历意义下的)直接后继 x存储r的值后
         // 实际删除的节点为r
-        BinNodePosi(T) r = removeAt(x, this->_hot);
+        BinNodePosi(T) r = BinTree<T>::removeAt(x, this->_hot);
         // 删除后树空
         if (!(--this->_size)) return true;
         // 被删除的为树根
