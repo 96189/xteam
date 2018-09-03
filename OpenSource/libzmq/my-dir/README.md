@@ -67,18 +67,49 @@
 
 ### 0x08 PAIR-PAIR
 
-## 代理(proxy or broker)
-### 代理解决的问题
+### 代理(proxy or broker)
+#### 代理解决的问题
     "dynamic discovery problem"
         最简单的是 静态发现 手工完成(hard-coding or configuring) 
         动态发现 pub-sub代理解决动态发现问题
     伸缩性(随时添加和删除前后端节点)
-        ROUTER(负载均衡)-DEALER(公平队列)代理
+        ROUTER-DEALER代理
     隔离(桥接)
         内外网隔离: 通过SUB-PROXY-PUB代理
-### ZMQ提供的代理
+#### ZMQ提供的代理
     QUEUE       REP-REQ代理
     FORWARDER   PUB-SUB代理
     STREAMER    pipeline代理
+
+### 自定义请求-响应路由
+#### ROUTER-REQ模式
+    rtreq.cc
+    1(ROUTER) -> n(REQ)
+    1->n模式下 ROUTER如何分辨n个DEALER?
+
+    Routing Envelope for REQ
+![routing-envelope-for-req](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/routing-envelope-for-req.png)
+
+#### ROUTER-DEALER模式
+    rtdealer.cc
+    1(ROUTER) -> n(DEALER)
+    1->n模式下 ROUTER如何分辨n个DEALER?
+
+
+#### REQ和DEALER的区别
+
+
+### API
+    // socket套接字
+    // 数据内容起始地址
+    // 有效数据实际长度(不包含'\0')
+    // 
+    int zmq_send (void *s_, const void *buf_, size_t len_, int flags_)
+
+    // socket套接字
+    // 缓冲区地址
+    // 缓冲区大小
+    // 
+    int zmq_recv (void *s_, void *buf_, size_t len_, int flags_)
 
 图片来源:http://zguide.zeromq.org/page:all

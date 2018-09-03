@@ -38,6 +38,13 @@ add_executable(psenvsub psenvsub.cc)
 add_executable(durasub durasub.cc)
 add_executable(durapub durapub.cc)
 
+add_executable(identity identity.cc)
+
+add_executable(rtreq rtreq.cc)
+
+add_executable(rtdealer rtdealer.cc)
+
+
 
 
 target_link_libraries(hwserver zmq)
@@ -71,3 +78,9 @@ target_link_libraries(psenvsub zmq)
 
 target_link_libraries(durasub zmq)
 target_link_libraries(durapub zmq)
+
+target_link_libraries(identity zmq)
+
+target_link_libraries(rtreq zmq)
+
+target_link_libraries(rtdealer zmq)
