@@ -110,7 +110,8 @@
         The REQ socket will send only one message before it receives a reply; the DEALER is fully asynchronous.
 
 ### 套接字模式的无效组合
-    Mostly, trying to connect clients to clients, or servers to servers is a bad idea and won't work. However, rather than give general vague warnings, I'll explain in detail:
+        Mostly, trying to connect clients to clients, or servers to servers is a bad idea and won't work. However, 
+    rather than give general vague warnings, I'll explain in detail:
 
         REQ to REQ: both sides want to start by sending messages to each other, and this could only work if you timed things so that both peers exchanged messages at the same time. It hurts my brain to even think about it.
         
@@ -119,9 +120,12 @@
         REP to REP: both sides would wait for the other to send the first message.
         REP to ROUTER: the ROUTER socket can in theory initiate the dialog and send a properly-formatted request, if it knows the REP socket has connected and it knows the identity of that connection. It's messy and adds nothing over DEALER to ROUTER.
 
-    The common thread in this valid versus invalid breakdown is that a ZeroMQ socket connection is always biased towards one peer that binds to an endpoint, and another that connects to that. Further, that which side binds and which side connects is not arbitrary, but follows natural patterns. The side which we expect to "be there" binds: it'll be a server, a broker, a publisher, a collector. The side that "comes and goes" connects: it'll be clients and workers. Remembering this will help you design better ZeroMQ architectures.
+        The common thread in this valid versus invalid breakdown is that a ZeroMQ socket connection is always biased 
+    towards one peer that binds to an endpoint, and another that connects to that. Further, that which side binds and which side connects is not arbitrary, but follows natural patterns. The side which we expect to "be there" binds: it'll be a server, a broker, a publisher, a collector. The side that "comes and goes" connects: it'll be clients and workers. Remembering this will help you design better ZeroMQ architectures.
 
 ### clients(REQ) - [ROUTER-frontend | broker | ROUTER-backend] - workers(REQ)
+![load-balancing-broker](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/load-balancing-broker.png)
+
     lbbroker.cc
     由REQ发出的包会自动加上empty-delimiter frame
     由ROUTER收到的包会自动加上identity frame
