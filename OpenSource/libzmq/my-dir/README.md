@@ -121,7 +121,10 @@
         REP to ROUTER: the ROUTER socket can in theory initiate the dialog and send a properly-formatted request, if it knows the REP socket has connected and it knows the identity of that connection. It's messy and adds nothing over DEALER to ROUTER.
 
         The common thread in this valid versus invalid breakdown is that a ZeroMQ socket connection is always biased 
-    towards one peer that binds to an endpoint, and another that connects to that. Further, that which side binds and which side connects is not arbitrary, but follows natural patterns. The side which we expect to "be there" binds: it'll be a server, a broker, a publisher, a collector. The side that "comes and goes" connects: it'll be clients and workers. Remembering this will help you design better ZeroMQ architectures.
+    towards one peer that binds to an endpoint, and another that connects to that. Further, that which side binds and 
+    which side connects is not arbitrary, but follows natural patterns. The side which we expect to "be there" binds: 
+    it'll be a server, a broker, a publisher, a collector. The side that "comes and goes" connects: it'll be clients and 
+    workers. Remembering this will help you design better ZeroMQ architectures.
 
 ### clients(REQ) - [ROUTER-frontend | broker | ROUTER-backend] - workers(REQ)
 ![load-balancing-broker](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/load-balancing-broker.png)
