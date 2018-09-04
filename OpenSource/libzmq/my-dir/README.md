@@ -118,8 +118,25 @@
         
         REP to REP: both sides would wait for the other to send the first message.
         REP to ROUTER: the ROUTER socket can in theory initiate the dialog and send a properly-formatted request, if it knows the REP socket has connected and it knows the identity of that connection. It's messy and adds nothing over DEALER to ROUTER.
-        
+
     The common thread in this valid versus invalid breakdown is that a ZeroMQ socket connection is always biased towards one peer that binds to an endpoint, and another that connects to that. Further, that which side binds and which side connects is not arbitrary, but follows natural patterns. The side which we expect to "be there" binds: it'll be a server, a broker, a publisher, a collector. The side that "comes and goes" connects: it'll be clients and workers. Remembering this will help you design better ZeroMQ architectures.
+
+### clients(REQ) - [ROUTER-frontend | broker | ROUTER-backend] - workers(REQ)
+    lbbroker.cc
+    由REQ发出的包会自动加上empty-delimiter frame
+    由ROUTER收到的包会自动加上identity frame
+    由ROUTER发出的包会自动去掉信封(identity frame和empty-delimiter frame)
+
+    client发出的包(data frame) 
+    首先会加上empty-deimiter frame 
+    在ROUTER-frontend会加上client-identity frame
+    在ROUTER-backend会加上empty-delimiter frame和worker-identity frame
+    此时包结构为 | worker-identity | empty-delimiter | client-identity | empty-deimiter | data |
+
+    由ROUTER-backend发出去掉信封worker收到的包结构为
+    | client-identity | empty-deimiter | data |
+
+    lbbroker.cc在ROUTER-backend基于LRU算法实现了负载均衡,事实上ROUTER-backend可以替换为ZMQ_DEALER且用ZMQ_QUEUE来连接前后端,这样的例子已在mtserver.cc中实现.ZMQ_DEALER自带负载均衡.
 
 ### API
     // socket套接字

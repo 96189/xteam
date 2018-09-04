@@ -44,7 +44,7 @@ add_executable(rtreq rtreq.cc)
 add_executable(rtdealer rtdealer.cc)
 add_executable(rtrep rtrep.cc)
 
-
+add_executable(lbbroker lbbroker.cc)
 
 
 target_link_libraries(hwserver zmq)
@@ -84,3 +84,5 @@ target_link_libraries(identity zmq)
 target_link_libraries(rtreq zmq)
 target_link_libraries(rtdealer zmq)
 target_link_libraries(rtrep zmq)
+
+target_link_libraries(lbbroker zmq)
