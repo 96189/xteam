@@ -41,8 +41,8 @@ add_executable(durapub durapub.cc)
 add_executable(identity identity.cc)
 
 add_executable(rtreq rtreq.cc)
-
 add_executable(rtdealer rtdealer.cc)
+add_executable(rtrep rtrep.cc)
 
 
 
@@ -82,5 +82,5 @@ target_link_libraries(durapub zmq)
 target_link_libraries(identity zmq)
 
 target_link_libraries(rtreq zmq)
-
 target_link_libraries(rtdealer zmq)
+target_link_libraries(rtrep zmq)

@@ -88,16 +88,38 @@
     1->n模式下 ROUTER如何分辨n个DEALER?
 
     Routing Envelope for REQ
+        | address | empty | data |
 ![routing-envelope-for-req](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/routing-envelope-for-req.png)
+
+    应用实例:
+        mtserver.cc 同时与多个REQ客户端通信的异步服务器
 
 #### ROUTER-DEALER模式
     rtdealer.cc
     1(ROUTER) -> n(DEALER)
-    1->n模式下 ROUTER如何分辨n个DEALER?
+    1->n模式下 ROUTER如何分辨n个DEALER?(消息分发)
 
+    Routing Envelope for DEALER
+        | address | data | 数据传输前手工构造信封,使用已知的标识发送数据,若定义非法的信封地址ROUTER会丢弃该消息,不做任何提示
+
+    为异步客户端提供了与异步服务器通信的能力,双方可以完全控制消息格式.DEALER和ROUTER都可以使用任意消息格式,如果您希望安全地使用它们,您必须成为一个协议设计者.至少你必须决定是否要模仿REQ / REP回复信封.这取决于你是否真的需要发送回复.
 
 #### REQ和DEALER的区别
+    Anywhere you can use REQ, you can use DEALER. There are two specific differences:
+        The REQ socket always sends an empty delimiter frame before any data frames; the DEALER does not.
+        The REQ socket will send only one message before it receives a reply; the DEALER is fully asynchronous.
 
+### 套接字模式的无效组合
+    Mostly, trying to connect clients to clients, or servers to servers is a bad idea and won't work. However, rather than give general vague warnings, I'll explain in detail:
+
+        REQ to REQ: both sides want to start by sending messages to each other, and this could only work if you timed things so that both peers exchanged messages at the same time. It hurts my brain to even think about it.
+        
+        REQ to DEALER: you could in theory do this, but it would break if you added a second REQ because DEALER has no way of sending a reply to the original peer. Thus the REQ socket would get confused, and/or return messages meant for another client.
+        
+        REP to REP: both sides would wait for the other to send the first message.
+        REP to ROUTER: the ROUTER socket can in theory initiate the dialog and send a properly-formatted request, if it knows the REP socket has connected and it knows the identity of that connection. It's messy and adds nothing over DEALER to ROUTER.
+        
+    The common thread in this valid versus invalid breakdown is that a ZeroMQ socket connection is always biased towards one peer that binds to an endpoint, and another that connects to that. Further, that which side binds and which side connects is not arbitrary, but follows natural patterns. The side which we expect to "be there" binds: it'll be a server, a broker, a publisher, a collector. The side that "comes and goes" connects: it'll be clients and workers. Remembering this will help you design better ZeroMQ architectures.
 
 ### API
     // socket套接字

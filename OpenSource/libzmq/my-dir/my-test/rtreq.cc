@@ -23,6 +23,7 @@ void *worker_task(void *args)
     assert(worker);
 
     // 设置套接字标识 setsockopt ZMQ_IDENTITY
+    // 示例用 现实中REQ套接字都是匿名的
     char identity [10];
     sprintf (identity, "%04X-%04X", randof (0x10000), randof (0x10000));
     zmq_setsockopt (worker, ZMQ_IDENTITY, identity, strlen (identity));
@@ -79,7 +80,7 @@ int main(int argc, char *argv[])
         pthread_create(&worker, NULL, worker_task, NULL);
     }
 
-    // 
+    // 任务分发 最近最少使用的worker在消息队列中 LRU负载均衡
     int n = -1;
     char identify[BUFF_SIZE];
     char delimiter[BUFF_SIZE];

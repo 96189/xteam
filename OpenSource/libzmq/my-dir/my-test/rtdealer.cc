@@ -71,16 +71,16 @@ int main(int argc, char *argv[])
     strcpy(buf, "This is the workload");
     for (int task_nbr = 0; task_nbr < NBR_WORKERS; ++task_nbr)
     {
-        // 路由采用随机加权
+        // 路由采用随机加权进行负载均衡
         // >= 2/3的任务分配给A标识的套接字
-        // 由ROUTER发送给DEALTER时需要直到标识
+        // 由ROUTER发送给DEALTER时需要知道标识
         if (randof(3) > 0)
         {
             n = zmq_send(broker, "A", 1, ZMQ_SNDMORE);
             assert(n > 0);
         }
         // < 1/3的任务分配给B标识的套接字
-        // 由ROUTER发送给DEALTER时需要直到标识
+        // 由ROUTER发送给DEALTER时需要知道标识
         else 
         {
             n = zmq_send(broker, "B", 1, ZMQ_SNDMORE);
