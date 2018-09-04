@@ -347,6 +347,17 @@ void PrintInt(int& val)
     printf("%d ", val);
 }
 
+void TestSort()
+{
+    printf("\ntest sort start...\n");
+    int arr[] = { 3, 22, 55, 11, 1, 66, 71, 89, 9, 10, 10 };
+    int len = sizeof(arr)/ sizeof(arr[0]);
+    MYSTL::Vector<int> v(arr, 0, len);
+    v.sort();
+    v.traverse(PrintInt);    
+    printf("\ntest sort end...\n");
+}
+
 int main(int argc, char* argv[])
 {
     const int n = 11;
@@ -410,5 +421,7 @@ int main(int argc, char* argv[])
     printf("\n");
     vv.unsort();
     vv.traverse(PrintInt);
+
+    TestSort();
     return 0;
 }

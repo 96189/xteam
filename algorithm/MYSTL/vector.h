@@ -4,7 +4,6 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
-// #include "pq_complHeap.h"   // 堆排序
 
 namespace MYSTL
 {
@@ -214,23 +213,56 @@ protected:
     // 轴点构造算法
     Rank partition(Rank lo, Rank hi)
     {
-        return 0;
+
     }
     // 快速排序算法
     void quickSort(Rank lo, Rank hi)
     {
 
     }
+    // 当前idx所在的节点 与两个孩子节点中 三者最大值的秩
+    // 秩不能 >= n
+    // 无左右孩子的节点 最终返回秩为当前节点秩
+    int Maxp2s(T *start, int idx, int n)
+    {
+        int lcIdx = 2 * idx + 1;
+        int rcIdx = 2 * idx + 2;
+        int cmpidx = lcIdx;
+        // 左孩子不存在(右孩子必不存在))
+        if (lcIdx >= n) return idx;
+        // 存在右孩子
+        if (rcIdx < n)
+        {
+            cmpidx = start[lcIdx] > start[rcIdx] ? lcIdx : rcIdx;
+        }
+        // 只存在左孩子 或者已经决出左右孩子的最大者秩
+        return start[idx] > start[cmpidx] ? idx : cmpidx;
+    }
+    void DownFilter(T *start, int idx, int n)
+    {
+        int maxIdx = idx;
+        while (idx != (maxIdx = Maxp2s(start, idx, n)))
+        {
+            swap(start[idx], start[maxIdx]);
+            idx = maxIdx;
+        }
+    }
+    void MakeMaxHeap(T *start, int n)
+    {
+        for (int idx = n / 2; idx >= 0; --idx)
+        {
+            DownFilter(start, idx, n);
+        }
+    }
     // 堆排序算法
     void heapSort(Rank lo, Rank hi)
     {
-        // PQ_ComplHeap<T> H(_elem + lo, hi - lo);
-        // // n
-        // while (!H.empty())
-        // {
-        //     // log(n)
-        //     _elem[--hi] = H.delMax();
-        // }
+        MakeMaxHeap(_elem + lo, hi - lo);
+        while (--hi > lo)
+        {
+            swap(_elem[0], _elem[hi]);
+            DownFilter(_elem + lo, 0, hi);
+        }
     }
 public:
     // 构造函数
@@ -390,7 +422,8 @@ public:
         switch (c)
         {
         default:
-            insertionSort(lo, hi);
+            // insertionSort(lo, hi);
+            heapSort(lo, hi);
             // mergeSort(lo, hi);
             // selectionSort(lo, hi);
             // bubbleSort(lo, hi);
