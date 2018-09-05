@@ -1,6 +1,7 @@
 
 cmake_minimum_required(VERSION 3.9)
 
+set (CMAKE_CXX_STANDARD 11)
 add_definitions("-Wall -g")
 
 find_package(Threads)
@@ -46,6 +47,8 @@ add_executable(rtrep rtrep.cc)
 
 add_executable(lbbroker lbbroker.cc)
 
+add_executable(asyncsrv asyncsrv.cc)
+
 
 target_link_libraries(hwserver zmq)
 target_link_libraries(hwclient zmq)
@@ -86,3 +89,5 @@ target_link_libraries(rtdealer zmq)
 target_link_libraries(rtrep zmq)
 
 target_link_libraries(lbbroker zmq)
+
+target_link_libraries(asyncsrv zmq)

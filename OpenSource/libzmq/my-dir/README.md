@@ -145,6 +145,30 @@
 
     lbbroker.cc在ROUTER-backend基于LRU算法实现了负载均衡,事实上ROUTER-backend可以替换为ZMQ_DEALER且用ZMQ_QUEUE来连接前后端,这样的例子已在mtserver.cc中实现.ZMQ_DEALER自带负载均衡.
 
+### clients(DEALER) - server(ROUTER)
+    asyncsrv.cc
+    异步套接字模式 DEALER
+
+![detail-of-asynchronous-server](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/detail-of-asynchronous-server.png)
+
+        clients与server(n:1)之间采用DEALER to ROUTER的模式
+
+        server采用线程池模型 server内部main thread与worker thread(1:n)采用DEALER to DEALER的模式,DEALER是异步模式套接字,若有
+    同步需求则需要REP套接字.
+
+    数据包
+         client          server       frontend       worker
+    [ DEALER ]<---->[ ROUTER <----> DEALER <----> DEALER ]
+            data-frame                  data-frame identity-frame
+                      data-frame identity-frame       
+
+    To properly manage client state in a stateful asynchronous server, you have to:
+        Do heartbeating from client to server. In our example, we send a request once per second, which can reliably be 
+    used as a heartbeat.
+        Store state using the client identity (whether generated or explicit) as key.
+        Detect a stopped heartbeat. If there's no request from a client within, say, two seconds, the server can detect 
+    this and destroy any state it's holding for that client.
+
 ### API
     // socket套接字
     // 数据内容起始地址
