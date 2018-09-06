@@ -169,6 +169,52 @@
         Detect a stopped heartbeat. If there's no request from a client within, say, two seconds, the server can detect 
     this and destroy any state it's holding for that client.
 
+### Inter-Broker Routing(跨代理路由)
+#### 需求
+        design of a large cloud computing facility. He has this vision of a cloud that spans many data centers, each a 
+    cluster of clients and workers, and that works together as a whole. 
+
+#### 需求分析
+* worker在不同的硬件上运作 但可以处理所有类型的任务 每个集群都有成百个worker 再乘以集群的个数 因此数量众多
+* client向worker指派任务 每个任务都是独立的 每个client都希望能找到对应的worker来处理任务 越快越好 client是不固定的 来去频繁
+* 真正的难点在于 这个架构需要能够自如地添加和删除集群 附带着集群中的client和worker
+* 如果集群中没有可用的worker 它便会将任务分派给其他集群中可以用的worker
+* client每次发送一个请求 并等待应答 如果X秒后他们没有获得应答 他们会重新发送请求 这一点我们不需要多做考虑 client端的API已经写好了
+* worker每次处理一个请求 他们的行为非常简单 如果worker崩溃了 会有另外的脚本启动他们
+* 集群之间会有一个更上层的网络来连接
+* 每个集群约有1000个client 单个client每秒会发送10次请求 请求包含的内容很少 应答也很少 每个不超过1KB
+
+#### 设计
+##### 单个集群的架构
+    worker和client是同步的 使用LRU负载均衡多个worker
+    worker是匿名的 client不直接和worker通信 因此不需要保证消息的送达以及失败后的重试
+
+##### 多个集群的架构
+
+###### 如何让一个集群的client和另一个集群的worker进行通信
+* client直接和多个代理相连接
+    优:
+    劣:
+* worker直接和多个代理相连接
+    优:
+    劣:
+* 代理之间可以互相连接
+    优:
+    劣:
+
+* 方案一
+* 方案二
+
+##### 代理的连接模式
+    联邦模式Federation
+    同伴模式Peering
+
+##### 消息流
+    状态流(state) between the broker and its peer brokers
+##### 代理程序的套接字分布
+##### 状态流原型
+##### 本地流和云端流原型
+
 ### API
     // socket套接字
     // 数据内容起始地址
