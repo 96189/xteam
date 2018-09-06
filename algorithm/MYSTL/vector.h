@@ -210,15 +210,44 @@ protected:
         mergeSort(mi, hi);
         merge(lo, mi, hi);
     }
-    // 轴点构造算法
-    Rank partition(Rank lo, Rank hi)
+    // 轴点构造算法 LUG算法(lower, unorder, greater)
+    Rank partitionLUG(Rank lo, Rank hi)
     {
+        swap(_elem[lo], _elem[lo + rand() % (hi - lo)]);
+        T pivotVal = _elem[lo];
+        // U _elem[lo, hi-1]
+        Rank start = lo;
+        Rank end = hi - 1;
+        while (start < end)
+        {
+            // G
+            while (start < end && pivotVal <= _elem[end]) --end;
+            // G区间发现严格的小于pivotVal的值
+            _elem[start] = _elem[end];
 
+            // L
+            while (start < end && _elem[start] <= pivotVal) ++start;
+            // L区间发现严格的大于pivotVal的值
+            _elem[end] = _elem[start];
+        } 
+        _elem[start] = pivotVal;
+        return start;
+    }
+    // 轴点构造算法 LGU算法
+    Rank partitionLGU(Rank lo, Rank hi)
+    {
+        return 0;
     }
     // 快速排序算法
     void quickSort(Rank lo, Rank hi)
     {
-
+        if (hi - lo <= 1)
+        {
+            return;
+        }
+        int pivot = partitionLUG(lo, hi);
+        quickSort(lo, pivot);
+        quickSort(pivot + 1, hi);
     }
     // 当前idx所在的节点 与两个孩子节点中 三者最大值的秩
     // 秩不能 >= n
@@ -423,7 +452,8 @@ public:
         {
         default:
             // insertionSort(lo, hi);
-            heapSort(lo, hi);
+            // heapSort(lo, hi);
+            quickSort(lo, hi);
             // mergeSort(lo, hi);
             // selectionSort(lo, hi);
             // bubbleSort(lo, hi);
