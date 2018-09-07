@@ -106,11 +106,11 @@ void TestReadInterface(MYSTL::Vector<int> & vv)
 
 int main(int argc, char* argv[])
 {
-    TestConstructor();
-    int arr[] = { 11, 1, 66, 71, 89, 9 };
-    MYSTL::Vector<int> vv(arr, 0, sizeof(arr)/sizeof(arr[0]));
-    TestWriteInterface(vv);
-    TestReadInterface(vv);
+    // TestConstructor();
+    // int arr[] = { 11, 1, 66, 71, 89, 9 };
+    // MYSTL::Vector<int> vv(arr, 0, sizeof(arr)/sizeof(arr[0]));
+    // TestWriteInterface(vv);
+    // TestReadInterface(vv);
     TestSort();
     return 0;
 }

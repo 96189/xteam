@@ -236,7 +236,20 @@ protected:
     // 轴点构造算法 LGU算法
     Rank partitionLGU(Rank lo, Rank hi)
     {
-        return 0;
+        T pivotVal = _elem[lo];
+        int m = lo;
+        int k = lo + 1;
+        for ( ; k < hi; ++k)
+        {
+            // L < val[m] <= G 
+            // pivotVal <= _elem[k] ? ++k : swap(_elem[++lo], _elem[k++]);
+            if (_elem[k] < pivotVal) // 归入L
+                swap(_elem[++m], _elem[k]);
+            // else // 归入G 
+
+        }
+        swap(_elem[m], _elem[lo]);
+        return m;
     }
     // 快速排序算法
     void quickSort(Rank lo, Rank hi)
@@ -245,7 +258,8 @@ protected:
         {
             return;
         }
-        int pivot = partitionLUG(lo, hi);
+        // int pivot = partitionLUG(lo, hi);
+        int pivot = partitionLGU(lo, hi);
         quickSort(lo, pivot);
         quickSort(pivot + 1, hi);
     }
