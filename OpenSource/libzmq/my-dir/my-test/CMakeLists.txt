@@ -49,6 +49,12 @@ add_executable(lbbroker lbbroker.cc)
 
 add_executable(asyncsrv asyncsrv.cc)
 
+add_executable(brokerstateflow brokerstateflow.cc)
+add_executable(localcloudflow localcloudflow.cc)
+add_executable(fullclustersimulation fullclustersimulation.cc)
+
+
+
 
 target_link_libraries(hwserver zmq)
 target_link_libraries(hwclient zmq)
@@ -91,3 +97,7 @@ target_link_libraries(rtrep zmq)
 target_link_libraries(lbbroker zmq)
 
 target_link_libraries(asyncsrv zmq)
+
+target_link_libraries(brokerstateflow zmq)
+target_link_libraries(localcloudflow zmq czmq)
+target_link_libraries(fullclustersimulation zmq czmq)
