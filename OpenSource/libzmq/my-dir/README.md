@@ -215,6 +215,27 @@
 ##### 状态流原型
 ##### 本地流和云端流原型
 
+## Reliable Request-Reply Patterns
+### Client-Side Reliability (Lazy Pirate Pattern)
+    REQ-REP连接模式 
+        REQ带有重试机制,REQ一侧使用zmq_poll(...)设置超时时间,超时未收到回复,则关闭原来的套接字,创建新的套接字重新
+    发起连接.
+    lpclient.cc lpserver.cc
+
+![lazy-pirate-pattern](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/lazy-pirate-pattern.png)
+
+### Basic Reliable Queuing (Simple Pirate Pattern)
+    REQ-[ROUTER-lruqueue-ROUTER]-REQ
+    client一侧的req带有重试机制 broker作为client和server之间的代理,通过lru队列选择后端worker,通过多个worker的方
+法解决了REQ-REP模式下单一REP的故障无法解决的问题,但这个引入了新的单点故障broker,且broker将请求转发给后端worker，一旦worker崩溃且未处理该请求,则该请求丢失.broker无法感知worker的状态.
+
+    spqueue.cc spserver.cc lpclient.cc
+
+![simple-pirate-pattern](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/simple-pirate-pattern.png)
+
+
+
+
 ### API
     // socket套接字
     // 数据内容起始地址

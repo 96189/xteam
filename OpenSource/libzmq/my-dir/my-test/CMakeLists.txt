@@ -53,6 +53,11 @@ add_executable(brokerstateflow brokerstateflow.cc)
 add_executable(localcloudflow localcloudflow.cc)
 add_executable(fullclustersimulation fullclustersimulation.cc)
 
+add_executable(lpclient lpclient.cc)
+add_executable(lpserver lpserver.cc)
+
+add_executable(spqueue spqueue.cc)
+add_executable(spworker spworker.cc)
 
 
 
@@ -101,3 +106,9 @@ target_link_libraries(asyncsrv zmq)
 target_link_libraries(brokerstateflow zmq)
 target_link_libraries(localcloudflow zmq czmq)
 target_link_libraries(fullclustersimulation zmq czmq)
+
+target_link_libraries(lpclient zmq czmq)
+target_link_libraries(lpserver zmq czmq)
+
+target_link_libraries(spqueue zmq czmq)
+target_link_libraries(spworker zmq czmq)
