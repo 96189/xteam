@@ -229,12 +229,27 @@
     client一侧的req带有重试机制 broker作为client和server之间的代理,通过lru队列选择后端worker,通过多个worker的方
 法解决了REQ-REP模式下单一REP的故障无法解决的问题,但这个引入了新的单点故障broker,且broker将请求转发给后端worker，一旦worker崩溃且未处理该请求,则该请求丢失.broker无法感知worker的状态.
 
-    spqueue.cc spserver.cc lpclient.cc
+    spqueue.cc spworker.cc lpclient.cc
 
 ![simple-pirate-pattern](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/simple-pirate-pattern.png)
 
+### Robust Reliable Queuing (Paranoid Pirate Pattern)
+    REQ-[ROUTER-lruqueue-ROUTER]-DEALTER
+    client-REQ一侧依然是带有重试机制
+    ROUTER-lruqueue-ROUTER的broker,lruqueue中存储的不再是简单的worker的identity,而是worker对象(包含identity和expiry),
+检测到worker过期则将worker清除,因此lruqueue中保存的始终是存活的后端worker.broker会定期的发送心跳到后端worker探测后端
+worker是否存活.
+    worker-DEALTER一侧新增探测broker是否存活的心跳,若发现worker到broker的连接已不同,达到设定的健康心跳后,则重新建立到
+broker的连接.
+    由于worker套接字类型为DEALTER则worker需要自己处理信封envelope
 
+    ppqueue.cc ppworker.cc lpclient.cc
 
+![paranoid-pirate-pattern](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/paranoid-pirate-pattern.png)
+
+    通过心跳解决了broker和worker之间无法知道对方是否存活的问题,一旦broker检测到worker死亡,则在lruqueue中删除该worker对
+象;worker检测到broker死亡,由于只存在一个worker,则留给worker的选择只有重连.
+    本模式并没有解决broker单点故障的问题.
 
 ### API
     // socket套接字

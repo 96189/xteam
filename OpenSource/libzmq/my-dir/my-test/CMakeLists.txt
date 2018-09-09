@@ -59,6 +59,10 @@ add_executable(lpserver lpserver.cc)
 add_executable(spqueue spqueue.cc)
 add_executable(spworker spworker.cc)
 
+add_executable(ppqueue ppqueue.cc)
+add_executable(ppworker ppworker.cc)
+
+
 
 
 target_link_libraries(hwserver zmq)
@@ -112,3 +116,6 @@ target_link_libraries(lpserver zmq czmq)
 
 target_link_libraries(spqueue zmq czmq)
 target_link_libraries(spworker zmq czmq)
+
+target_link_libraries(ppqueue zmq czmq)
+target_link_libraries(ppworker zmq czmq)
