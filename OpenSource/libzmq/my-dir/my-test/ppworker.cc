@@ -5,10 +5,10 @@
 #include <czmq.h>
 #include <assert.h>
 
-#define HEARTBEAT_LIVENESS 3    // 心跳健康度
-#define HEARTBEAT_INTERVAL 1000 // 单位:ms
-#define INTERVAL_INIT 1000      // initial reconnect
-#define INITVAL_MAX 3200        // after exponential backoff
+#define HEARTBEAT_LIVENESS 3    // 心跳健康度 which is how many heartbeats we can still miss before deciding the queue is dead. 
+#define HEARTBEAT_INTERVAL 1000 // 1s 心跳间隔时间
+#define INTERVAL_INIT 1000      // 1s initial reconnect
+#define INITVAL_MAX 3200        // 32s after exponential backoff
 
 #define BACKEND_ADDR "tcp://localhost:5556"
 
@@ -110,7 +110,7 @@ int main(int argc, char const *argv[])
             {
                 printf("W: heartbeat failure, can't reach queue\n");
                 printf("W: reconnecting in %zd msec…\n", interval);
-                zclock_sleep(interval);
+                zclock_sleep(interval); // To avoid opening and closing too many sockets, we wait for a certain interval before reconnecting
 
                 if (interval < INITVAL_MAX)
                     interval *= 2;  // 等待重连时间 幂次增长

@@ -235,13 +235,12 @@
 
 ### Robust Reliable Queuing (Paranoid Pirate Pattern)
     REQ-[ROUTER-lruqueue-ROUTER]-DEALTER
-    client-REQ一侧依然是带有重试机制
-    ROUTER-lruqueue-ROUTER的broker,lruqueue中存储的不再是简单的worker的identity,而是worker对象(包含identity和expiry),
-检测到worker过期则将worker清除,因此lruqueue中保存的始终是存活的后端worker.broker会定期的发送心跳到后端worker探测后端
-worker是否存活.
-    worker-DEALTER一侧新增探测broker是否存活的心跳,若发现worker到broker的连接已不同,达到设定的健康心跳后,则重新建立到
-broker的连接.
-    由于worker套接字类型为DEALTER则worker需要自己处理信封envelope
+#### 实现细节
+* client-REQ一侧依然是带有重试机制
+* ROUTER-lruqueue-ROUTER的broker,lruqueue中存储的不再是简单的worker的identity,而是worker对象(包含identity和expiry),检测到worker过期则将worker清除,因此lruqueue中保存的始终是存活的后端worker.broker会定期的发送心跳到后端worker探测后端worker是否存活.
+* worker-DEALTER一侧新增探测broker是否存活的心跳,若发现worker到broker的连接已不同,达到设定的健康心跳后,则重新建立到broker的连接.
+
+由于worker套接字类型为DEALTER则worker需要自己处理信封envelope
 
     ppqueue.cc ppworker.cc lpclient.cc
 
@@ -250,6 +249,42 @@ broker的连接.
     通过心跳解决了broker和worker之间无法知道对方是否存活的问题,一旦broker检测到worker死亡,则在lruqueue中删除该worker对
 象;worker检测到broker死亡,由于只存在一个worker,则留给worker的选择只有重连.
     本模式并没有解决broker单点故障的问题.
+
+#### Heartbeating for Paranoid Pirate
+* worker如何探测broker(queue)的心跳
+    * liveness 
+        最多可错过的心跳次数,每次超时
+    * zmq_poll
+        以心跳间隔时间作为参数,函数返回后必然是有消息达到或者由于超时返回.
+        若worker有消息达到 则将所有的有效输入数据都作为心跳对待,重置liveness值
+        若是由于超时 则对liveness递减,直至达到0,重连(销毁旧的套接字建立新的套接字并重新连接),然后重置liveness值
+        给broker发送心跳消息 并重置心跳开始时间
+        
+* broker(queue)如何探测worker的心跳
+    * expiry 
+        过期时间 = zclock_time() + HEARTBEAT_LIVENESS * HEARTBEAT_INTERVAL
+    * lruqueue
+        若worker有消息到达queue,则新建带有过期时间的worker对象存入lruqueue
+        若client有消息到达queue,则取出并删除lruqueue队列中的第一个worker,将任务指派给该worker
+        对当前lruqueue中保存的worker连接发送心跳消息 重置心跳开始时间
+        清除lruqueue中连接已经过期的worker对象
+    * zmq_poll
+        以HEARTBEAT_INTERVAL作为参数
+
+### 关于心跳
+    心跳不是一种请求-应答 它们异步地在节点之间传递 任一节点都可以通过它来判断对方已经死亡 并中止通信
+#### 为什么需要心跳
+* 若application使用ROUTER套接字,对端peer发生disconnect和reconnect,则application将会发生资源泄漏
+* 若application是基于SUB或DEALER套接字的数据接收者,则application无法区分当前是good silence还是bad silence,若是bad silence则application应该连接八婆备用的router
+* 若application使用的是传输层协议为tcp,则tcp的心跳机制不能保证对应的应用层收到数据,因此需要应用层设计心跳协议,以确保应用层判断对方是否存活
+
+#### 使用心跳潜在的问题
+* It can be inaccurate when we send large amounts of data, as heartbeats will be delayed behind that data. If heartbeats are delayed(被延迟), you can get false timeouts and disconnections due to network congestion(网络拥塞). Thus, always treat any incoming data as a heartbeat(输入数据都作为心跳对待), whether or not the sender optimizes out heartbeats.
+* While the pub-sub pattern will drop messages(丢弃消息) for disappeared recipients, PUSH and DEALER sockets will queue(排队) them. So if you send heartbeats to a dead peer and it comes back, it will get all the heartbeats you sent, which can be thousands.
+* This design assumes that heartbeat timeouts are the same across the whole network. But that won't be accurate. Some peers will want very aggressive heartbeating(积极的心跳机制) in order to detect faults rapidly(迅速的检测故障). And some will want very relaxed heartbeating(轻松的心跳机制), in order to let sleeping networks lie and save power.
+
+#### ping-pong dialog
+    treat any incoming data as a pong, and only send a ping when not otherwise sending data.
 
 ### API
     // socket套接字

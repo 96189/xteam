@@ -6,7 +6,7 @@
 #include <assert.h>
 
 #define HEARTBEAT_LIVENESS 3    // 心跳健康度
-#define HEARTBEAT_INTERVAL 1000 // 单位:ms
+#define HEARTBEAT_INTERVAL 1000 // 心跳间隔时间 1ms
 
 #define PPP_READY "\001"        // signals worker is ready
 #define PPP_HEARTBEAT "\002"    // signals worker heartbeat
