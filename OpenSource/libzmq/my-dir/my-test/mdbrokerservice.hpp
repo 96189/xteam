@@ -49,6 +49,8 @@ public:
         delete service;
     }
 //
+    void PushBackWorker(Worker *worker);
+    Worker* PopFrontWorker();
     void PushBackMsg(zmsg_t *msg);
     zmsg_t *PopFrontMsg();
     void ProcessMsg(zmsg_t *msg);

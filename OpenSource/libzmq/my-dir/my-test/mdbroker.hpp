@@ -31,8 +31,21 @@ public:
     zlist_t *waiting_;      // list of waiting workers
     int64_t heartbeat_at_;  // 心跳开始时间
 
-    void InsertService(char *name, Service *service);
-    void InsertWorker(char *id_string, Worker *worker);
+public:
+    // services_
+    void AddService(char *name, Service *service);
+    Service* InquireService(char *name);
+
+    // workers_
+    void AddWorker(char *id_string, Worker *worker);
+    void RemoveWorker(char *id_string);
+    Worker* InquireWorker(char *id_string);
+
+    // waiting_
+    void AddWaitWorker(Worker *worker);
+    void RemoveWaitWorker(Worker *worker);
+    Worker* FirstWaitWorker();
+    Worker* NextWaitWorker();
 public:
 // 构造 析构
     Broker(int verbose)
