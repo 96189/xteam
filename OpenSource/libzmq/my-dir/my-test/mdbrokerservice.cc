@@ -2,40 +2,48 @@
 #include "mdbroker.hpp"
 #include "mdbrokerworker.hpp"
 
-void Service::PushBackWorker(Worker *worker)
+void Service::WorkerQueuePush(Worker *worker)
 {
-    ++workers_;
-    zlist_append(this->waiting_, worker);
+    zlist_append(this->workerqueue_, worker);
 }
-Worker* Service::PopFrontWorker()
+Worker* Service::WorkerQueuePop()
 {
-    --workers_;
-    return (Worker*)zlist_pop(this->waiting_);
+    return (Worker*)zlist_pop(this->workerqueue_);
 }
-void Service::PushBackMsg(zmsg_t *msg)
+size_t Service::WorkerQueueSize()
 {
-    zlist_append(this->requests_, msg);
+    return zlist_size(this->workerqueue_);
 }
-zmsg_t *Service::PopFrontMsg()
+
+void Service::RequestQueuePush(zmsg_t *msg)
 {
-    return (zmsg_t*)zlist_pop(this->requests_);
+    zlist_append(this->requestqueue_, msg);
 }
+size_t Service::RequestQueueSize()
+{
+    return zlist_size(this->requestqueue_);
+}
+zmsg_t *Service::RequestQueuePop()
+{
+    return (zmsg_t*)zlist_pop(this->requestqueue_);
+}
+
 void Service::ProcessMsg(zmsg_t *msg)
 {
     // 消息入队
     if (msg) {
-        this->PushBackMsg(msg);
+        this->RequestQueuePush(msg);
     }
 
     // 删除broker中所有过期的worker
     this->broker_->Purge();
 
-    while (zlist_size(this->waiting_) && 
-           zlist_size(this->requests_)) {
-        Worker *worker = PopFrontWorker();
-        this->broker_->RemoveWaitWorker(worker);
-        zmsg_t *msg = PopFrontMsg();
-        worker->Send (MDPW_REQUEST, NULL, msg);
-        zmsg_destroy (&msg);
+    while (WorkerQueueSize() > 0 && 
+           RequestQueueSize() > 0) {
+        Worker *worker = WorkerQueuePop();
+        this->broker_->WorkerQueuePop(worker);
+        zmsg_t *msg = RequestQueuePop();
+        worker->Send(MDPW_REQUEST, NULL, msg);
+        zmsg_destroy(&msg);
     }
 }

@@ -17,18 +17,17 @@ class Service
 {
 public:
     Broker *broker_;
-    char *name_;            // 服务名称
-    zlist_t *requests_;     // 客户端请求的队列
-    zlist_t *waiting_;      // 当前服务拥有的worker队列
-    size_t workers_;        // 可用worker数
+    char *name_;                // 服务名称
+    zlist_t *requestqueue_;     // 客户端请求的队列 (zmsg_t)
+    zlist_t *workerqueue_;      // 当前服务拥有的worker队列 (Worker)
 
 public:
 // 构造 析构
     Service(Broker *broker, char *name)
         : broker_(broker), name_(name)
     {
-        requests_ = zlist_new();
-        waiting_ = zlist_new();
+        requestqueue_ = zlist_new();
+        workerqueue_ = zlist_new();
     }
     ~Service()
     {
@@ -38,21 +37,25 @@ public:
     static void Destroy(void *argument)
     {
         Service *service = (Service*)argument;
-        while (zlist_size(service->requests_))
+        while (zlist_size(service->requestqueue_))
         {
-            zmsg_t *msg = (zmsg_t*)zlist_pop(service->requests_);
+            zmsg_t *msg = (zmsg_t*)zlist_pop(service->requestqueue_);
             zmsg_destroy(&msg);
         }
-        zlist_destroy(&service->requests_);
-        zlist_destroy(&service->waiting_);
+        zlist_destroy(&service->requestqueue_);
+        zlist_destroy(&service->workerqueue_);
         free(service->name_);
         delete service;
     }
 //
-    void PushBackWorker(Worker *worker);
-    Worker* PopFrontWorker();
-    void PushBackMsg(zmsg_t *msg);
-    zmsg_t *PopFrontMsg();
+    void WorkerQueuePush(Worker *worker);
+    Worker* WorkerQueuePop();
+    size_t WorkerQueueSize();
+
+    void RequestQueuePush(zmsg_t *msg);
+    zmsg_t *RequestQueuePop();
+    size_t RequestQueueSize();
+
     void ProcessMsg(zmsg_t *msg);
 };
 

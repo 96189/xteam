@@ -4,53 +4,53 @@
 #include "mdbrokerservice.hpp"
 #include "mdbrokerworker.hpp"
 
-void Broker::AddService (char *name, Service *service)
+void Broker::AddService(char *name, Service *service)
 {
-    zhash_insert(this->services_, name, service);
-    zhash_freefn(this->services_, name, service->Destroy);
+    zhash_insert(this->servicestb_, name, service);
+    zhash_freefn(this->servicestb_, name, service->Destroy);
 }
 Service* Broker::InquireService(char *name)
 {
-    return (Service*)zhash_lookup(this->services_, name);
+    return (Service*)zhash_lookup(this->servicestb_, name);
 }
-void Broker::AddWorker (char *id_string, Worker *worker)
+void Broker::AddWorker(char *id_string, Worker *worker)
 {
-    zhash_insert(this->workers_, id_string, worker);
-    zhash_freefn(this->workers_, id_string, worker->Destroy);
+    zhash_insert(this->workerstb_, id_string, worker);
+    zhash_freefn(this->workerstb_, id_string, worker->Destroy);
 }
 void Broker::RemoveWorker(char *id_string)
 {
-    zhash_delete(this->workers_, id_string);
+    zhash_delete(this->workerstb_, id_string);
 }
 Worker* Broker::InquireWorker(char *id_string)
 {
-    return (Worker*)zhash_lookup(this->workers_, id_string);
+    return (Worker*)zhash_lookup(this->workerstb_, id_string);
 }
 
-void Broker::AddWaitWorker(Worker *worker)
+void Broker::WorkerQueuePush(Worker *worker)
 {
-    zlist_append(this->waiting_, worker);
+    zlist_append(this->workerqueue_, worker);
 }
-void Broker::RemoveWaitWorker(Worker *worker)
+void Broker::WorkerQueuePop(Worker *worker)
 {
-    zlist_remove(this->waiting_, worker);
+    zlist_remove(this->workerqueue_, worker);
 }
-Worker* Broker::FirstWaitWorker()
+Worker* Broker::WorkerQueueFirst()
 {
-    return (Worker*)zlist_first(this->waiting_);
+    return (Worker*)zlist_first(this->workerqueue_);
 }
-Worker* Broker::NextWaitWorker()
+Worker* Broker::WorkerQueueNext()
 {
-    return (Worker*)zlist_next(this->waiting_);
+    return (Worker*)zlist_next(this->workerqueue_);
 }
-int Broker::Bind (const char *endpoint)
+int Broker::Bind(const char *endpoint)
 {
     this->endpoint_ = strdup(endpoint);
     zclock_log("I: MDP broker/0.2.0 is active at %s", endpoint);
     return zmq_bind (this->socket_, this->endpoint_);
 }
 // 查找或者创建worker
-Worker *Broker::RequireWorker (zframe_t *identity)
+Worker *Broker::RequireWorker(zframe_t *identity)
 {
     assert (identity);
     char *id_string = zframe_strhex(identity);
@@ -69,7 +69,7 @@ Worker *Broker::RequireWorker (zframe_t *identity)
     return worker;
 }
 // 查找或者创建service
-Service *Broker::RequireService (zframe_t *servicename)
+Service *Broker::RequireService(zframe_t *servicename)
 {
     assert(servicename);
     char *name = zframe_strdup(servicename);
@@ -103,7 +103,7 @@ void Broker::ServiceInternal(zframe_t *servicename, zmsg_t *msg)
         // 服务查询
         Service *service = this->InquireService(name);
         // 查询结果
-        return_code = service && service->workers_ ? OK : NOT_FOUND;
+        return_code = service && service->WorkerQueueSize() ? OK : NOT_FOUND;
         free(name);
     } else {
         return_code = SERVER_ERROR;
@@ -125,10 +125,11 @@ void Broker::ProcessWorkerMsg(zframe_t *sender, zmsg_t *msg)
     zframe_t *command = zmsg_pop(msg);
     char *id_string = zframe_strhex(sender);
     int worker_exist = (this->InquireWorker(id_string) != NULL);
-    free (id_string);
+    free(id_string);
+    // 查workerstb_ 或者创建表项并添加到表中
     Worker *worker = this->RequireWorker(sender);
 
-    // worker通知broker已准备就绪
+    // 来自worker的就绪通知
     if (zframe_streq(command, MDPW_READY)) {
         if (worker_exist) {
             worker->Delete(1);
@@ -138,11 +139,13 @@ void Broker::ProcessWorkerMsg(zframe_t *sender, zmsg_t *msg)
                 worker->Delete(1);
             } else {
                 zframe_t *servicename = zmsg_pop(msg);
+                // 查servicestb_ 或者创建表项并添加到表中
                 worker->service_ = this->RequireService(servicename);
                 worker->Waiting();
                 zframe_destroy(&servicename);
             }
         }
+    // 来自worker的reply
     } else if (zframe_streq(command, MDPW_REPLY)) {
         if (worker_exist) {
             zframe_t *client = zmsg_unwrap(msg);
@@ -150,18 +153,22 @@ void Broker::ProcessWorkerMsg(zframe_t *sender, zmsg_t *msg)
             zmsg_pushstr(msg, MDPC_CLIENT);
             zmsg_wrap(msg, client);
             zmsg_send(&msg, this->socket_);
+            
             worker->Waiting();
         } else {
             worker->Delete(1);
         }
+    // 来自worker的心跳
     } else if (zframe_streq(command, MDPW_HEARTBEAT)) {
         if (worker_exist) {
             worker->expiry_ = zclock_time() + HEARTBEAT_EXPIRY;
         } else {
             worker->Delete(1);
         }
+    // 来自worker的重连请求
     } else if (zframe_streq(command, MDPW_DISCONNECT)) {
         worker->Delete(0);
+    // 来自worker的未知消息
     } else {
         zclock_log("E: invalid input message");
         zmsg_dump(msg);
@@ -193,7 +200,7 @@ void Broker::ProcessClientMsg (zframe_t *sender, zmsg_t *msg)
 // 清除broker中过期的worker
 void Broker::Purge()
 {
-    Worker *worker = this->FirstWaitWorker();
+    Worker *worker = this->WorkerQueueFirst();
     while (worker) {
         if (zclock_time() < worker->expiry_)
             break;
@@ -201,7 +208,7 @@ void Broker::Purge()
             zclock_log("I: deleting expired worker: %s", worker->id_string_);
         }
         worker->Delete(0);
-        worker = this->FirstWaitWorker();
+        worker = this->WorkerQueueFirst();
     }
 }
 
@@ -260,11 +267,11 @@ int main(int argc, char const *argv[])
             // 断开并删除过期的worker
             broker->Purge();
             // 给所有有效的worker发送心跳包
-            Worker *worker = broker->FirstWaitWorker();
+            Worker *worker = broker->WorkerQueueFirst();
             while (worker)
             {
                 worker->Send(MDPW_HEARTBEAT, NULL, NULL);
-                worker = broker->NextWaitWorker();
+                worker = broker->WorkerQueueNext();
             }
             broker->heartbeat_at_ = zclock_time() + HEARTBEAT_INTERVAL;
         }

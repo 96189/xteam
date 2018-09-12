@@ -287,13 +287,22 @@
     treat any incoming data as a pong, and only send a ping when not otherwise sending data.
 
 
+### Service-Oriented Reliable Queuing (Majordomo Pattern)
 规范化
 抽象(中间层)
 框架
 https://rfc.zeromq.org/spec:6/PPP/
 https://rfc.zeromq.org/spec:7/MDP/
 
+代理broker:
+    worker -> service  1 -> 1
+    service -> worker  1 -> n
 
+    service -> broker  n -> 1
+    broker -> service  1 -> n
+
+    worker -> broker   n -> 1
+    broker -> worker   1 -> n 
 
 
 ### API

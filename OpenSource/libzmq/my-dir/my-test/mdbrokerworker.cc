@@ -9,10 +9,10 @@ void Worker::Delete(int disconnect)
     }
 
     if (this->service_) {
-        this->service_->PopFrontWorker();
+        this->service_->WorkerQueuePop();
     }
 
-    this->broker_->RemoveWaitWorker(this);
+    this->broker_->WorkerQueuePop(this);
     this->broker_->RemoveWorker(this->id_string_);
 }
 void Worker::Send(char *command, char *option, zmsg_t *msg)
@@ -35,8 +35,8 @@ void Worker::Send(char *command, char *option, zmsg_t *msg)
 void Worker::Waiting()
 {
     assert(this->broker_);
-    this->broker_->AddWaitWorker(this);
-    this->service_->PushBackWorker(this);
+    this->broker_->WorkerQueuePush(this);
+    this->service_->WorkerQueuePush(this);
     this->expiry_ = zclock_time() + HEARTBEAT_EXPIRY;
     this->service_->ProcessMsg(NULL);
 }
