@@ -457,6 +457,43 @@ public:
     // 函数对象遍历
     template <typename VST>
     void traverse(VST& funobj);
+
+    // https://juejin.im/post/5aa299c1518825557b4c5806
+    // 寻找链表的中间元素
+    ListNodePosi(T) MiddleNode()
+    {
+        ListNodePosi(T) slow = first();
+        if (slow->succ == trailer)
+        {
+            return slow;
+        }
+        ListNodePosi(T) fast = first()->succ->succ;
+        while (fast != trailer)
+        {
+            slow = slow->succ;
+            fast = (fast->succ != trailer) ? fast->succ->succ : fast->succ;
+        }
+        return slow;
+    }
+
+    // 判断链表是否存在环
+    bool IsLoop()
+    {
+        ListNodePosi(T) slow = first();
+        if (slow->succ == slow) return true;
+
+        ListNodePosi(T) fast = trailer;
+        if (first()->succ)
+            fast = first()->succ->succ;
+        while (fast != trailer && slow != fast)
+        {
+            slow = slow->succ;
+            fast = (fast->succ != trailer) ? fast->succ->succ : fast->succ;
+        }
+        if (fast == trailer) return false;
+        return true;
+    }
+
 }; // List
 
 }; // namespace MYSTL
