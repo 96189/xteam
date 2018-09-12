@@ -259,7 +259,7 @@
         若worker有消息达到 则将所有的有效输入数据都作为心跳对待,重置liveness值
         若是由于超时 则对liveness递减,直至达到0,重连(销毁旧的套接字建立新的套接字并重新连接),然后重置liveness值
         给broker发送心跳消息 并重置心跳开始时间
-        
+
 * broker(queue)如何探测worker的心跳
     * expiry 
         过期时间 = zclock_time() + HEARTBEAT_LIVENESS * HEARTBEAT_INTERVAL
@@ -285,6 +285,16 @@
 
 #### ping-pong dialog
     treat any incoming data as a pong, and only send a ping when not otherwise sending data.
+
+
+规范化
+抽象(中间层)
+框架
+https://rfc.zeromq.org/spec:6/PPP/
+https://rfc.zeromq.org/spec:7/MDP/
+
+
+
 
 ### API
     // socket套接字

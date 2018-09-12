@@ -62,6 +62,12 @@ add_executable(spworker spworker.cc)
 add_executable(ppqueue ppqueue.cc)
 add_executable(ppworker ppworker.cc)
 
+add_executable(mdclient mdclient.cc)
+add_executable(mdworker mdworker.cc)
+add_executable(mdbroker mdbroker.cc mdbrokerservice.cc mdbrokerworker.cc)
+
+
+
 
 
 
@@ -119,3 +125,7 @@ target_link_libraries(spworker zmq czmq)
 
 target_link_libraries(ppqueue zmq czmq)
 target_link_libraries(ppworker zmq czmq)
+
+target_link_libraries(mdclient zmq czmq)
+target_link_libraries(mdworker zmq czmq)
+target_link_libraries(mdbroker zmq czmq)
