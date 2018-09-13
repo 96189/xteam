@@ -134,6 +134,6 @@ target_link_libraries(mdclient zmq czmq)
 target_link_libraries(mdworker zmq czmq)
 target_link_libraries(mdbroker zmq czmq)
 target_link_libraries(mdservicediscovery zmq czmq)
-target_link_libraries(trippingtest zmq czmq)
+target_link_libraries(trippingtest zmq czmq ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(mdclient_async zmq czmq)
