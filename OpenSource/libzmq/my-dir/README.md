@@ -294,6 +294,12 @@
 https://rfc.zeromq.org/spec:6/PPP/
 https://rfc.zeromq.org/spec:7/MDP/
 
+mdp.h
+mdcliapi.hpp mdclient.cc
+mdwrkapi.hpp mdworker.cc
+mdbroker.hpp mdbroker.cc mdbrokerservice.hpp mdbrokerservice.cc mdbrokerworker.hpp mdbrokerwroker.cc
+
+
 代理broker:
     worker -> service  1 -> 1
     service -> worker  1 -> n
@@ -303,6 +309,17 @@ https://rfc.zeromq.org/spec:7/MDP/
 
     worker -> broker   n -> 1
     broker -> worker   1 -> n 
+
+https://rfc.zeromq.org/spec:8/MMI/
+Majordomo Management Interface
+broker同时实现了服务查询功能
+
+### Asynchronous Majordomo Pattern
+    异步和同步的性能对比
+    mdcliapi_async.hpp mdclient_async.cc
+    性能测试对比
+    time mdcliapi
+    time mdclient_async
 
 
 ### API

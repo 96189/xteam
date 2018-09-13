@@ -66,6 +66,9 @@ add_executable(mdclient mdclient.cc)
 add_executable(mdworker mdworker.cc)
 add_executable(mdbroker mdbroker.cc mdbrokerservice.cc mdbrokerworker.cc)
 add_executable(mdservicediscovery mdservicediscovery.cc)
+add_executable(trippingtest trippingtest.cc)
+
+add_executable(mdclient_async mdclient_async.cc)
 
 
 
@@ -131,3 +134,6 @@ target_link_libraries(mdclient zmq czmq)
 target_link_libraries(mdworker zmq czmq)
 target_link_libraries(mdbroker zmq czmq)
 target_link_libraries(mdservicediscovery zmq czmq)
+target_link_libraries(trippingtest zmq czmq)
+
+target_link_libraries(mdclient_async zmq czmq)
