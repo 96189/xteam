@@ -477,20 +477,35 @@ public:
     }
 
     // 判断链表是否存在环
+    void MakeLoop(int from)
+    {
+        assert(from <= size());
+        ListNodePosi(T) pCur = first();
+        for (int i = 1; i < from; ++i)
+        {
+            pCur = pCur->succ;
+        }    
+        last()->succ = pCur;
+    }
     bool IsLoop()
     {
         ListNodePosi(T) slow = first();
+        // 空表
+        if (slow == trailer) return false;
+        // 单个节点成环
         if (slow->succ == slow) return true;
 
         ListNodePosi(T) fast = trailer;
-        if (first()->succ)
+        if (first()->succ != trailer)
             fast = first()->succ->succ;
         while (fast != trailer && slow != fast)
         {
             slow = slow->succ;
             fast = (fast->succ != trailer) ? fast->succ->succ : fast->succ;
         }
+        // 快指针到达尾哨兵
         if (fast == trailer) return false;
+        // 快慢指针相遇 成环
         return true;
     }
 

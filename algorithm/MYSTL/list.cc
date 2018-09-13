@@ -32,6 +32,25 @@ void TestMiddleNode()
     assert(pCur->getData() == 3);
 }
 
+void TestIsLoop()
+{
+    MYSTL::List<int> l;
+    assert(l.IsLoop() == false);
+    l.insertAsLast(1);
+    assert(l.IsLoop() == false);
+    l.MakeLoop(1);
+    assert(l.IsLoop() == true);
+    l.insertAsLast(2);
+    l.insertAsLast(3);
+    l.insertAsLast(4);
+    l.insertAsLast(5);
+    l.MakeLoop(3);
+    assert(l.IsLoop() == true);
+    printf("TestIsLoop end\n");
+    // 成环导致析构时 对同一个地址多次释放 core
+    getchar();
+}
+
 int main(int argc, char* argv[])
 {
     // MYSTL::List<int> l;
@@ -113,6 +132,7 @@ int main(int argc, char* argv[])
     // l.traverse(PrintInt);
     // printf("\n");
 
-    TestMiddleNode();
+    // TestMiddleNode();
+    TestIsLoop();
     return 0;
 }
