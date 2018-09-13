@@ -70,6 +70,9 @@ add_executable(trippingtest trippingtest.cc)
 
 add_executable(mdclient_async mdclient_async.cc)
 
+add_executable(titanic titanic.cc)
+add_executable(ticlient ticlient.cc)
+
 
 
 
@@ -137,3 +140,6 @@ target_link_libraries(mdservicediscovery zmq czmq)
 target_link_libraries(trippingtest zmq czmq ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(mdclient_async zmq czmq)
+
+target_link_libraries(titanic zmq czmq uuid)
+target_link_libraries(ticlient zmq czmq uuid)
