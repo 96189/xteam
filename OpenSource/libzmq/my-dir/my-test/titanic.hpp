@@ -7,7 +7,7 @@
 #include <uuid/uuid.h>
 
 #include "mdwrkapi.hpp"
-#include "mdcliapi.hpp"
+#include "ticlient.hpp"
 #include "zfile.h"      // czmq/include/zfile.h
 
 #define BUFF_SIZE 256
@@ -18,6 +18,8 @@
 #define SERVICE_REPLY "titanic.reply"
 #define SERVICE_CLOSE "titanic.close"
 
+#define MMI_SERVICE "mmi.service"
+
 namespace Helper
 {
 
@@ -27,7 +29,7 @@ static char *GenerateUuid()
     char *uuidstr = (char*)zmalloc(sizeof(uuid_t) * 2 + 1);
     uuid_t uuid;
     uuid_generate(uuid);
-    int byte_nbr;
+    size_t byte_nbr;
     for (byte_nbr = 0; byte_nbr < sizeof(uuid_t); byte_nbr++) {
         uuidstr [byte_nbr * 2 + 0] = hex_char [uuid [byte_nbr] >> 4];
         uuidstr [byte_nbr * 2 + 1] = hex_char [uuid [byte_nbr] & 15];
@@ -76,12 +78,13 @@ public:
             zmsg_t *request = worker->Recv(&reply);
             if (!request) break;
 
-            zfile_mkdir(TITANIC_DIR);
+            zsys_dir_create(TITANIC_DIR);
 
             char *uuid = Helper::GenerateUuid();
             char *filename = Helper::RequestFilename(uuid);
             FILE *file = fopen(filename, "w");
             assert(file);
+            printf("Request req_filename %s\n", filename);
             zmsg_save(request, file);
             fclose(file);
             zmsg_destroy(&request);
@@ -100,6 +103,7 @@ public:
     }
     static void Reply(void *args)
     {
+        
         MdWork *worker = new MdWork(BROKER_ADDR, SERVICE_REPLY, 0);
         worker->Connect2Broker();
 
@@ -112,7 +116,8 @@ public:
             char *uuid = zmsg_popstr(request);
             char *req_filename = Helper::RequestFilename(uuid);
             char *rep_filename = Helper::ReplyFilename(uuid);
-            if (zfile_exists(rep_filename))
+            printf("Reply rep_filename %s\n", rep_filename);
+            if (zsys_file_exists(rep_filename))
             {
                 FILE *file = fopen(rep_filename, "r");
                 assert(file);
@@ -123,7 +128,7 @@ public:
             else 
             {
                 reply = zmsg_new();
-                if (zfile_exists(req_filename))
+                if (zsys_file_exists(req_filename))
                 {
                     zmsg_pushstr(reply, "300"); // pending
                 }
@@ -141,7 +146,7 @@ public:
         delete worker;
     }
     static void Close(void *args)
-    {
+    {   
         MdWork *worker = new MdWork(BROKER_ADDR, SERVICE_CLOSE, 0);
         worker->Connect2Broker();
 
@@ -154,8 +159,8 @@ public:
             char *uuid = zmsg_popstr(request);
             char *req_filename = Helper::RequestFilename(uuid);
             char *rep_filename = Helper::ReplyFilename(uuid);
-            zfile_delete(req_filename);
-            zfile_delete(rep_filename);
+            zsys_file_delete(req_filename);
+            zsys_file_delete(rep_filename);
             free(uuid);
             free(req_filename);
             free(rep_filename);
@@ -167,6 +172,7 @@ public:
 
         delete worker;
     }
+// 
     static int ServiceSuccess(char *uuid)
     {
         char *filename = Helper::RequestFilename(uuid);
@@ -182,14 +188,15 @@ public:
         char *service_name = zframe_strdup(service);
 
         MdCli *client = new MdCli(BROKER_ADDR, 0);
+        client->Connect2Broker();
         client->SetTimeOut(1000);
         client->SetRetries(1);
 
         zmsg_t *mmi_request = zmsg_new();
         zmsg_add(mmi_request, service);
-        zmsg_t *mmi_reply = client->Send("mmi.service", &mmi_request);
+        zmsg_t *mmi_reply = client->Send((char*)MMI_SERVICE, &mmi_request);
         int service_ok = (mmi_reply && zframe_streq(zmsg_first(mmi_reply), "200"));
-        zmsg_destroy(&mmi_request);
+        zmsg_destroy(&mmi_reply);
 
         int result = 0;
         if (service_ok)
@@ -214,6 +221,50 @@ public:
         delete client;
         free(service_name);
         return result;
+    }
+
+    static void Loop(zactor_t *request_pipe, int verbose)
+    {
+        while (1)
+        {
+            zfile_mkdir(TITANIC_DIR);
+            zmsg_t *msg = zmsg_recv(request_pipe);
+            if (!msg) break;
+            FILE* file = fopen(TITANIC_DIR"/queue", "a");
+            char *uuid = zmsg_popstr(msg);
+            fprintf(file, "-%s\n", uuid);
+            fclose(file);
+            free(uuid);
+            zmsg_destroy(&msg);
+
+            char entry[] = "?…….:…….:…….:…….:";
+            file = fopen(TITANIC_DIR"/queue", "r+");
+            while (file && fread(entry, 33, 1, file) == 1)
+            {
+                if (entry[0] == '-')
+                {
+                    if (verbose)
+                        printf("I: processing request %s\n", entry + 1);
+                    // 发送处理结果给client
+                    if (Titanic::ServiceSuccess(entry + 1))
+                    {
+                        fseek(file, -33, SEEK_CUR);
+                        fwrite("+", 1, 1, file);
+                        fseek(file, 32, SEEK_CUR);
+                    }
+                }
+
+                if (fgetc(file) == '\r')
+                {
+                    fgetc(file);
+                }
+                if (zctx_interrupted) break;
+            }
+            if (file)
+            {
+                fclose(file);
+            }
+        }
     }
 };
 

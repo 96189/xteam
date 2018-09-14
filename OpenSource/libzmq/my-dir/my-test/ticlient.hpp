@@ -71,8 +71,8 @@ public:
         zmsg_pushstr(request, MDPC_CLIENT);
         if (this->verbose_)
         {
-            zclock_log ("I: send request to '%s' service:", service);
-            zmsg_dump (request);
+            zclock_log("I: send request to '%s' service:", service);
+            zmsg_print(request);
         }
         int retires_left = this->retries_;
         while (retires_left > 0)
@@ -93,7 +93,7 @@ public:
                 if (this->verbose_)
                 {
                     zclock_log ("I: received reply:");
-                    zmsg_dump(msg);
+                    zmsg_print(msg);
                 }
                 assert(zmsg_size(msg) >= 3);
                 zframe_t *header = zmsg_pop(msg);
@@ -150,7 +150,12 @@ public:
                 printf("E: server fatal error, aborting\n");
                 exit(EXIT_FAILURE);
             }
-            else 
+            else if (zframe_streq(status, "300"))
+            {
+                // retry
+                printf("E: 300 error server busy start retry\n");
+            }
+            else  
             {
                 assert(false);
             }
@@ -163,13 +168,13 @@ public:
         return NULL;
     }
 //
-    void Test()
+    void HealthCheck()
     {
         zmsg_t *request = zmsg_new();
         zmsg_addstr(request, "echo");
         zmsg_addstr(request, "hello world");
         
-        zmsg_t *reply = this->ServiceCall(SERVICE_REQUEST, &request);
+        zmsg_t *reply = this->ServiceCall((char*)SERVICE_REQUEST, &request);
         
         zframe_t *uuid = NULL;
         if (reply)
@@ -182,8 +187,9 @@ public:
         while (!zctx_interrupted)
         {
             zclock_sleep(100);
+            request = zmsg_new();
             zmsg_add(request, zframe_dup(uuid));
-            zmsg_t *reply = this->ServiceCall(SERVICE_REPLY, &request);
+            zmsg_t *reply = this->ServiceCall((char*)SERVICE_REPLY, &request);
             if (reply)
             {
                 char *reply_string = zframe_strdup(zmsg_last(reply));
@@ -193,7 +199,7 @@ public:
 
                 request = zmsg_new();
                 zmsg_add(request, zframe_dup(uuid));
-                reply = this->ServiceCall(SERVICE_CLOSE, &request);
+                reply = this->ServiceCall((char*)SERVICE_CLOSE, &request);
                 zmsg_destroy(&reply);
                 break;
             }

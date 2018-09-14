@@ -321,6 +321,11 @@ broker同时实现了服务查询功能
     time mdcliapi
     time mdclient_async
 
+### Disconnected Reliability (Titanic Pattern)
+    架构图
+    长连接 短链接
+    数据流走向 请求响应走向
+    单点故障分析
 
 ### API
     // socket套接字
