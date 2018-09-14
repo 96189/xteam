@@ -51,6 +51,18 @@ void TestIsLoop()
     getchar();
 }
 
+void TestLastN()
+{
+    MYSTL::List<int> l;
+    for (int i = 1;  i <= 5; ++i)
+    {
+        l.insertAsLast(i);
+    }
+
+    assert(l.LastN(1)->getData() == 5);
+    assert(l.LastN(5)->getData() == 1);
+}
+
 int main(int argc, char* argv[])
 {
     // MYSTL::List<int> l;
@@ -133,6 +145,7 @@ int main(int argc, char* argv[])
     // printf("\n");
 
     // TestMiddleNode();
-    TestIsLoop();
+    // TestIsLoop();
+    TestLastN();
     return 0;
 }

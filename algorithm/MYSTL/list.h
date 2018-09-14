@@ -509,6 +509,24 @@ public:
         return true;
     }
 
+    // 单链表求倒数第 N 个节点
+    ListNodePosi(T) LastN(int n)
+    {
+        ListNodePosi(T) slow = header;
+        ListNodePosi(T) fast = header;
+        while (n-- > 0 && fast != trailer)
+        {
+            fast = fast->succ;
+        }
+
+        while (fast != trailer)
+        {
+            slow = slow->succ;
+            fast = fast->succ;
+        }
+        return slow;
+    }
+
 }; // List
 
 }; // namespace MYSTL
