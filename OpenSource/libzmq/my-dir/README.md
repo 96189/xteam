@@ -327,6 +327,16 @@ broker同时实现了服务查询功能
     数据流走向 请求响应走向
     单点故障分析
 
+### 主备模式-HA
+![primary-backup](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/primary-backup.png)    
+
+    主机
+    备机
+    状态机 
+    主备机之间心跳保持和状态变化通知
+
+    客户端同时保存主机备机地址
+
 ### API
     // socket套接字
     // 数据内容起始地址
