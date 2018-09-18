@@ -76,6 +76,8 @@ add_executable(ticlient ticlient.cc)
 add_executable(bstarsrv bstarsrv.cc)
 add_executable(bstarcli bstarcli.cc)
 
+add_executable(bstarreactor bstarreactor.cc)
+
 
 
 
@@ -149,3 +151,5 @@ target_link_libraries(ticlient zmq czmq uuid)
 
 target_link_libraries(bstarsrv zmq czmq)
 target_link_libraries(bstarcli zmq czmq)
+
+target_link_libraries(bstarreactor zmq czmq)

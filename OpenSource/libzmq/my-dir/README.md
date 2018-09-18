@@ -330,12 +330,16 @@ broker同时实现了服务查询功能
 ### 主备模式-HA
 ![primary-backup](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/primary-backup.png)    
 
+    bstarsrv.hpp bstarsrv.cc bstarcli.hpp bstarcli.cc
     主机
     备机
     状态机 
     主备机之间心跳保持和状态变化通知
 
     客户端同时保存主机备机地址
+
+    整合primary-backup结合zmq reactor生成服务框架
+    bstarreactor.hpp bstarreactor.cc bstarcli.hpp bstarcli.cc
 
 ### API
     // socket套接字
