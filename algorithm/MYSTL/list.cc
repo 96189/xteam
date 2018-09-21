@@ -63,7 +63,7 @@ void TestLastN()
     assert(l.LastN(5)->getData() == 1);
 }
 
-void RemoveLastN()
+void TestRemoveLastN()
 {
     MYSTL::List<int> l;
     for (int i = 1;  i <= 5; ++i)
@@ -94,6 +94,20 @@ void TestRotate()
         l.traverse(PrintInt);
         printf("\n"); 
     }
+}
+
+void TestReverse()
+{
+    MYSTL::List<int> l;
+    for (int i = 1;  i <= 5; ++i)
+    {
+        l.insertAsLast(i);
+    }  
+    l.traverse(PrintInt);   
+    printf("\n"); 
+    l.Reverse();
+    l.traverse(PrintInt);   
+    printf("\n"); 
 }
 
 int main(int argc, char* argv[])
@@ -180,7 +194,8 @@ int main(int argc, char* argv[])
     // TestMiddleNode();
     // TestIsLoop();
     // TestLastN();
-    // RemoveLastN();
-    TestRotate();
+    // TestRemoveLastN();
+    // TestRotate();
+    TestReverse();
     return 0;
 }

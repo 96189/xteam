@@ -572,6 +572,88 @@ public:
         fast->succ_ = trailer_; trailer_->pred_ = fast;
         return true;
     }
+    // 链表逆置
+    void Reverse()
+    {
+        ListNodePosi(T) front = first();
+        ListNodePosi(T) mid = front->succ_;
+        
+        // 逆置前的第一个节点为逆置后的最后一个节点
+        front->succ_ = trailer_;
+
+        ListNodePosi(T) rear = trailer_;
+        while (mid != trailer_)
+        {
+            // 记录下一个位置
+            rear = mid->succ_;
+
+            // 指针修改
+            mid->succ_ = front;
+            mid->pred_ = rear;
+
+            // 后移
+            front = mid;
+            mid = rear;
+        }
+
+        // 逆置后最后一个节点为第一个节点
+        header_->succ_ = front;
+    }
+    // 判断两个链表是否相交 且 求出交点
+    bool IsConverge(const List<T>& l, ListNodePosi(T) **point)
+    {
+        ListNodePosi(T) pCur1 = this->first();
+        ListNodePosi(T) pCur2 = l->first();
+        int diff = 0;
+        while (pCur1->succ_ != trailer_)
+        {
+            ++diff;
+            pCur1 = pCur1->succ_;
+        }
+        while (pCur2->succ != trailer_)
+        {
+            --diff;
+            pCur2 = pCur2->succ_;
+        }
+
+        if (pCur1 != pCur2) return false;
+
+        // 两条链表一样长 V字型
+        if (diff == 0)
+        {
+            *point = pCur1;
+            return true;
+        }
+        // l链表长于this链表
+        else if (diff < 0) 
+        {
+            diff *= -1;
+            pCur1 = l->first();
+            pCur2 = this->first();
+        }
+        // this链表长于l链表
+        else 
+        {
+            pCur1 = this->first();
+            pCur2 = l->first();
+        }
+
+        // pCur1指向较长的链表 pCur2指向较短的链表
+        while (diff-- > 0)
+        {
+            pCur1 = pCur1->succ_;
+        }
+
+        // 至此pCur1和pCur2在同一起点开始
+        while (pCur1 != pCur2)
+        {
+            pCur1 = pCur1->succ_;
+            pCur2 = pCur2->succ_;
+        }
+
+        *point = pCur1;
+        return true;
+    }
 
 }; // List
 
