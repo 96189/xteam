@@ -1,5 +1,6 @@
 
 ## 策略模式 ##
+    duckBehavior.hpp duck.hpp duckInstance.hpp duckInstance.cc
     继承的问题在于对基类的修改会影响所有派生类
     继承的优势在于对代码的复用
     
@@ -13,5 +14,10 @@
     组合提高可用性和扩展性
 
 ## 观察者模式 ##
-    1:n n依赖1的数据 松耦合 推拉模型1->n
+    subobsInterface.hpp wether.hpp weatherDisplay.hpp WeatherStation.cc
+    1:n n依赖1的数据 松耦合(降低对象间的依赖) 推拉模型1->n 推(1一次性推所有数据给n) 拉(n分别按需从1获取数据)
+
+    定义了对象之间的一对多依赖,当一个对象改变状态时,其他所有依赖者都会收到通知并自动更新。
+### 观察者模式和发布订阅模式区别 ###
+    https://juejin.im/post/5a14e9edf265da4312808d86
 
