@@ -15,7 +15,6 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-
 #define SERVER_PORT 9998
  
 typedef struct
@@ -24,6 +23,127 @@ typedef struct
     int port;
     char buf[1024];
 }EchoBuf;
+
+// class Echo
+// {
+// private:
+//     AEEventLoop *eventLoop_;
+//     int listenfd_;
+// public:
+//     Echo()
+//     {
+//         eventLoop_ = new AEEventLoop(1024);
+//         listenfd_ = anetTcpServer(NULL, SERVER_PORT, INADDR_ANY, 5);
+//     }
+//     ~Echo()
+//     {
+
+//     }
+//     void Init()
+//     {
+//         if (eventLoop_->aeCreateFileEvent(listenfd_, AE_READABLE, acceptTcpHandler, NULL) != AE_OK)
+//         {
+//             perror("aeCreateFileEvent error");
+//             close(listenfd_);
+//             delete eventLoop_;
+//         }
+//     }
+//     void Loop()
+//     {
+//         eventLoop_->aeMain();
+//     }
+//     // 回调函数
+//     void writeHandler(int fd, void *clientData, int mask)
+//     {
+//         int len = 0;
+//         char *buf = ((EchoBuf *)clientData)->buf;
+//         len = strlen(buf);
+
+//         printf("write to client: %s\n", buf);
+//         if (write(fd, buf, len) != len)
+//         {
+//             perror("write error");
+
+//             close(fd);
+//             eventLoop_->aeDeleteFileEvent(fd, AE_READABLE);
+//             eventLoop_->aeDeleteFileEvent(fd, AE_WRITABLE);
+
+//             printf("free %p\n", clientData);
+//             free(clientData);
+//         }
+//         eventLoop_->aeDeleteFileEvent(fd, AE_WRITABLE);
+//     }
+//     void readHandler(int fd, void *clientData, int mask)
+//     {
+//         char readbuf[1024] = {};
+//         int len = -1;
+//         EchoBuf *usrbuf = (EchoBuf *)clientData;
+
+//         if ((len = read(fd, readbuf, 1024)) > 0)
+//         {
+//             printf("read from <%s:%d>: %s\n", usrbuf->clientaddr, usrbuf->port, readbuf);
+
+//             memcpy(usrbuf->buf, readbuf, 1024);
+//             if (eventLoop_->aeCreateFileEvent(fd, AE_WRITABLE, writeHandler, clientData) != AE_OK)
+//             {
+//                 printf("aeCreateFileEvent error\n");
+//                 goto END;
+//             }
+//             else
+//                 return;
+//         }
+//         else if (len == 0)
+//         {
+//             printf("close link from %s\n", usrbuf->buf);
+//             goto END;
+//         }
+//         else
+//         {
+//             printf("read error from %s\n", usrbuf->buf);
+//             goto END;
+//         }
+
+//     END:
+//         close(fd);
+//         eventLoop_->aeDeleteFileEvent(fd, AE_READABLE);
+//         eventLoop_->aeDeleteFileEvent(fd, AE_WRITABLE);
+//         printf("free %p\n", clientData);
+//         free(clientData);
+//         return;
+//     }
+//     void acceptTcpHandler(int fd, void *clientData, int mask)
+//     {
+//         int acceptfd = -1;
+//         struct sockaddr_in cliaddr;
+//         socklen_t addrlen = sizeof(cliaddr);
+
+//         acceptfd = accept(fd, (struct sockaddr *)&cliaddr, &addrlen);
+//         if (acceptfd < 0)
+//         {
+//             perror("accept error\n");
+//             return;
+//         }
+
+//         EchoBuf *usrbuf = (EchoBuf *)calloc(1, sizeof(EchoBuf));
+//         printf("calloc %p\n", usrbuf);
+//         inet_ntop(AF_INET, &cliaddr.sin_addr, usrbuf->clientaddr, INET_ADDRSTRLEN),
+//             usrbuf->port = ntohs(cliaddr.sin_port);
+//         printf("\naccept from <%s:%d>\n", usrbuf->clientaddr, usrbuf->port);
+
+//         // setunblock(acceptfd);
+//         anetNonBlock(NULL, acceptfd);
+
+//         if (eventLoop_->aeCreateFileEvent(acceptfd, AE_READABLE, readHandler, usrbuf) != AE_OK)
+//         {
+//             perror("aeCreateFileEvent error");
+//             close(acceptfd);
+//             printf("free %p\n", usrbuf);
+//             free(usrbuf);
+//             return;
+//         }
+//         return;
+//     }
+// };
 
 class Echo 
 {

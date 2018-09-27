@@ -5,31 +5,51 @@
 
 #include "aeApi.hpp"
 #include <sys/epoll.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <assert.h>
 
-typedef struct aeApiState {
+class aeApiState 
+{
+public:
     int epfd_;
     struct epoll_event *events_;
-} aeApiState;
+public:
+    aeApiState(int size)
+    {
+        events_ = (struct epoll_event *)malloc(sizeof(struct epoll_event) * size);
+        assert(events_ != NULL);
+        epfd_ = epoll_create(1024); /* 1024 is just a hint for the kernel */
+        assert(epfd_ != -1);
+    }
+    ~aeApiState()
+    {
+        close(epfd_);
+        free(events_);
+    }
+};
 
+class aeEventLoop;
 class AEEpoll : public AEApi
 {
 private:
     aeApiState *state_;
+    aeEventLoop *eventLoop_;
 public:
-    AEEpoll();
+    AEEpoll(aeEventLoop *eventLoop);
     ~AEEpoll();
     // 接口实现
     // 构造函数
-    int aeApiCreate(aeEventLoop *eventLoop);
+    int aeApiCreate();
     // 析构函数
-    void aeApiFree(aeEventLoop *eventLoop);
-    int aeApiResize(aeEventLoop *eventLoop, int setsize);
+    void aeApiFree();
+    int aeApiResize(int setsize);
     // 添加事件
-    int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask);
+    int aeApiAddEvent(int fd, int mask);
     // 删除事件
-    void aeApiDelEvent(aeEventLoop *eventLoop, int fd, int delmask);
+    void aeApiDelEvent(int fd, int delmask);
     // 事件就绪检查
-    int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp);
+    int aeApiPoll(struct timeval *tvp);
     char *aeApiName(void);
 };
 

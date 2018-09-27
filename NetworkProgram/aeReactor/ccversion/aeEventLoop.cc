@@ -6,8 +6,8 @@
 AEEventLoop::AEEventLoop(int setsize)
 {
     eventLoop_ = new aeEventLoop(setsize);
-    aeApi_ = new AEEpoll();
-    int ret = aeApi_->aeApiCreate(eventLoop_);
+    aeApi_ = new AEEpoll(eventLoop_);
+    int ret = aeApi_->aeApiCreate();
     assert(ret != -1);
     for (int i = 0; i < setsize; i++)
         eventLoop_->events[i].mask = AE_NONE;
@@ -16,7 +16,7 @@ AEEventLoop::~AEEventLoop()
 {
     if (aeApi_)
     {
-        aeApi_->aeApiFree(eventLoop_);
+        aeApi_->aeApiFree();
     }
     if (eventLoop_)
     {
@@ -37,7 +37,7 @@ int AEEventLoop::aeCreateFileEvent(int fd, int mask,
     }
     aeFileEvent *fe = &eventLoop_->events[fd];
 
-    if (aeApi_->aeApiAddEvent(eventLoop_, fd, mask) == -1)
+    if (aeApi_->aeApiAddEvent(fd, mask) == -1)
         return AE_ERR;
     fe->mask |= mask;
     // 关联读事件处理器
@@ -64,7 +64,7 @@ void AEEventLoop::aeDeleteFileEvent(int fd, int mask)
     if (mask & AE_WRITABLE)
         mask |= AE_BARRIER;
 
-    aeApi_->aeApiDelEvent(eventLoop_, fd, mask);
+    aeApi_->aeApiDelEvent(fd, mask);
     fe->mask = fe->mask & (~mask);
     if (fd == eventLoop_->maxfd && fe->mask == AE_NONE)
     {
@@ -146,9 +146,9 @@ int AEEventLoop::aeDeleteTimeEvent(long long id)
     }
     return AE_ERR; /* NO event with the specified ID found */
 }
-aeTimeEvent *AEEventLoop::aeSearchNearestTimer(aeEventLoop *eventLoop)
+aeTimeEvent *AEEventLoop::aeSearchNearestTimer()
 {
-    aeTimeEvent *te = eventLoop->timeEventHead;
+    aeTimeEvent *te = eventLoop_->timeEventHead;
     aeTimeEvent *nearest = NULL;
 
     while (te)
@@ -177,7 +177,7 @@ int AEEventLoop::aeProcessEvents(int flags)
 
         if (flags & AE_TIME_EVENTS && !(flags & AE_DONT_WAIT))
             // 获取到达当前事件最近的时间事件
-            shortest = aeSearchNearestTimer(eventLoop_);
+            shortest = aeSearchNearestTimer();
         if (shortest)
         {
             long now_sec, now_ms;
@@ -218,7 +218,7 @@ int AEEventLoop::aeProcessEvents(int flags)
             }
         }
 
-        numevents = aeApi_->aeApiPoll(eventLoop_, tvp);
+        numevents = aeApi_->aeApiPoll(tvp);
 
         /* After sleep callback. */
         if (eventLoop_->aftersleep != NULL && flags & AE_CALL_AFTER_SLEEP)
@@ -267,11 +267,11 @@ int AEEventLoop::aeProcessEvents(int flags)
     /* Check time events */
     // 处理已经发生的超时事件
     if (flags & AE_TIME_EVENTS)
-        processed += processTimeEvents(eventLoop_);
+        processed += processTimeEvents();
 
     return processed; /* return the number of processed file/time events */
 }
-int AEEventLoop::processTimeEvents(aeEventLoop *eventLoop)
+int AEEventLoop::processTimeEvents()
 {
     int processed = 0;
     aeTimeEvent *te;
@@ -424,7 +424,7 @@ int AEEventLoop::aeResizeSetSize(int setsize)
         return AE_OK;
     if (eventLoop_->maxfd >= setsize)
         return AE_ERR;
-    if (aeApi_->aeApiResize(eventLoop_, setsize) == -1)
+    if (aeApi_->aeApiResize(setsize) == -1)
         return AE_ERR;
 
     eventLoop_->events = (aeFileEvent *)realloc(eventLoop_->events, sizeof(aeFileEvent) * setsize);

@@ -1,6 +1,4 @@
 
-#include "aeEventLoop.hpp"
-#include "aenet.hpp"
 #include "echo.hpp"
 
 int main(int argc, char const *argv[])
@@ -17,5 +15,9 @@ int main(int argc, char const *argv[])
         return -1;
     }
     loop->aeMain();
+
+    // Echo *pEcho = new Echo();
+    // pEcho->Init();
+    // pEcho->Loop();
     return 0;
 }

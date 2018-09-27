@@ -68,9 +68,9 @@ typedef struct aeTimeEvent {
     long long id; /* time event identifier. */
     long when_sec; /* seconds */
     long when_ms; /* milliseconds */
-    // 事件事件处理器
+    // 时间事件处理器
     aeTimeProc *timeProc;
-    // 事件事件析构函数
+    // 时间事件析构函数
     aeEventFinalizerProc *finalizerProc;
     void *clientData;
     // 事件链式结构
@@ -95,7 +95,6 @@ public:
     aeFiredEvent *fired; /* Fired events */
     aeTimeEvent *timeEventHead;
     int stop;
-    void *apidata; /* This is used for polling API specific data */
     aeBeforeSleepProc *beforesleep;
     aeBeforeSleepProc *aftersleep;
 
@@ -141,9 +140,9 @@ public:
                                 aeTimeProc *proc, void *clientData,
                                 aeEventFinalizerProc *finalizerProc);
     int aeDeleteTimeEvent(long long id);
-    aeTimeEvent *aeSearchNearestTimer(aeEventLoop *eventLoop);
+    aeTimeEvent *aeSearchNearestTimer();
     int aeProcessEvents(int flags);
-    int processTimeEvents(aeEventLoop *eventLoop);
+    int processTimeEvents();
     int aeWait(int fd, int mask, long long milliseconds);
     void aeMain();
     char *aeGetApiName(void);
