@@ -78,6 +78,8 @@ add_executable(bstarcli bstarcli.cc)
 
 add_executable(bstarreactor bstarreactor.cc)
 
+add_executable(freelancesvr freelancesvr.cc)
+
 
 
 
@@ -153,3 +155,5 @@ target_link_libraries(bstarsrv zmq czmq)
 target_link_libraries(bstarcli zmq czmq)
 
 target_link_libraries(bstarreactor zmq czmq)
+
+target_link_libraries(freelancesvr zmq czmq)
