@@ -48,9 +48,11 @@ int main(int argc, char const *argv[])
             {
                 { client, 0, ZMQ_POLLIN, 0 }
             };
+
             int ret = zmq_poll(items, 1, REQUEST_TIMEOUT);;
             assert(ret != -1);
 
+            // 服务端应答
             if (items[0].revents & ZMQ_POLLIN)
             {
                 char *reply = zstr_recv(client);
@@ -67,8 +69,10 @@ int main(int argc, char const *argv[])
                 }
                 free(reply);
             }
+            // 服务端超时未应答
             else 
             {
+                // 多次重试 依然没有应答则放弃请求
                 if (--retries_left == 0)
                 {
                     printf("E: server seems to be offline, abandoning\n");
@@ -77,6 +81,7 @@ int main(int argc, char const *argv[])
                 }
                 else
                 {
+                    // 客户端重试 重发请求
                     printf("W: no response from server, retrying…\n");
                     zmq_close(client);
                     client = s_client_socket(context);
