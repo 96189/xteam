@@ -61,7 +61,7 @@ class CallbackT : public Callback
   }
 
  private:
-  ProtobufMessageTCallback callback_;
+  ProtobufMessageTCallback callback_;   // 消息处理逻辑
 };
 
 class ProtobufDispatcher
@@ -80,11 +80,14 @@ class ProtobufDispatcher
                          const MessagePtr& message,
                          muduo::Timestamp receiveTime) const
   {
+    // 查表
     CallbackMap::const_iterator it = callbacks_.find(message->GetDescriptor());
+    // 调用对应的处理逻辑
     if (it != callbacks_.end())
     {
       it->second->onMessage(conn, message, receiveTime);
     }
+    // 调用默认处理逻辑
     else
     {
       defaultCallback_(conn, message, receiveTime);
@@ -101,8 +104,8 @@ class ProtobufDispatcher
  private:
   typedef std::map<const google::protobuf::Descriptor*, boost::shared_ptr<Callback> > CallbackMap;
 
-  CallbackMap callbacks_;
-  ProtobufMessageCallback defaultCallback_;
+  CallbackMap callbacks_;                       // 消息类型 - 消息处理逻辑 表
+  ProtobufMessageCallback defaultCallback_;     // 默认的消息处理逻辑
 };
 #endif  // MUDUO_EXAMPLES_PROTOBUF_CODEC_DISPATCHER_H
 

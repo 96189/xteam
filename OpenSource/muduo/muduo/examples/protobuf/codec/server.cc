@@ -24,15 +24,18 @@ class QueryServer : boost::noncopyable
   QueryServer(EventLoop* loop,
               const InetAddress& listenAddr)
   : server_(loop, listenAddr, "QueryServer"),
-    dispatcher_(boost::bind(&QueryServer::onUnknownMessage, this, _1, _2, _3)),
-    codec_(boost::bind(&ProtobufDispatcher::onProtobufMessage, &dispatcher_, _1, _2, _3))
+    dispatcher_(boost::bind(&QueryServer::onUnknownMessage, this, _1, _2, _3)),             /* 消息处理 */
+    codec_(boost::bind(&ProtobufDispatcher::onProtobufMessage, &dispatcher_, _1, _2, _3))   /* 业务逻辑处理(消息分发) */
   {
+    // 注册业务消息处理逻辑
     dispatcher_.registerMessageCallback<muduo::Query>(
         boost::bind(&QueryServer::onQuery, this, _1, _2, _3));
     dispatcher_.registerMessageCallback<muduo::Answer>(
         boost::bind(&QueryServer::onAnswer, this, _1, _2, _3));
+    // 连接建立回调
     server_.setConnectionCallback(
         boost::bind(&QueryServer::onConnection, this, _1));
+    // 消息到达回调
     server_.setMessageCallback(
         boost::bind(&ProtobufCodec::onMessage, &codec_, _1, _2, _3));
   }
@@ -83,8 +86,8 @@ class QueryServer : boost::noncopyable
   }
 
   TcpServer server_;
-  ProtobufDispatcher dispatcher_;
-  ProtobufCodec codec_;
+  ProtobufDispatcher dispatcher_;   // 消息分发
+  ProtobufCodec codec_;             // 消息编解码 - 消息拦截器(分包打包)
 };
 
 int main(int argc, char* argv[])

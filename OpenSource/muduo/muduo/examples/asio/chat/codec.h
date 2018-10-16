@@ -21,6 +21,7 @@ class LengthHeaderCodec : boost::noncopyable
   {
   }
 
+  // 消息分包(消息到达回调)
   void onMessage(const muduo::net::TcpConnectionPtr& conn,
                  muduo::net::Buffer* buf,
                  muduo::Timestamp receiveTime)
@@ -30,6 +31,7 @@ class LengthHeaderCodec : boost::noncopyable
       // FIXME: use Buffer::peekInt32()
       const void* data = buf->peek();
       int32_t be32 = *static_cast<const int32_t*>(data); // SIGBUS
+      // 包长
       const int32_t len = muduo::net::sockets::networkToHost32(be32);
       if (len > 65536 || len < 0)
       {
@@ -37,10 +39,12 @@ class LengthHeaderCodec : boost::noncopyable
         conn->shutdown();  // FIXME: disable reading
         break;
       }
+      // 缓冲区数据至少够一个完成的包
       else if (buf->readableBytes() >= len + kHeaderLen)
       {
         buf->retrieve(kHeaderLen);
         muduo::string message(buf->peek(), len);
+        // 包处理逻辑
         messageCallback_(conn, message, receiveTime);
         buf->retrieve(len);
       }
@@ -52,6 +56,7 @@ class LengthHeaderCodec : boost::noncopyable
   }
 
   // FIXME: TcpConnectionPtr
+  // 消息打包
   void send(muduo::net::TcpConnection* conn,
             const muduo::StringPiece& message)
   {
@@ -59,6 +64,7 @@ class LengthHeaderCodec : boost::noncopyable
     buf.append(message.data(), message.size());
     int32_t len = static_cast<int32_t>(message.size());
     int32_t be32 = muduo::net::sockets::hostToNetwork32(len);
+    // 包长
     buf.prepend(&be32, sizeof be32);
     conn->send(&buf);
   }

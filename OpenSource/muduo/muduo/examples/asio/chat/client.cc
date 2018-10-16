@@ -20,10 +20,12 @@ class ChatClient : boost::noncopyable
  public:
   ChatClient(EventLoop* loop, const InetAddress& serverAddr)
     : client_(loop, serverAddr, "ChatClient"),
-      codec_(boost::bind(&ChatClient::onStringMessage, this, _1, _2, _3))
+      codec_(boost::bind(&ChatClient::onStringMessage, this, _1, _2, _3))   /* 业务逻辑处理 */
   {
+    // 连接建立回调
     client_.setConnectionCallback(
         boost::bind(&ChatClient::onConnection, this, _1));
+    // 消息到达回调
     client_.setMessageCallback(
         boost::bind(&LengthHeaderCodec::onMessage, &codec_, _1, _2, _3));
     client_.enableRetry();
@@ -49,6 +51,7 @@ class ChatClient : boost::noncopyable
   }
 
  private:
+  // 连接建立回调
   void onConnection(const TcpConnectionPtr& conn)
   {
     LOG_INFO << conn->localAddress().toIpPort() << " -> "
@@ -66,6 +69,7 @@ class ChatClient : boost::noncopyable
     }
   }
 
+  // 业务逻辑处理
   void onStringMessage(const TcpConnectionPtr&,
                        const string& message,
                        Timestamp)
@@ -74,11 +78,13 @@ class ChatClient : boost::noncopyable
   }
 
   TcpClient client_;
-  LengthHeaderCodec codec_;
+  LengthHeaderCodec codec_;   // 编解码器(分包打包) - 消息拦截器(中间层)
   MutexLock mutex_;
   TcpConnectionPtr connection_ GUARDED_BY(mutex_);
 };
 
+// main函数所在的线程负责读键盘
+// EventLoopThread线程来处理网络IO
 int main(int argc, char* argv[])
 {
   LOG_INFO << "pid = " << getpid();
