@@ -32,17 +32,72 @@ void MinKV2(int arr[], int len, int k)
     }
 }
 
-void TestMinK()
+// array为有序序列 diff必为有序序列
+// 有序序列
+// 空间复杂度 O(N)
+// 时间复杂度 O(N)
+bool FindTwoSumN_v1(const int array[], const int len, const int n, int res[])
 {
-    const int len = 10;
-    const int k = 5;
-    int arr[len] = {0};
+    // 构造差值表
+    int *diff = new int[len];   // O(N)
     for (int i = 0; i < len; ++i)
     {
-        arr[i] = rand() % MOD;
+        diff[i] = n - array[i];
     }
-    PrintArray(arr, len);
-    // MinKV1(arr, len, k);
-    MinKV2(arr, len, k);
-    PrintArray(arr, k);
+    
+    // 同时遍历源数据表array[i]和差值表diff[j]
+    int i = 0, j = len-1; 
+    int count = 0;
+    // O(N)
+    while (i < len && j >= 0)
+    {
+        if (array[i] > diff[j]) 
+        {
+            --j;
+        }
+        else if (array[i] < diff[j])
+        {
+            ++i;
+        }
+        else
+        {
+            res[count++] = array[i];
+            ++i; 
+            --j;
+        } 
+    }
+    delete diff;
+    return (count == 2);
 }
+
+// 有序序列
+// 时间复杂度 O(N)
+// 空间复杂度 O(1)
+bool FindTwoSumN_v2(const int array[], const int len, const int n, int res[])
+{
+    int i = 0;
+    int j = len-1;
+    int count = 0;  // O(1)
+    // O(N)
+    while (i < j)
+    {
+        if (array[i] + array[j] > n)
+        {
+            --j;
+        }
+        else if (array[i] + array[j] < n)
+        {
+            ++i;
+        }
+        else
+        {
+            res[count++] = array[i];
+            res[count++] = array[j];
+            break;
+        }
+    }
+    return (count == 2);
+}
+
+
+

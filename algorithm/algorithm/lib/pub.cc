@@ -54,6 +54,15 @@ static int MaxThreeVal(int array[], int idx, int size)
     return maxIdx;
 }
 
+void Upper(char* str)
+{
+    unsigned int len = strlen(str);
+    for (unsigned int i = 0; i < len; ++i)
+    {
+        str[i] = toupper(str[i]);
+    }
+}
+
 // 向下筛选
 // array[] 堆结构的底层存储
 // size 堆结构底层存储的长度限制
