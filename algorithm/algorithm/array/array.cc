@@ -4,30 +4,30 @@
 // 输入n个整数，输出其中最小的k个。
 
 // O(k) + (n-k) * O(k)
-void MinKV1(int arr[], int len, int k)
+void MinKV1(std::vector<int>& array, int k)
 {
     // [0,k)  [k,len)
-    int maxIdx = MaxIdx(arr, k);
-    for (int i = k; i < len; ++i)
+    unsigned int maxIdx = MaxValueIdx(array);
+    for (unsigned int i = k; i < array.size(); ++i)
     {
-        if (arr[i] < arr[maxIdx])
+        if (array[i] < array[maxIdx])
         {
-            Swap(arr[maxIdx], arr[i]);
+            Swap(array[maxIdx], array[i]);
             // O(k)
-            maxIdx = MaxIdx(arr, k);
+            maxIdx = MaxValueIdx(array);
         }
     }
 }
 
 // O(log(k)) + (n-k) * O(log(k))
-void MinKV2(int arr[], int len, int k)
+void MinKV2(std::vector<int>& array, int k)
 {
-    InitMaxHeap(arr, k);
-    for (int i = k; i < len; ++i)
+    InitMaxHeap(array, k);
+    for (unsigned int i = k; i < array.size(); ++i)
     {
-        if (arr[i] < MaxHeapTop(arr))
+        if (array[i] < MaxHeapTop<int>(array))
         {
-            MaxHeapPush(arr, k, i);
+            MaxHeapPush<int>(array, k, i);
         }
     }
 }
@@ -36,20 +36,20 @@ void MinKV2(int arr[], int len, int k)
 // 有序序列
 // 空间复杂度 O(N)
 // 时间复杂度 O(N)
-bool FindTwoSumN_v1(const int array[], const int len, const int n, int res[])
+bool Sum2_v1(const std::vector<int>& array, const int val, std::vector<int>& res)
 {
     // 构造差值表
-    int *diff = new int[len];   // O(N)
-    for (int i = 0; i < len; ++i)
+    std::vector<int> diff;   // O(N)
+    for (unsigned int i = 0; i < array.size(); ++i)
     {
-        diff[i] = n - array[i];
+        diff.push_back(val - array[i]);
     }
     
     // 同时遍历源数据表array[i]和差值表diff[j]
-    int i = 0, j = len-1; 
-    int count = 0;
+    unsigned int i = 0; 
+    int j = array.size()-1; 
     // O(N)
-    while (i < len && j >= 0)
+    while (i < array.size() && j >= 0)
     {
         if (array[i] > diff[j]) 
         {
@@ -61,43 +61,94 @@ bool FindTwoSumN_v1(const int array[], const int len, const int n, int res[])
         }
         else
         {
-            res[count++] = array[i];
+            res.push_back(array[i]);
             ++i; 
             --j;
         } 
     }
-    delete diff;
-    return (count == 2);
+    return (res.size() == 2);
 }
 
 // 有序序列
 // 时间复杂度 O(N)
 // 空间复杂度 O(1)
-bool FindTwoSumN_v2(const int array[], const int len, const int n, int res[])
+bool Sum2_v2(const std::vector<int>& array, const int val, std::vector<int>& res)
 {
-    int i = 0;
-    int j = len-1;
-    int count = 0;  // O(1)
+    unsigned int i = 0;
+    unsigned int j = array.size()-1;
     // O(N)
     while (i < j)
     {
-        if (array[i] + array[j] > n)
+        if (array[i] + array[j] > val)
         {
             --j;
         }
-        else if (array[i] + array[j] < n)
+        else if (array[i] + array[j] < val)
         {
             ++i;
         }
         else
         {
-            res[count++] = array[i];
-            res[count++] = array[j];
+            res.push_back(array[i]);
+            res.push_back(array[j]);
             break;
         }
     }
-    return (count == 2);
+    return (res.size() == 2);
 }
 
+std::vector<int> Sum2(const std::vector<int>& array, const int val)
+{
+    // 预处理 建立hash表
+    std::unordered_map<int, int> hashTable; // diff -> valueIdx
+    for (unsigned int i = 0; i < array.size(); ++i)
+    {
+        // hash表中找差值
+        if (hashTable.find(val - array[i]) != hashTable.end())
+        {
+            return std::vector<int>{array[hashTable[val - array[i]]], array[i]};
+        }
+        // 原值存储到hash表
+        hashTable[array[i]] = i;
+    }
+    return std::vector<int>{-1, -1};
+}
 
+// O(n^2)
+// O(n)
+std::vector<int> Sum3(const std::vector<int>& array, const int val)
+{
+    std::vector<int> res;
+    for (unsigned int i = 0; i < array.size(); ++i)
+    {
+        auto diff = val - array[i];
+        // 预处理 建立hash表
+        std::unordered_map<int, int> hashTable; // diff -> valueIdx
+        for (unsigned int j = 0; j < array.size(); ++j)
+        {
+            if (array[i] == array[j])
+                continue;
+
+            // hash表中找差值
+            if (hashTable.find(diff - array[j]) != hashTable.end())
+            {
+                res.push_back(array[hashTable[diff - array[j]]]);
+                res.push_back(array[j]);
+                break;
+            }
+            // 原值存储到hash表
+            hashTable[array[j]] = j;
+        }
+        if (res.size() == 2)
+        {
+            res.push_back(array[i]);
+            break;
+        }
+        else 
+        {
+            res.clear();
+        }
+    }    
+    return res;
+}
 
