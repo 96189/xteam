@@ -33,9 +33,17 @@ void Test_TwoSum_N()
     PrintVector(vals);
 }
 
+void Test_Search()
+{
+    std::vector<int> vec{ 1 ,3, 5, 7 ,9 };
+    int pos = BinSearch(vec, 5);
+    assert(vec[pos] == 5);
+}
+
 int main(int argc, char const *argv[])
 {
     // Test_Min_K();
-    Test_TwoSum_N();
+    // Test_TwoSum_N();
+    Test_Search();
     return 0;
 }

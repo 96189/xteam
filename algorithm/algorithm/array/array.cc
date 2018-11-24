@@ -152,3 +152,27 @@ std::vector<int> Sum3(const std::vector<int>& array, const int val)
     return res;
 }
 
+
+int BinSearch(const std::vector<int>& vec, const int val)
+{
+    int start = 0;
+    int end = vec.size() - 1;
+    int mid = -1;
+    while (start <= end)
+    {
+        mid = (start + end) / 2;
+        if (val < vec[mid])
+        {
+            end = mid - 1;
+        }
+        else if (vec[mid] < val)
+        {
+            start = mid + 1;
+        }
+        else 
+        {
+            break;
+        }
+    }
+    return mid;
+}

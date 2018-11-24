@@ -13,3 +13,7 @@ bool Sum2_v2(const std::vector<int>& array, const int val, std::vector<int>& res
 
 std::vector<int> Sum2(const std::vector<int>& array, const int val);
 std::vector<int> Sum3(const std::vector<int>& array, const int val);
+
+
+// 查找
+int BinSearch(const std::vector<int>& vec, const int val);
