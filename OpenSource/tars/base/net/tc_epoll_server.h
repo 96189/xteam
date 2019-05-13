@@ -1880,32 +1880,3 @@ typedef TC_AutoPtr<TC_EpollServer> TC_EpollServerPtr;
 }
 
 #endif
-
-// 使用
-Application::main
-    initializeServer();
-                _epollServer = new TC_EpollServer(iNetThreadNum);
-                _epollServer->setNetThreadBufferPoolInfo(minBlockSize, maxBlockSize, maxBytes);
-                _epollServer->EnAntiEmptyConnAttack(bEnable);
-                _epollServer->setEmptyConnTimeout(TC_Common::strto<int>(toDefault(_conf.get("/tars/application/server<emptyconntimeout>"), "3")));
-                _epollServer->setLocalLogger(TarsRollLogger::getInstance()->logger());
-                // 若配置文件有配置/tars/application/server<local> 则配置AdminAdapter::AdminObj 
-                // 此外配置_handleGroups 名为AdminAdapter Handle个数为1 并配置要处理的Adapter为当前adapter
-                // 仅有一个线程 绑定本地地址并监听
-                _epollServer->bind(lsPtr); 
-                _epollServer->_pReportRspQueue = p.get();
-
-    bindAdapter(adapters);
-                // 循环 实例化配置文件/tars/application/server/的n个子标签 生成对应的Adapter
-                // n个线程中 第1个线程绑定地址并监听 其他n-1个线程设置最大连接数作为连接列表的size
-                _epollServer->bind(bindAdapter);    
-
-    // 循环 配置_handleGroups /tars/application/server/名为子标签名 Handle个数为配置文件中配置的线程个数 并配置要处理的Adapter为当前adapter
-    setHandle(adapters[i]);
-
-    // 所有线程函数开始执行
-    _epollServer->startHandle();
-    
-    // 各网络线程创建并执行epoll事件循环
-    _epollServer->createEpoll();
-

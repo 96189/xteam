@@ -1,0 +1,20 @@
+
+sudo docker pull mysql:5.6
+sudo docker run --name mysql -p 3306:3306 -v /mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=111111
+
+sudo docker pull tarscloud/tars-node:latest
+sudo docker run -d -it --name tars --link mysql --env MOUNT_DATA=true --env DBIP=mysql --env DBPort=3306 --env DBUser=root --env DBPassword=111111 -p 3000:3000 -v /tars/data:/data tarscloud/tars
+sudo docker container logs 459a818ac476
+
+mysql
+sudo docker exec -it a9a8a51f4244 /bin/bash
+
+
+sudo docker run -dit --name Rultr-web -p 8000:80 -v /home/user/website/:/usr/local/apache2/htdocs/ httpd
+
+https://github.com/jyiL/docker-tars
+https://hub.docker.com/r/tarscloud/tars/
+https://tangramor.gitlab.io/tars-docker-guide/
+https://my.oschina.net/u/3796575/blog/1838385?nocache=1530498237368
+https://blog.csdn.net/qq_39398995/article/details/84797877
+
