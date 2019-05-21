@@ -288,14 +288,14 @@ protected:
 
     /**
      * @brief 获取任务, 如果没有任务, 则为NULL.
-     *
+     *  任务线程在任务队列_jobqueue中获取任务
      * @return TC_FunctorWrapperInterface*
      */
     std::function<void ()> get(ThreadWorker *ptw);
 
     /**
      * @brief 获取启动任务.
-     *
+     *  线程池从启动对象队列_startqueue中取出初始化对象来初始化工作线程
      * @return TC_FunctorWrapperInterface*
      */
     std::function<void ()> get();

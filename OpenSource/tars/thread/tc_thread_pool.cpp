@@ -37,7 +37,7 @@ void TC_ThreadPool::ThreadWorker::terminate()
 void TC_ThreadPool::ThreadWorker::run()
 {
     //调用初始化部分
-    auto pst = _tpool->get();
+    auto pst = _tpool->get();   // _startqueue获取初始化对象
     if(pst)
     {
         try
@@ -52,7 +52,7 @@ void TC_ThreadPool::ThreadWorker::run()
     //调用处理部分
     while (!_bTerminate)
     {
-        auto pfw = _tpool->get(this);
+        auto pfw = _tpool->get(this);   // _jobqueue获取任务
         if(pfw)
         {
             try
@@ -63,6 +63,7 @@ void TC_ThreadPool::ThreadWorker::run()
             {
             }
 
+            // 将当前工作线程从繁忙线程set中删除
             _tpool->idle(this);
         }
     }
@@ -261,6 +262,7 @@ std::function<void ()> TC_ThreadPool::get(ThreadWorker *ptw)
         return NULL;
     }
 
+    // 任务队列中 无可用任务 将当期工作线程同时存储在繁忙线程的set中
     {
         Lock sync(_tmutex);
         _busthread.insert(ptw);
@@ -282,6 +284,7 @@ std::function<void ()> TC_ThreadPool::get()
 
 void TC_ThreadPool::idle(ThreadWorker *ptw)
 {
+    // 将当期工作线程从繁忙线程的set中移除
     Lock sync(_tmutex);
     _busthread.erase(ptw);
 
