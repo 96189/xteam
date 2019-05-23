@@ -7,7 +7,7 @@
 
 ## 服务查询/服务注册 ##
     QueryImp.h QueryImp.cpp
-    Registry.h Registry.cpp
+    RegistryImp.h RegistryImp.cpp
 
 ## RegistryServer ##
 ### 处理流程 ###
@@ -35,10 +35,10 @@
         int num = TC_Common::strto<int>(g_pconf->get("/tars/reap<asyncthread>", "3"));
         _registryProcThread->start(num);
 
-        //供node访问的对象
+        //供node访问的对象(实例化注册处理对象并存储地址信息)
         addServant<RegistryImp>((*g_pconf)["/tars/objname<RegistryObjName>"]);
 
-        //供tars的服务获取路由的对象
+        //供tars的服务获取路由的对象(实例化查询处理对象并存储地址信息)
         addServant<QueryImp>((*g_pconf)["/tars/objname<QueryObjName>"]);
         // ...
     }
@@ -47,6 +47,7 @@
     线程初始化
         _db.loadObjectIdCache 全量加载数据库相关信息到缓存(CDbHandle _objectsCache _mapServantStatus _setDivisionCache)中
     线程执行函数
+
     void ReapThread::run()
     {
         while(!_terminate)
@@ -58,6 +59,7 @@
     }
 * 监控tarsnode超时的线程CheckNodeThread
     线程执行函数
+
     void CheckNodeThread::run()
     {
         while(!_terminate)
@@ -72,6 +74,7 @@
 
 * 监控所有服务状态的线程CheckSettingState
     线程执行函数
+
     void CheckSettingState::run()
     {
         while(!_terminate)
@@ -85,6 +88,7 @@
 
 * 异步处理命令的线程池RegistryProcThread
     线程执行函数
+
     void RegistryProcThreadRunner::run()
     {
         while (!_terminate)
