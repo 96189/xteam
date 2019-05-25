@@ -7,6 +7,7 @@
 
 ## NodeServer ##
 ### 处理流程 ###
+```
 {
     // 初始化主控AdminProxy(单例)的名字 配置文件中字段QueryObj后的内容(直接调用内容为ip时用""代替)
     initRegistryObj();
@@ -36,9 +37,9 @@
     _removeLogThread->start(iThreads);
     g_RemoveLogThread = _removeLogThread;
 }
-
+```
 * 保活线程KeepAliveThread
-
+```
 void KeepAliveThread::run()
 {
     while (!_terminate)
@@ -77,9 +78,9 @@ void KeepAliveThread::run()
             }
     }
 }
-
+```
 * 内存用量上报线程ReportMemThread
-
+```
 void ReportMemThread::run()
 {
     while (!_shutDown)
@@ -87,10 +88,10 @@ void ReportMemThread::run()
             report();   // 定时上报每个服务的实例内存使用情况 通过读取"/proc/" + spid + "/statm"内容获取内存使用状况
     }
 }
-
+```
 * 批量发布线程对象BatchPatch
     创建批量发布线程池
-
+    ```
     for (int i = 0; i < iNum; i++)
     {
         BatchPatchThread * t = new BatchPatchThread(this);
@@ -98,38 +99,39 @@ void ReportMemThread::run()
         t->start();
         _runners.push_back(t);
     }
-
+    ```
     发布线程BatchPatchThread
-
-void BatchPatchThread::run()
-{
-    while (!_shutDown)
+    ```
+    void BatchPatchThread::run()
     {
+        while (!_shutDown)
+        {
             if (_batchPatch->pop_front(item))   // 从线程池发布队列中获取任务 任务数据来源为NodeImp::patchPro
             {
                 doPatchRequest(item.first, item.second); // 处理任务(构造发布命令对象 发布)  已发布任务的拉起依赖KeepAliveThread定时检查拉起
             }
+        }
     }
-}
-
+    ```
 * 日志删除对象RemoveLogManager
     创建日志删除线程池
-
-void RemoveLogManager::start(int iNum)
-{
-    for (int i = 0; i < iNum; i++)
+    ```
+    void RemoveLogManager::start(int iNum)
     {
-        RemoveLogThread * t = new RemoveLogThread(this);
-        t->start();
-        _runners.push_back(t);
+        for (int i = 0; i < iNum; i++)
+        {
+            RemoveLogThread * t = new RemoveLogThread(this);
+            t->start();
+            _runners.push_back(t);
+        }
     }
-}
-
+    ```
     日志删除线程
-void RemoveLogThread::run()
-{
-    while (!_shutDown)
+    ```
+    void RemoveLogThread::run()
     {
+        while (!_shutDown)
+        {
             // 数据来源 NodeImp::destroyServer CommandDestroy command(pServerObjectPtr) g_RemoveLogThread->push_back
             if (_manager->pop_front(sLogPath))  
             {
@@ -138,8 +140,9 @@ void RemoveLogThread::run()
                     int ret = TC_File::removeFile(sLogPath,true);   // 删除被销毁的服务的日志目录
                 }
             }
+        }
     }
-}
+    ```
 
 * NodeImp对象
     实现Node.tars协议中定义的接口

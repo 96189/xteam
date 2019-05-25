@@ -9,6 +9,7 @@
 
 ## AdminRegistryServer ##
 ### 处理流程 ###
+```
     {
         // 加载本服务路由信息到内存
         loadServantEndpoint();
@@ -21,8 +22,9 @@
         string adminObj = g_pconf->get("/tars/objname<AdminRegObjName>", "");
         addServant<AdminRegistryImp>(adminObj);
     }
+```
 * 定时轮询线程AdminReapThread
-
+```
 void AdminReapThread::run()
 {
     while(!_terminate)
@@ -42,7 +44,7 @@ void AdminReapThread::run()
         }
     }
 }
-
+```
 ### 处理命令的对象实例化 ###
     AdminRegistryImp.h  AdminRegistryImp.cpp
     ExecuteTask.h   ExecuteTask.cpp

@@ -11,6 +11,7 @@
 
 ## RegistryServer ##
 ### 处理流程 ###
+```
     {
         //加载registry对象的端口信息
         loadServantEndpoint(); 
@@ -42,12 +43,13 @@
         addServant<QueryImp>((*g_pconf)["/tars/objname<QueryObjName>"]);
         // ...
     }
-
+```
 * 定时操作线程ReapThread
     线程初始化
         _db.loadObjectIdCache 全量加载数据库相关信息到缓存(CDbHandle _objectsCache _mapServantStatus _setDivisionCache)中
     线程执行函数
 
+    ```
     void ReapThread::run()
     {
         while(!_terminate)
@@ -57,9 +59,10 @@
             _db.checkRegistryTimeout(_registryTimeout);     // 定时更新心跳超时的主控状态为inactive(t_registry_info表)
         }
     }
+    ```
 * 监控tarsnode超时的线程CheckNodeThread
     线程执行函数
-
+    ```
     void CheckNodeThread::run()
     {
         while(!_terminate)
@@ -71,10 +74,10 @@
             }
         }
     }
-
+    ```
 * 监控所有服务状态的线程CheckSettingState
     线程执行函数
-
+    ```
     void CheckSettingState::run()
     {
         while(!_terminate)
@@ -85,10 +88,10 @@
             }
         }
     }
-
+    ```
 * 异步处理命令的线程池RegistryProcThread
     线程执行函数
-
+    ```
     void RegistryProcThreadRunner::run()
     {
         while (!_terminate)
@@ -114,7 +117,7 @@
             }
         }
     }
-
+    ```
 ### 数据读写核心 ###
     DbHandle.h DbHandle.cpp
 
