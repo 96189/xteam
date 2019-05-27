@@ -149,3 +149,6 @@ void ReportMemThread::run()
 
 * ServerImp对象
     实现NodeF.tars协议中定义的接口
+
+### 设计模式-命令模式 ###
+TODO
