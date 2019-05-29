@@ -149,6 +149,7 @@ void TC_EpollServer::Handle::setWaitTime(uint32_t iWaitTime)
 
 void TC_EpollServer::Handle::handleImp()
 {
+    // 开启未存活的线程
     startHandle();
 
     while (!getEpollServer()->isTerminate())
@@ -196,21 +197,22 @@ void TC_EpollServer::Handle::handleImp()
 
                     stRecvData.adapter = adapter;
 
-                    //数据已超载 overload
+                    // 数据已超载 overload
                     if (stRecvData.isOverload)
                     {
                         handleOverload(stRecvData);
                     }
-                    //关闭连接的通知消息
+                    // 关闭连接的通知消息
                     else if (stRecvData.isClosed)
                     {
                         handleClose(stRecvData);
                     }
-                    //数据在队列中已经超时了
+                    // 数据在队列中已经超时了
                     else if ( (now - stRecvData.recvTimeStamp) > (int64_t)adapter->getQueueTimeout())
                     {
                         handleTimeout(stRecvData);
                     }
+                    // 业务数据处理
                     else
                     {
                         handle(stRecvData);
@@ -767,6 +769,7 @@ int TC_EpollServer::NetThread::Connection::parseProtocol(recv_queue::queue_type 
                 if(_recvbuffer.length() >= (unsigned) _iHeaderLen)
                 {
                     string header = _recvbuffer.substr(0, _iHeaderLen);
+                    // 包头过滤函数
                     _pBindAdapter->getHeaderFilterFunctor()((int)(TC_EpollServer::PACKET_FULL), header);
                     _recvbuffer = _recvbuffer.substr(_iHeaderLen);
                     _iHeaderLen = 0;
@@ -775,7 +778,7 @@ int TC_EpollServer::NetThread::Connection::parseProtocol(recv_queue::queue_type 
                 {
                     _pBindAdapter->getHeaderFilterFunctor()((int)(TC_EpollServer::PACKET_LESS), _recvbuffer);
                     _iHeaderLen -= _recvbuffer.length();
-                    _recvbuffer = "";
+                    _recvbuffer = "";   // 清空接收缓冲
                     break;
                 }
             }
@@ -802,14 +805,17 @@ int TC_EpollServer::NetThread::Connection::parseProtocol(recv_queue::queue_type 
                 _recvbuffer.clear();
             }
 #endif
-
+            // 接收到的出去包头以外的包内容
             string ro;
 
+            // 当前收包状态
             int b = TC_EpollServer::PACKET_LESS;
+            // 非tars协议 server启动时设置协议解析器
             if (_pBindAdapter->getConnProtocol())
             {
                 b = _pBindAdapter->getConnProtocol()(*rbuf, ro, this);
             }
+            // 默认tars协议解析器
             else
             {
                 b = _pBindAdapter->getProtocol()(*rbuf, ro);
@@ -820,12 +826,15 @@ int TC_EpollServer::NetThread::Connection::parseProtocol(recv_queue::queue_type 
                 //包不完全
                 break;
             }
+            // 完整的包
             else if(b == TC_EpollServer::PACKET_FULL)
             {
+                // 鉴权
                 if (_pBindAdapter->_authWrapper &&
                     _pBindAdapter->_authWrapper(this, ro))
                     continue;
 
+                // 构造recv数据对象
                 tagRecvData* recv = new tagRecvData();
                 recv->buffer           = std::move(ro);
                 recv->ip               = _ip;
@@ -835,13 +844,12 @@ int TC_EpollServer::NetThread::Connection::parseProtocol(recv_queue::queue_type 
                 recv->isOverload       = false;
                 recv->isClosed         = false;
                 recv->fd               = getfd();
-
-                //收到完整的包才算
-                this->_bEmptyConn = false;
+                this->_bEmptyConn      = false;
 
                 //收到完整包
                 o.push_back(recv);
 
+                // 数据超过临时队列的大小  重新将数据添加到接收数据队列 重置o对象
                 if((int) o.size() > _iMaxTemQueueSize)
                 {
                     insertRecvQueue(o);
@@ -953,7 +961,7 @@ int TC_EpollServer::NetThread::Connection::recv(recv_queue::queue_type &o)
         }
         else
         {
-            //接收到数据不超过buffer,没有数据了(如果有数据,内核会再通知你)
+            //接收到数据不超过buffer,没有数据了(如果有数据,内核会再通知你 epoll et模式)
             if((size_t)iBytesReceived < sizeof(buffer))
             {
                 break;
@@ -966,6 +974,7 @@ int TC_EpollServer::NetThread::Connection::recv(recv_queue::queue_type &o)
         }
     }
 
+    // tcp
     if(_lfd != -1)
     {
         return parseProtocol(o);
@@ -1629,7 +1638,7 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
         //创建epoll
         _epoller.create(10240);
 
-        // 管道(用于关闭服务)
+        // 管道(用于关闭服务) 高32位为事件类型
         _epoller.add(_shutdown.getfd(), H64(ET_CLOSE), EPOLLIN);
         // 管道(用于通知有数据需要发送就)
         _epoller.add(_notify.getfd(), H64(ET_NOTIFY), EPOLLIN);
@@ -1643,7 +1652,7 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
             {
                 //获取最大连接数
                 maxAllConn += kv.second->getMaxConns();
-
+                // 高32位为事件类型 低32位为套接字描述符
                 _epoller.add(kv.first, H64(ET_LISTEN) | kv.first, EPOLLIN);
             }
             else
@@ -1659,6 +1668,7 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
             maxAllConn = _listSize;
         }
 
+        // 限制最大连接数(设置为系统最大上限值)
         if(maxAllConn >= (1 << 22))
         {
             error("createEpoll connection num: " + TC_Common::tostr(maxAllConn) + " >= " + TC_Common::tostr(1 << 22));
@@ -1696,7 +1706,7 @@ void TC_EpollServer::NetThread::terminate()
     //通知队列醒过来
     _sbuffer.notifyT();
 
-    //通知epoll响应, 关闭连接
+    //通知epoll响应, 关闭连接 高32为为事件类型
     _epoller.mod(_shutdown.getfd(), H64(ET_CLOSE), EPOLLOUT);
 }
 
@@ -1917,7 +1927,7 @@ void TC_EpollServer::NetThread::close(uint32_t uid)
 
     _sbuffer.push_back(send);
 
-    //通知epoll响应, 关闭连接
+    //通知epoll响应, 关闭连接 高32位为事件类型
     _epoller.mod(_notify.getfd(), H64(ET_NOTIFY), EPOLLOUT);
 }
 
@@ -1942,7 +1952,7 @@ void TC_EpollServer::NetThread::send(uint32_t uid, const string &s, const string
 
     _sbuffer.push_back(send);
 
-    //通知epoll响应, 有数据要发送
+    //通知epoll响应, 有数据要发送 高32位为事件类型
     _epoller.mod(_notify.getfd(), H64(ET_NOTIFY), EPOLLOUT);
 }
 
@@ -2008,6 +2018,7 @@ void TC_EpollServer::NetThread::processPipe()
 
 void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 {
+    // 当前连接的描述符fd(低32位)
     uint32_t uid = ev.data.u32;
 
     Connection *cPtr = getConnectionPtr(uid);
@@ -2018,7 +2029,7 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
         return;
     }
 
-    if (ev.events & EPOLLERR || ev.events & EPOLLHUP)
+    if (ev.events & EPOLLERR || ev.events & EPOLLHUP)   // 连接上发生错误
     {
         delConnection(cPtr,true,EM_SERVER_CLOSE);
 
@@ -2056,6 +2067,7 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
         }
     }
 
+    // uid描述符fd 刷新连接管理链表
     _list.refresh(uid, cPtr->getTimeout() + TNOW);
 }
 
@@ -2073,11 +2085,11 @@ void TC_EpollServer::NetThread::run()
             try
             {
                 const epoll_event &ev = _epoller.get(i);
-
+                // 取高32位获取事件类型
                 uint32_t h = ev.data.u64 >> 32;
-
                 switch(h)
                 {
+                // 监听连接上有新连接建立请求
                 case ET_LISTEN:
                     {
                         //监听端口有请求
@@ -2089,8 +2101,9 @@ void TC_EpollServer::NetThread::run()
                                 bool ret;
                                 do
                                 {
+                                    // 获取新连接
                                     ret = accept(ev.data.u32, it->second->_ep.isIPv6() ? AF_INET6 : AF_INET);
-                                }while(ret);
+                                } while(ret);
                             }
                         }
                     }
@@ -2102,6 +2115,7 @@ void TC_EpollServer::NetThread::run()
                     //发送通知
                     processPipe();
                     break;
+                // 已建立的连接
                 case ET_NET:
                     //网络请求
                     processNet(ev);

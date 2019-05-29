@@ -1013,11 +1013,11 @@ namespace tars
             bool                _bEmptyConn;
 
             /*
-             *接收数据的临时buffer,加这个目的是对udp接收数据包大小进行设置
+             * 接收数据的临时buffer,加这个目的是对udp接收数据包大小进行设置
              */
             char                *_pRecvBuffer;
 
-            size_t                _nRecvBufferSize;
+            size_t               _nRecvBufferSize;
         public:
             /*
              *该连接的鉴权状态
