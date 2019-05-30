@@ -20,6 +20,7 @@ class ThreadLocal : boost::noncopyable
  public:
   ThreadLocal()
   {
+    // 定义线程私有数据内存资源释放函数
     MCHECK(pthread_key_create(&pkey_, &ThreadLocal::destructor));
   }
 
@@ -30,10 +31,12 @@ class ThreadLocal : boost::noncopyable
 
   T& value()
   {
+    // 获取当前线程的私有数据
     T* perThreadValue = static_cast<T*>(pthread_getspecific(pkey_));
     if (!perThreadValue)
     {
       T* newObj = new T();
+      // 设置当前线程的私有数据
       MCHECK(pthread_setspecific(pkey_, newObj));
       perThreadValue = newObj;
     }

@@ -36,12 +36,13 @@ void ThreadPool::start(int numThreads)
   assert(threads_.empty());
   running_ = true;
   threads_.reserve(numThreads);
+  // 生成线程池 开启线程
   for (int i = 0; i < numThreads; ++i)
   {
     char id[32];
     snprintf(id, sizeof id, "%d", i+1);
-    threads_.push_back(new muduo::Thread(
-          boost::bind(&ThreadPool::runInThread, this), name_+id));
+    // 绑定线程处理函数
+    threads_.push_back(new muduo::Thread(boost::bind(&ThreadPool::runInThread, this), name_+id));
     threads_[i].start();
   }
   if (numThreads == 0 && threadInitCallback_)
@@ -68,8 +69,10 @@ size_t ThreadPool::queueSize() const
   return queue_.size();
 }
 
+// 添加任务
 void ThreadPool::run(const Task& task)
 {
+  // 线程池中无线程 由当前线程执行任务
   if (threads_.empty())
   {
     task();
@@ -79,11 +82,13 @@ void ThreadPool::run(const Task& task)
     MutexLockGuard lock(mutex_);
     while (isFull())
     {
+      // 阻塞
       notFull_.wait();
     }
     assert(!isFull());
 
     queue_.push_back(task);
+    // 通知
     notEmpty_.notify();
   }
 }
@@ -110,12 +115,14 @@ void ThreadPool::run(Task&& task)
 }
 #endif
 
+// 获取任务
 ThreadPool::Task ThreadPool::take()
 {
   MutexLockGuard lock(mutex_);
   // always use a while-loop, due to spurious wakeup
   while (queue_.empty() && running_)
   {
+    // 阻塞
     notEmpty_.wait();
   }
   Task task;
@@ -125,6 +132,7 @@ ThreadPool::Task ThreadPool::take()
     queue_.pop_front();
     if (maxQueueSize_ > 0)
     {
+      // 通知
       notFull_.notify();
     }
   }
@@ -137,6 +145,7 @@ bool ThreadPool::isFull() const
   return maxQueueSize_ > 0 && queue_.size() >= maxQueueSize_;
 }
 
+// 线程处理函数
 void ThreadPool::runInThread()
 {
   try
@@ -147,7 +156,9 @@ void ThreadPool::runInThread()
     }
     while (running_)
     {
+      // 从任务队列中获取任务
       Task task(take());
+      // 执行任务
       if (task)
       {
         task();

@@ -30,8 +30,9 @@ class Condition : boost::noncopyable
 
   void wait()
   {
-    MutexLock::UnassignGuard ug(mutex_);
+    MutexLock::UnassignGuard ug(mutex_);  // 构造时类似解锁操作(持有者线程id清零)
     MCHECK(pthread_cond_wait(&pcond_, mutex_.getPthreadMutex()));
+    // 析构时类似加锁操作(获取当前持有者线程id)
   }
 
   // returns true if time out, false otherwise.

@@ -33,6 +33,7 @@ class ThreadPool : boost::noncopyable
   void setThreadInitCallback(const Task& cb)
   { threadInitCallback_ = cb; }
 
+  // 开启线程池
   void start(int numThreads);
   void stop();
 
@@ -42,6 +43,7 @@ class ThreadPool : boost::noncopyable
   size_t queueSize() const;
 
   // Could block if maxQueueSize > 0
+  // 添加任务
   void run(const Task& f);
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
   void run(Task&& f);
@@ -49,7 +51,9 @@ class ThreadPool : boost::noncopyable
 
  private:
   bool isFull() const REQUIRES(mutex_);
+  // 线程执行函数
   void runInThread();
+  // 获取任务
   Task take();
 
   mutable MutexLock mutex_;
