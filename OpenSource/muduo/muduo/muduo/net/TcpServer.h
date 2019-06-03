@@ -102,18 +102,25 @@ class TcpServer : boost::noncopyable
 
   typedef std::map<string, TcpConnectionPtr> ConnectionMap;
 
-  EventLoop* loop_;  // the acceptor loop
+  EventLoop* loop_;     // the acceptor loop(若配置线程池中的线程池个数则此loop仅仅用于acceptor,否则此loop为acceptor/tcpconnection共享)
   const string ipPort_;
   const string name_;
+
+  // 
   boost::scoped_ptr<Acceptor> acceptor_; // avoid revealing Acceptor
+  // 每线程一个reactor的线程池
   boost::shared_ptr<EventLoopThreadPool> threadPool_;
-  ConnectionCallback connectionCallback_;
-  MessageCallback messageCallback_;
-  WriteCompleteCallback writeCompleteCallback_;
-  ThreadInitCallback threadInitCallback_;
+  
+  // 回调
+  ConnectionCallback      connectionCallback_;
+  MessageCallback         messageCallback_;
+  WriteCompleteCallback   writeCompleteCallback_;
+  ThreadInitCallback      threadInitCallback_;
+  
   AtomicInt32 started_;
   // always in loop thread
   int nextConnId_;
+  // 已建立连接的表
   ConnectionMap connections_;
 };
 

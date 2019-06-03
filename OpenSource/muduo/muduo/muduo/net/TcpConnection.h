@@ -132,6 +132,7 @@ class TcpConnection : boost::noncopyable,
   void startReadInLoop();
   void stopReadInLoop();
 
+  // reactor
   EventLoop* loop_;
   const string name_;
   StateE state_;  // FIXME: use atomic variable
@@ -141,14 +142,21 @@ class TcpConnection : boost::noncopyable,
   boost::scoped_ptr<Channel> channel_;
   const InetAddress localAddr_;
   const InetAddress peerAddr_;
-  ConnectionCallback connectionCallback_;
-  MessageCallback messageCallback_;
-  WriteCompleteCallback writeCompleteCallback_;
-  HighWaterMarkCallback highWaterMarkCallback_;
-  CloseCallback closeCallback_;
+
+  // 回调
+  ConnectionCallback      connectionCallback_;
+  MessageCallback         messageCallback_;
+  WriteCompleteCallback   writeCompleteCallback_;
+  HighWaterMarkCallback   highWaterMarkCallback_;
+  CloseCallback           closeCallback_;
+  
   size_t highWaterMark_;
+  
+  // 输入输出缓冲区
   Buffer inputBuffer_;
   Buffer outputBuffer_; // FIXME: use list<Buffer> as output buffer.
+  
+  // 上下文(参数)
   boost::any context_;
   // FIXME: creationTime_, lastReceiveTime_
   //        bytesReceived_, bytesSent_

@@ -68,11 +68,11 @@ void EventLoopThread::threadFunc()
 
   {
     MutexLockGuard lock(mutex_);
-    loop_ = &loop;
+    loop_ = &loop;    // 指针指向实例化后的reactor
     cond_.notify();
   }
 
-  loop.loop();
+  loop.loop();    // 循环阻塞
   //assert(exiting_);
   MutexLockGuard lock(mutex_);
   loop_ = NULL;

@@ -40,14 +40,17 @@ void EventLoopThreadPool::start(const ThreadInitCallback& cb)
 
   started_ = true;
 
+  // 先创建每个线程一个reactor的线程池
   for (int i = 0; i < numThreads_; ++i)
   {
     char buf[name_.size() + 32];
     snprintf(buf, sizeof buf, "%s%d", name_.c_str(), i);
+    // cb为每个线程执行的任务处理方法
     EventLoopThread* t = new EventLoopThread(cb, buf);
     threads_.push_back(t);
-    loops_.push_back(t->startLoop());
+    loops_.push_back(t->startLoop());   // 由线程的threadFunc执行时生成loop 本函数执行时解除startLoop的等待
   }
+  // 然后执行线程池初始化函数(仅在未配置线程池单线程的情况下)
   if (numThreads_ == 0 && cb)
   {
     cb(baseLoop_);
@@ -60,9 +63,10 @@ EventLoop* EventLoopThreadPool::getNextLoop()
   assert(started_);
   EventLoop* loop = baseLoop_;
 
+  // 已配置线程池线程个数
   if (!loops_.empty())
   {
-    // round-robin
+    // round-robin(轮询)
     loop = loops_[next_];
     ++next_;
     if (implicit_cast<size_t>(next_) >= loops_.size())

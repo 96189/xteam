@@ -112,6 +112,8 @@ class Channel : boost::noncopyable
   bool tied_;
   bool eventHandling_;
   bool addedToLoop_;
+
+  // 回调
   ReadEventCallback readCallback_;
   EventCallback writeCallback_;
   EventCallback closeCallback_;

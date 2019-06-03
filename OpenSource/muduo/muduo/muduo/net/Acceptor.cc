@@ -35,8 +35,7 @@ Acceptor::Acceptor(EventLoop* loop, const InetAddress& listenAddr, bool reusepor
   acceptSocket_.setReuseAddr(true);
   acceptSocket_.setReusePort(reuseport);
   acceptSocket_.bindAddress(listenAddr);
-  acceptChannel_.setReadCallback(
-      boost::bind(&Acceptor::handleRead, this));
+  acceptChannel_.setReadCallback(boost::bind(&Acceptor::handleRead, this));
 }
 
 Acceptor::~Acceptor()
@@ -79,7 +78,7 @@ void Acceptor::handleRead()
     // Read the section named "The special problem of
     // accept()ing when you can't" in libev's doc.
     // By Marc Lehmann, author of libev.
-    if (errno == EMFILE)
+    if (errno == EMFILE)    // 文件描述符耗尽时 优雅的断开与客户端的连接
     {
       ::close(idleFd_);
       idleFd_ = ::accept(acceptSocket_.fd(), NULL, NULL);

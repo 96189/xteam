@@ -38,7 +38,7 @@ class EventLoopThreadPool : boost::noncopyable
   void start(const ThreadInitCallback& cb = ThreadInitCallback());
 
   // valid after calling start()
-  /// round-robin
+  /// round-robin(轮询)
   EventLoop* getNextLoop();
 
   /// with the same hash code, it will always return the same EventLoop
@@ -54,13 +54,13 @@ class EventLoopThreadPool : boost::noncopyable
 
  private:
 
-  EventLoop* baseLoop_;
+  EventLoop* baseLoop_;                           // 由使用者外部提供的loop
   string name_;
   bool started_;
   int numThreads_;
   int next_;
   boost::ptr_vector<EventLoopThread> threads_;
-  std::vector<EventLoop*> loops_;
+  std::vector<EventLoop*> loops_;                 // 每个loop实例由每个线程threadFunc()创建 因此loop个数和thread个数相同.
 };
 
 }

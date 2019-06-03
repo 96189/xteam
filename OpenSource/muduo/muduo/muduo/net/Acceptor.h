@@ -31,8 +31,7 @@ class InetAddress;
 class Acceptor : boost::noncopyable
 {
  public:
-  typedef boost::function<void (int sockfd,
-                                const InetAddress&)> NewConnectionCallback;
+  typedef boost::function<void (int sockfd, const InetAddress&)> NewConnectionCallback;
 
   Acceptor(EventLoop* loop, const InetAddress& listenAddr, bool reuseport);
   ~Acceptor();
@@ -46,12 +45,13 @@ class Acceptor : boost::noncopyable
  private:
   void handleRead();
 
+  // reactor
   EventLoop* loop_;
   Socket acceptSocket_;
   Channel acceptChannel_;
   NewConnectionCallback newConnectionCallback_;
   bool listenning_;
-  int idleFd_;
+  int idleFd_;    // 解决文件描述符耗尽导致的问题
 };
 
 }
