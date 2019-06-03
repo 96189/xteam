@@ -14,13 +14,13 @@ class ChargenServer
   void start();
 
  private:
+  // 连接建立回调
   void onConnection(const muduo::net::TcpConnectionPtr& conn);
-
-  void onMessage(const muduo::net::TcpConnectionPtr& conn,
-                 muduo::net::Buffer* buf,
-                 muduo::Timestamp time);
-
+  // 消息到达回调
+  void onMessage(const muduo::net::TcpConnectionPtr& conn, muduo::net::Buffer* buf, muduo::Timestamp time);
+  // 写完成回调
   void onWriteComplete(const muduo::net::TcpConnectionPtr& conn);
+  // 定时任务
   void printThroughput();
 
   muduo::net::TcpServer server_;
