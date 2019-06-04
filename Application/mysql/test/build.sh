@@ -1,0 +1,1 @@
+g++ mysqlTest.cc ../dbInterface.cc ../connectpool.cpp -g -o mysqlTest -I/usr/include/mysql -lmariadbclient -lpthread -ldl -lcrypto -lz -lssl
