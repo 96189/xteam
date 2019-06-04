@@ -62,10 +62,12 @@ void TC_Epoller::create(int max_connections)
 {
     _max_connections = max_connections;
 
+    // 连接超过此限制后 由内核自动扩大
     _iEpollfd = epoll_create(_max_connections + 1);
 
     delete[] _pevs;
 
+    // 创建事件集数组  
     _pevs = new epoll_event[_max_connections + 1];
 }
 

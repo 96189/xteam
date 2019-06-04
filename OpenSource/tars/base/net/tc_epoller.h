@@ -125,7 +125,7 @@ protected:
     int    _max_connections;
 
     /**
-     * 事件集
+     * 事件集(数组)
      */
     struct epoll_event *_pevs;
 

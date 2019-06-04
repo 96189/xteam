@@ -1,6 +1,8 @@
 
 ## 网络IO ##
 ### epoll ###
+    tars的epoll默认采用ET模式
+
 * struct epoll_event
 ```
 struct epoll_event
