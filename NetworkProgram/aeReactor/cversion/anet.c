@@ -358,15 +358,12 @@ int anetTcpNonBlockConnect(char *err, char *addr, int port)
 int anetTcpNonBlockBindConnect(char *err, char *addr, int port,
                                char *source_addr)
 {
-    return anetTcpGenericConnect(err,addr,port,source_addr,
-            ANET_CONNECT_NONBLOCK);
+    return anetTcpGenericConnect(err,addr,port,source_addr, ANET_CONNECT_NONBLOCK);
 }
 
-int anetTcpNonBlockBestEffortBindConnect(char *err, char *addr, int port,
-                                         char *source_addr)
+int anetTcpNonBlockBestEffortBindConnect(char *err, char *addr, int port, char *source_addr)
 {
-    return anetTcpGenericConnect(err,addr,port,source_addr,
-            ANET_CONNECT_NONBLOCK|ANET_CONNECT_BE_BINDING);
+    return anetTcpGenericConnect(err,addr,port,source_addr, ANET_CONNECT_NONBLOCK|ANET_CONNECT_BE_BINDING);
 }
 
 int anetUnixGenericConnect(char *err, char *path, int flags)

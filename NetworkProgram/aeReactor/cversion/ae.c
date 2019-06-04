@@ -65,9 +65,15 @@ aeEventLoop *aeCreateEventLoop(int setsize) {
     int i;
 
     if ((eventLoop = zmalloc(sizeof(*eventLoop))) == NULL) goto err;
+
+    // 注册事件数组
     eventLoop->events = zmalloc(sizeof(aeFileEvent)*setsize);
+    // 已发生事件数组
     eventLoop->fired = zmalloc(sizeof(aeFiredEvent)*setsize);
+
     if (eventLoop->events == NULL || eventLoop->fired == NULL) goto err;
+
+    // reactor数据初始化
     eventLoop->setsize = setsize;
     eventLoop->lastTime = time(NULL);
     eventLoop->timeEventHead = NULL;
@@ -76,9 +82,11 @@ aeEventLoop *aeCreateEventLoop(int setsize) {
     eventLoop->maxfd = -1;
     eventLoop->beforesleep = NULL;
     eventLoop->aftersleep = NULL;
+
     if (aeApiCreate(eventLoop) == -1) goto err;
     /* Events with mask == AE_NONE are not set. So let's initialize the
      * vector with it. */
+    // 设置每个描述符关注的事件类型为AE_NONE
     for (i = 0; i < setsize; i++)
         eventLoop->events[i].mask = AE_NONE;
     return eventLoop;
@@ -133,30 +141,31 @@ void aeStop(aeEventLoop *eventLoop) {
     eventLoop->stop = 1;
 }
 
-// 添加给定的给定事件到i/o复用监听集合中 并 关联事件和事件处理器
-int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
-        aeFileProc *proc, void *clientData)
+// 添加指定文件事件到reactor中 文件事件由描述符fd,事件类型mask,事件处理函数proc,函数参数clientData构成
+int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask, aeFileProc *proc, void *clientData)
 {
     if (fd >= eventLoop->setsize) {
         errno = ERANGE;
         return AE_ERR;
     }
+    // 获取reactor中fd对应的注册事件
     aeFileEvent *fe = &eventLoop->events[fd];
 
     if (aeApiAddEvent(eventLoop, fd, mask) == -1)
         return AE_ERR;
+    // 关注特定事件
     fe->mask |= mask;
-    // 关联读事件处理器
+    // 设置读写回调及参数
     if (mask & AE_READABLE) fe->rfileProc = proc;
-    // 关联写事件处理器
     if (mask & AE_WRITABLE) fe->wfileProc = proc;
     fe->clientData = clientData;
+    
     if (fd > eventLoop->maxfd)
         eventLoop->maxfd = fd;
     return AE_OK;
 }
 
-// 取消给定套接字的给定事件的监听 并 取消事件和事件处理器之间的关联
+// 从reactor中删除指定的事件 该事件指的是某fd上的特定事件mask
 void aeDeleteFileEvent(aeEventLoop *eventLoop, int fd, int mask)
 {
     if (fd >= eventLoop->setsize) return;
@@ -168,6 +177,7 @@ void aeDeleteFileEvent(aeEventLoop *eventLoop, int fd, int mask)
     if (mask & AE_WRITABLE) mask |= AE_BARRIER;
 
     aeApiDelEvent(eventLoop, fd, mask);
+    // 解除关注fd上的mask标记的事件
     fe->mask = fe->mask & (~mask);
     if (fd == eventLoop->maxfd && fe->mask == AE_NONE) {
         /* Update the max fd */
@@ -179,7 +189,7 @@ void aeDeleteFileEvent(aeEventLoop *eventLoop, int fd, int mask)
     }
 }
 
-// 返回套接字正在被监听的事件类型
+// 获取reactor中 某fd关注的事件
 int aeGetFileEvents(aeEventLoop *eventLoop, int fd) {
     if (fd >= eventLoop->setsize) return 0;
     aeFileEvent *fe = &eventLoop->events[fd];
@@ -212,24 +222,22 @@ static void aeAddMillisecondsToNow(long long milliseconds, long *sec, long *ms) 
     *ms = when_ms;
 }
 
-// 创建时间事件添加到eventLoop
-// milliseconds 相对时间
-long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
-        aeTimeProc *proc, void *clientData,
-        aeEventFinalizerProc *finalizerProc)
+// 添加时间事件到reactor中 时间事件由定时执行周期milliseconds,时间事件回调proc,回调参数clientData,资源释放回调finalizerProc
+long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds, aeTimeProc *proc, void *clientData, aeEventFinalizerProc *finalizerProc)
 {
     long long id = eventLoop->timeEventNextId++;
     aeTimeEvent *te;
 
     te = zmalloc(sizeof(*te));
     if (te == NULL) return AE_ERR;
+    // 设置时间事件数据
     te->id = id;
     aeAddMillisecondsToNow(milliseconds,&te->when_sec,&te->when_ms);
     te->timeProc = proc;
     te->finalizerProc = finalizerProc;
     te->clientData = clientData;
     te->prev = NULL;
-    // 头插法
+    // 定时器插入到链表中
     te->next = eventLoop->timeEventHead;
     if (te->next)
         te->next->prev = te;
@@ -237,14 +245,14 @@ long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
     return id;
 }
 
-// 在eventLoop中删除指定id的时间事件
+// 从reactor中删除指定id的时间事件
 int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id)
 {
     aeTimeEvent *te = eventLoop->timeEventHead;
-    // 遍历链表
+    // 遍历链表O(n)(可优化)
     while(te) {
         if (te->id == id) {
-            te->id = AE_DELETED_EVENT_ID;
+            te->id = AE_DELETED_EVENT_ID;   // 删除并不实际删除对象 此处只是标记id无效 由超时处理算法实际删除
             return AE_OK;
         }
         te = te->next;
@@ -270,6 +278,7 @@ static aeTimeEvent *aeSearchNearestTimer(aeEventLoop *eventLoop)
     aeTimeEvent *te = eventLoop->timeEventHead;
     aeTimeEvent *nearest = NULL;
 
+    // 遍历查找(可优化)
     while(te) {
         if (!nearest || te->when_sec < nearest->when_sec ||
             (te->when_sec == nearest->when_sec && te->when_ms < nearest->when_ms))
@@ -280,7 +289,7 @@ static aeTimeEvent *aeSearchNearestTimer(aeEventLoop *eventLoop)
 }
 
 /* Process time events */
-// 处理超时
+// 超时处理
 static int processTimeEvents(aeEventLoop *eventLoop) {
     int processed = 0;
     aeTimeEvent *te;
@@ -349,10 +358,10 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
             // 调用超时处理函数(时间事件处理器)
             retval = te->timeProc(eventLoop, id, te->clientData);
             processed++;
-            // 周期性事件
+            // 周期性事件 重新加入
             if (retval != AE_NOMORE) {
                 aeAddMillisecondsToNow(retval,&te->when_sec,&te->when_ms);
-            // 定时事件
+            // 定时事件 用过一次后删除
             } else {
                 te->id = AE_DELETED_EVENT_ID;
             }
@@ -402,6 +411,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
 
             // 获取当前时间
             aeGetTime(&now_sec, &now_ms);
+            // tvp决定底层监听api等待的超时时间
             tvp = &tv;
 
             /* How many milliseconds we need to wait for the next
@@ -465,7 +475,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
              * before replying to a client. */
             int invert = fe->mask & AE_BARRIER;
 
-	    /* Note the "fe->mask & mask & ..." code: maybe an already
+	        /* Note the "fe->mask & mask & ..." code: maybe an already
              * processed event removed an element that fired and we still
              * didn't processed, so we check if the event is still valid.
              *
@@ -508,9 +518,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
 
 /* Wait for milliseconds until the given file descriptor becomes
  * writable/readable/exception */
-// 阻塞 
-// 直到给定的套接字的给定事件发生 则返回
-// 达到超时时间milliseconds 超时返回
+// 等待描述符fd的指定事件mask在milliseconds是否发生
 int aeWait(int fd, int mask, long long milliseconds) {
     struct pollfd pfd;
     int retmask = 0, retval;

@@ -31,6 +31,9 @@
 
 #include <sys/epoll.h>
 
+// 内部API对外隐藏实现
+
+// 底层I/O复用数据
 typedef struct aeApiState {
     int epfd;
     struct epoll_event *events;
@@ -40,6 +43,7 @@ static int aeApiCreate(aeEventLoop *eventLoop) {
     aeApiState *state = zmalloc(sizeof(aeApiState));
 
     if (!state) return -1;
+    // 创建epoll_event事件数组
     state->events = zmalloc(sizeof(struct epoll_event)*eventLoop->setsize);
     if (!state->events) {
         zfree(state);
@@ -51,10 +55,12 @@ static int aeApiCreate(aeEventLoop *eventLoop) {
         zfree(state);
         return -1;
     }
+    // reactor和I/O复用数据关联
     eventLoop->apidata = state;
     return 0;
 }
 
+// 重设可监听的描述符个数
 static int aeApiResize(aeEventLoop *eventLoop, int setsize) {
     aeApiState *state = eventLoop->apidata;
 
@@ -62,6 +68,7 @@ static int aeApiResize(aeEventLoop *eventLoop, int setsize) {
     return 0;
 }
 
+// 释放资源
 static void aeApiFree(aeEventLoop *eventLoop) {
     aeApiState *state = eventLoop->apidata;
 
@@ -70,6 +77,7 @@ static void aeApiFree(aeEventLoop *eventLoop) {
     zfree(state);
 }
 
+// epoll添加描述符事件
 static int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask) {
     aeApiState *state = eventLoop->apidata;
     struct epoll_event ee = {0}; /* avoid valgrind warning */
@@ -105,10 +113,7 @@ static void aeApiDelEvent(aeEventLoop *eventLoop, int fd, int delmask) {
     }
 }
 
-// 阻塞
-// 等待所有在监听集合eventLoop->apidata->events中的事件
-// 至少有一个事件发生 则返回
-// 若无任何事件发生 则超时返回
+// epoll_wait监听等待
 static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
     aeApiState *state = eventLoop->apidata;
     int retval, numevents = 0;
