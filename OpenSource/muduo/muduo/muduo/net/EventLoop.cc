@@ -84,8 +84,7 @@ EventLoop::EventLoop()
   {
     t_loopInThisThread = this;
   }
-  wakeupChannel_->setReadCallback(
-      boost::bind(&EventLoop::handleRead, this));
+  wakeupChannel_->setReadCallback(boost::bind(&EventLoop::handleRead, this));
   // we are always reading the wakeupfd
   wakeupChannel_->enableReading();
 }
@@ -117,6 +116,7 @@ void EventLoop::loop()
     {
       printActiveChannels();
     }
+    // 新连接建立 已有连接数据读写 定时器超时
     // TODO sort channel by priority
     eventHandling_ = true;
     for (ChannelList::iterator it = activeChannels_.begin();

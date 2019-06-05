@@ -45,15 +45,15 @@ class TimerQueue : boost::noncopyable
   /// repeats if @c interval > 0.0.
   ///
   /// Must be thread safe. Usually be called from other threads.
-  TimerId addTimer(const TimerCallback& cb,
-                   Timestamp when,
-                   double interval);
+  // cb 定时器回调 when超时绝对时间戳 interval周期性间隔
+  TimerId addTimer(const TimerCallback& cb, Timestamp when, double interval);
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
   TimerId addTimer(TimerCallback&& cb,
                    Timestamp when,
                    double interval);
 #endif
 
+  // 取消定时器
   void cancel(TimerId timerId);
 
  private:
@@ -62,9 +62,9 @@ class TimerQueue : boost::noncopyable
   // This requires heterogeneous comparison lookup (N3465) from C++14
   // so that we can find an T* in a set<unique_ptr<T>>.
   typedef std::pair<Timestamp, Timer*> Entry;
-  typedef std::set<Entry> TimerList;
+  typedef std::set<Entry> TimerList;              // 插入时元素自动排序
   typedef std::pair<Timer*, int64_t> ActiveTimer;
-  typedef std::set<ActiveTimer> ActiveTimerSet;
+  typedef std::set<ActiveTimer> ActiveTimerSet;   // 插入时元素自动排序
 
   void addTimerInLoop(Timer* timer);
   void cancelInLoop(TimerId timerId);
@@ -77,13 +77,13 @@ class TimerQueue : boost::noncopyable
   bool insert(Timer* timer);
 
   EventLoop* loop_;
-  const int timerfd_;
-  Channel timerfdChannel_;
+  const int timerfd_;             // 定时器事件描述符
+  Channel timerfdChannel_;        // 定时器事件通道
   // Timer list sorted by expiration
-  TimerList timers_;
+  TimerList timers_;              // 定时器列表
 
   // for cancel()
-  ActiveTimerSet activeTimers_;
+  ActiveTimerSet activeTimers_;   // 活跃定时器列表
   bool callingExpiredTimers_; /* atomic */
   ActiveTimerSet cancelingTimers_;
 };

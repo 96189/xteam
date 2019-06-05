@@ -158,7 +158,22 @@
     ChargenServer
 
 ## 定时器 ## 
+    std::set来管理(底层是红黑树-平衡的二叉搜索树),插入时自动排序,搜索效率O(logn)
+
+* 定时器事件统一事件源
+    Channel timerfdChannel_
+
+* timerfd通过文件描述符的可读事件进行超时通知
+    创建定时器事件描述符
+        int timerfd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+
+    启动定时器,超时则事件通知
+        int ret = ::timerfd_settime(timerfd, 0, &newValue, &oldValue);
+
+    接收事件通知
+        ssize_t n = ::read(timerfd, &howmany, sizeof howmany);
+
 
 
 ## EventLoop::runInLoop ##
-
+    线程间事件通知eventfd

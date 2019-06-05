@@ -27,6 +27,7 @@ namespace net
 class Timer : boost::noncopyable
 {
  public:
+  // cb 定时器回调 when定时器超时绝对时间戳 interval周期执行间隔
   Timer(const TimerCallback& cb, Timestamp when, double interval)
     : callback_(cb),
       expiration_(when),
