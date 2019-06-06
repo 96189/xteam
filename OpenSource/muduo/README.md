@@ -164,16 +164,92 @@
     Channel timerfdChannel_
 
 * timerfd通过文件描述符的可读事件进行超时通知
+
+    const int timerfd_;
+
     创建定时器事件描述符
         int timerfd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 
     启动定时器,超时则事件通知
+    ```
+    TimerQueue::addTimerInLoop
+    TimerQueue::reset
         int ret = ::timerfd_settime(timerfd, 0, &newValue, &oldValue);
+    ```
 
     接收事件通知
+    ```
+    TimerQueue::handleRead()
         ssize_t n = ::read(timerfd, &howmany, sizeof howmany);
-
+    ```
 
 
 ## EventLoop::runInLoop ##
     线程间事件通知eventfd
+
+* 多线程间的事件通知机制
+
+    eventfd替换pipe实现事件通知
+    int wakeupFd_;
+
+    穿件负责事件通知和事件接收的文件描述符
+    int evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+
+    通知事件发生
+    ```
+    EventLoop::wakeup()
+        ssize_t n = sockets::write(wakeupFd_, &one, sizeof one);
+    ```
+
+    事件接收
+    ```
+    EventLoop::handleRead()
+        ssize_t n = sockets::read(wakeupFd_, &one, sizeof one);
+    ```
+
+* 事件通知统一事件源
+
+    boost::scoped_ptr<Channel> wakeupChannel_;
+
+* muduo中线程间事件通知旨在解决的问题
+
+    ```
+    void EventLoop::runInLoop(const Functor& cb)
+    {
+        if (isInLoopThread())   // 调用线程是loop所在的线程 立即执行任务
+        {
+            cb();
+        }
+        else    // 在主线程调用I/O线程的loop 排队延迟执行
+        {
+            queueInLoop(cb);
+        }
+    }
+    void EventLoop::queueInLoop(const Functor& cb)
+    {
+        {
+            MutexLockGuard lock(mutex_);
+            pendingFunctors_.push_back(cb); // 排队
+        }
+
+        if (!isInLoopThread() || callingPendingFunctors_)
+        {
+            wakeup();   // 通知loop上的I/O线程在epoll_wait返回 执行任务 通过写事件fd异步通知
+        }
+    }
+    void EventLoop::loop()
+    {
+        while (!quit_)
+        {
+            pollReturnTime_ = poller_->poll(kPollTimeMs, &activeChannels_);
+            for (ChannelList::iterator it = activeChannels_.begin(); it != activeChannels_.end(); ++it)
+            {
+                currentActiveChannel_ = *it;
+                currentActiveChannel_->handleEvent(pollReturnTime_);
+            }
+
+            // I/O线程执行主线程添加给自己的任务
+            doPendingFunctors();
+        }
+    }
+    ```

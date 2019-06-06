@@ -44,8 +44,7 @@ TcpServer::~TcpServer()
   {
     TcpConnectionPtr conn(it->second);
     it->second.reset();
-    conn->getLoop()->runInLoop(
-      boost::bind(&TcpConnection::connectDestroyed, conn));
+    conn->getLoop()->runInLoop(boost::bind(&TcpConnection::connectDestroyed, conn));
   }
 }
 
@@ -91,6 +90,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
   conn->setCloseCallback(boost::bind(&TcpServer::removeConnection, this, _1)); // FIXME: unsafe
   
   // 设置ioLoop的新连接建立回调
+  // 调用线程不是loop所属的线程 由调用线程通知I/O连接线程设置连接建立回调 由I/O线程的doPendingFunctors执行
   ioLoop->runInLoop(boost::bind(&TcpConnection::connectEstablished, conn));
 }
 

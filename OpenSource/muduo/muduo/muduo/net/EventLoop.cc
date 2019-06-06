@@ -91,8 +91,7 @@ EventLoop::EventLoop()
 
 EventLoop::~EventLoop()
 {
-  LOG_DEBUG << "EventLoop " << this << " of thread " << threadId_
-            << " destructs in thread " << CurrentThread::tid();
+  LOG_DEBUG << "EventLoop " << this << " of thread " << threadId_ << " destructs in thread " << CurrentThread::tid();
   wakeupChannel_->disableAll();
   wakeupChannel_->remove();
   ::close(wakeupFd_);
@@ -119,14 +118,15 @@ void EventLoop::loop()
     // 新连接建立 已有连接数据读写 定时器超时
     // TODO sort channel by priority
     eventHandling_ = true;
-    for (ChannelList::iterator it = activeChannels_.begin();
-        it != activeChannels_.end(); ++it)
+    for (ChannelList::iterator it = activeChannels_.begin(); it != activeChannels_.end(); ++it)
     {
       currentActiveChannel_ = *it;
       currentActiveChannel_->handleEvent(pollReturnTime_);
     }
     currentActiveChannel_ = NULL;
     eventHandling_ = false;
+
+    // 这种设计使得IO线程也能执行一些计算任务 避免了IO线程在不忙时长期阻塞在IO multiplexing调用中
     doPendingFunctors();
   }
 
