@@ -253,3 +253,12 @@
         }
     }
     ```
+
+## QA ##
+
+* muduo中的TcpConnection状态State
+
+* muduo中Buffer::readFd(scatter/gather IO和muduo的epoll LT mode),优势?
+
+* Channel::index和Channel::set_index
+
