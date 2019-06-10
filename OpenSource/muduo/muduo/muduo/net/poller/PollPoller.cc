@@ -78,6 +78,7 @@ void PollPoller::updateChannel(Channel* channel)
 {
   Poller::assertInLoopThread();
   LOG_TRACE << "fd = " << channel->fd() << " events = " << channel->events();
+  // 根据channel的index来区分是新添加的channel还是已存在的channel
   if (channel->index() < 0)
   {
     // a new one, add to pollfds_

@@ -85,8 +85,7 @@ Timestamp EPollPoller::poll(int timeoutMs, ChannelList* activeChannels)
   return now;
 }
 
-void EPollPoller::fillActiveChannels(int numEvents,
-                                     ChannelList* activeChannels) const
+void EPollPoller::fillActiveChannels(int numEvents, ChannelList* activeChannels) const
 {
   assert(implicit_cast<size_t>(numEvents) <= events_.size());
   for (int i = 0; i < numEvents; ++i)
@@ -107,8 +106,8 @@ void EPollPoller::updateChannel(Channel* channel)
 {
   Poller::assertInLoopThread();
   const int index = channel->index();
-  LOG_TRACE << "fd = " << channel->fd()
-    << " events = " << channel->events() << " index = " << index;
+  LOG_TRACE << "fd = " << channel->fd() << " events = " << channel->events() << " index = " << index;
+  // 新的尚未使用或者已删除状态的channel
   if (index == kNew || index == kDeleted)
   {
     // a new one, add with EPOLL_CTL_ADD
@@ -124,9 +123,11 @@ void EPollPoller::updateChannel(Channel* channel)
       assert(channels_[fd] == channel);
     }
 
+    // 改变channel状态为已添加
     channel->set_index(kAdded);
     update(EPOLL_CTL_ADD, channel);
   }
+  // 已添加的channel
   else
   {
     // update existing one with EPOLL_CTL_MOD/DEL
@@ -138,6 +139,7 @@ void EPollPoller::updateChannel(Channel* channel)
     if (channel->isNoneEvent())
     {
       update(EPOLL_CTL_DEL, channel);
+      // 设置channel为已删除状态
       channel->set_index(kDeleted);
     }
     else
@@ -165,6 +167,7 @@ void EPollPoller::removeChannel(Channel* channel)
   {
     update(EPOLL_CTL_DEL, channel);
   }
+  // 设置channel为新的尚未使用的状态
   channel->set_index(kNew);
 }
 

@@ -52,16 +52,11 @@ TcpConnection::TcpConnection(EventLoop* loop,
     peerAddr_(peerAddr),
     highWaterMark_(64*1024*1024)
 {
-  channel_->setReadCallback(
-      boost::bind(&TcpConnection::handleRead, this, _1));
-  channel_->setWriteCallback(
-      boost::bind(&TcpConnection::handleWrite, this));
-  channel_->setCloseCallback(
-      boost::bind(&TcpConnection::handleClose, this));
-  channel_->setErrorCallback(
-      boost::bind(&TcpConnection::handleError, this));
-  LOG_DEBUG << "TcpConnection::ctor[" <<  name_ << "] at " << this
-            << " fd=" << sockfd;
+  channel_->setReadCallback(boost::bind(&TcpConnection::handleRead, this, _1));
+  channel_->setWriteCallback(boost::bind(&TcpConnection::handleWrite, this));
+  channel_->setCloseCallback(boost::bind(&TcpConnection::handleClose, this));
+  channel_->setErrorCallback(boost::bind(&TcpConnection::handleError, this));
+  LOG_DEBUG << "TcpConnection::ctor[" <<  name_ << "] at " << this << " fd=" << sockfd;
   socket_->setKeepAlive(true);
 }
 
@@ -122,11 +117,7 @@ void TcpConnection::send(Buffer* buf)
     }
     else
     {
-      loop_->runInLoop(
-          boost::bind(&TcpConnection::sendInLoop,
-                      this,     // FIXME
-                      buf->retrieveAllAsString()));
-                    //std::forward<string>(message)));
+      loop_->runInLoop(boost::bind(&TcpConnection::sendInLoop, this,/* FIXME */ buf->retrieveAllAsString()));//std::forward<string>(message)));
     }
   }
 }
@@ -151,7 +142,7 @@ void TcpConnection::sendInLoop(const void* data, size_t len)
   if (!channel_->isWriting() && outputBuffer_.readableBytes() == 0)
   {
     nwrote = sockets::write(channel_->fd(), data, len);
-    if (nwrote >= 0)
+    if (nwrote >= 0)  // nwrote实际发送的字节数
     {
       remaining = len - nwrote;
       if (remaining == 0 && writeCompleteCallback_)
@@ -159,7 +150,7 @@ void TcpConnection::sendInLoop(const void* data, size_t len)
         loop_->queueInLoop(boost::bind(writeCompleteCallback_, shared_from_this()));
       }
     }
-    else // nwrote < 0
+    else // nwrote < 0 发送失败
     {
       nwrote = 0;
       if (errno != EWOULDBLOCK)
@@ -174,16 +165,17 @@ void TcpConnection::sendInLoop(const void* data, size_t len)
   }
 
   assert(remaining <= len);
+  // 剩余有数据没发送完
   if (!faultError && remaining > 0)
   {
     size_t oldLen = outputBuffer_.readableBytes();
-    if (oldLen + remaining >= highWaterMark_
-        && oldLen < highWaterMark_
-        && highWaterMarkCallback_)
+    if (oldLen + remaining >= highWaterMark_ && oldLen < highWaterMark_ && highWaterMarkCallback_)
     {
       loop_->queueInLoop(boost::bind(highWaterMarkCallback_, shared_from_this(), oldLen + remaining));
     }
+    // 未发送完的数据 存在缓冲中
     outputBuffer_.append(static_cast<const char*>(data)+nwrote, remaining);
+    // epoll重新关注当前channel上的写事件
     if (!channel_->isWriting())
     {
       channel_->enableWriting();
@@ -370,9 +362,7 @@ void TcpConnection::handleWrite()
   loop_->assertInLoopThread();
   if (channel_->isWriting())
   {
-    ssize_t n = sockets::write(channel_->fd(),
-                               outputBuffer_.peek(),
-                               outputBuffer_.readableBytes());
+    ssize_t n = sockets::write(channel_->fd(), outputBuffer_.peek(), outputBuffer_.readableBytes());
     if (n > 0)
     {
       outputBuffer_.retrieve(n);
@@ -400,8 +390,7 @@ void TcpConnection::handleWrite()
   }
   else
   {
-    LOG_TRACE << "Connection fd = " << channel_->fd()
-              << " is down, no more writing";
+    LOG_TRACE << "Connection fd = " << channel_->fd() << " is down, no more writing";
   }
 }
 

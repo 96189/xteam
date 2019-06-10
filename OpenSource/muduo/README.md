@@ -258,7 +258,76 @@
 
 * muduo中的TcpConnection状态State
 
-* muduo中Buffer::readFd(scatter/gather IO和muduo的epoll LT mode),优势?
+    ```
+    初始状态kConnecting ->  连接成功状态kConnected  ->  关闭状态kDisconnected
+                                        |                -               
+                                        |               /
+                                        -              /
+                                    等待关闭状态kDisconnecting
+    ```
+
+* muduo中Buffer::readFd的scatter/gather IO?
+
+    在多个缓冲区上实现一个简单的IO操作.减少或避免了缓冲区拷贝和系统调用（IO)
+
+    ``` 
+    write：Gather
+    ssize_t writev(int fd, const struct iovec *iov, int count)
+    ```
+    数据从几个缓冲区顺序抽取并沿着通道发送,就好比全部缓冲区全部连接起来放入一个大的缓冲区进行发送,缓冲区本身不具备gather能力.
+
+    ```
+    read：Scatter
+    ssize_t readv (int fd, const struct iovec *iov, int count)
+    ```
+    从通道读取的数据会按顺序散布到多个缓冲区,直到缓冲区被填满或者通道数据读完.
+
 
 * Channel::index和Channel::set_index
+
+    poller根据channel的index来判断channel的状态(新的尚未使用的channel,已添加在用的channel,已删除的channel),同一时刻只允许一种状态。
+
+* muduo中的epoll
+
+    muduo采用epoll LT mode,多次触发事件保证不会遗漏事件。
+
+    ```
+    typedef union epoll_data
+    {
+        void *ptr;
+        int fd;
+        uint32_t u32;
+        uint64_t u64;
+    } epoll_data_t;
+ 
+    struct epoll_event
+    {
+        uint32_t events;    /* Epoll events */
+        epoll_data_t data;  /* User data variable */
+    };
+    
+    // channel作为epoll的data
+    struct epoll_event event;
+    event.events = channel->events();
+    event.data.ptr = channel;
+    int fd = channel->fd();
+    ::epoll_ctl(epollfd_, operation, fd, &event)
+    ```
+* TcpConnection数据发送
+
+    ```
+    void TcpConnection::sendInLoop(const void* data, size_t len)
+    {
+        nwrote = sockets::write(channel_->fd(), data, len);
+        remaining = len - nwrote;
+        if (!faultError && remaining > 0)
+        {
+            outputBuffer_.append(static_cast<const char*>(data)+nwrote, remaining);
+            if (!channel_->isWriting())
+            {
+                channel_->enableWriting();
+            }
+        }
+    }
+    ```
 
