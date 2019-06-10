@@ -330,4 +330,6 @@
         }
     }
     ```
+* epoll的et和lt与read EAGAIN
 
+    https://blog.csdn.net/Al_xin/article/details/39047047
