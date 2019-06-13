@@ -79,7 +79,9 @@ void Connector::stopInLoop()
 
 void Connector::connect()
 {
+  // 本地socket描述符
   int sockfd = sockets::createNonblockingOrDie(serverAddr_.family());
+  // conncect系统调用
   int ret = sockets::connect(sockfd, serverAddr_.getSockAddr());
   int savedErrno = (ret == 0) ? 0 : errno;
   switch (savedErrno)
@@ -131,11 +133,10 @@ void Connector::connecting(int sockfd)
 {
   setState(kConnecting);
   assert(!channel_);
+  // 生成channel
   channel_.reset(new Channel(loop_, sockfd));
-  channel_->setWriteCallback(
-      boost::bind(&Connector::handleWrite, this)); // FIXME: unsafe
-  channel_->setErrorCallback(
-      boost::bind(&Connector::handleError, this)); // FIXME: unsafe
+  channel_->setWriteCallback(boost::bind(&Connector::handleWrite, this)); // FIXME: unsafe
+  channel_->setErrorCallback(boost::bind(&Connector::handleError, this)); // FIXME: unsafe
 
   // channel_->tie(shared_from_this()); is not working,
   // as channel_ is not managed by shared_ptr
@@ -167,8 +168,7 @@ void Connector::handleWrite()
     int err = sockets::getSocketError(sockfd);
     if (err)
     {
-      LOG_WARN << "Connector::handleWrite - SO_ERROR = "
-               << err << " " << strerror_tl(err);
+      LOG_WARN << "Connector::handleWrite - SO_ERROR = " << err << " " << strerror_tl(err);
       retry(sockfd);
     }
     else if (sockets::isSelfConnect(sockfd))
@@ -181,6 +181,7 @@ void Connector::handleWrite()
       setState(kConnected);
       if (connect_)
       {
+        // 外部设置的回调执行
         newConnectionCallback_(sockfd);
       }
       else
@@ -214,10 +215,8 @@ void Connector::retry(int sockfd)
   setState(kDisconnected);
   if (connect_)
   {
-    LOG_INFO << "Connector::retry - Retry connecting to " << serverAddr_.toIpPort()
-             << " in " << retryDelayMs_ << " milliseconds. ";
-    loop_->runAfter(retryDelayMs_/1000.0,
-                    boost::bind(&Connector::startInLoop, shared_from_this()));
+    LOG_INFO << "Connector::retry - Retry connecting to " << serverAddr_.toIpPort() << " in " << retryDelayMs_ << " milliseconds. ";
+    loop_->runAfter(retryDelayMs_/1000.0, boost::bind(&Connector::startInLoop, shared_from_this()));
     retryDelayMs_ = std::min(retryDelayMs_ * 2, kMaxRetryDelayMs);
   }
   else

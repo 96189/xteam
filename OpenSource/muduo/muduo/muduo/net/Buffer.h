@@ -42,7 +42,7 @@ namespace net
 class Buffer : public muduo::copyable
 {
  public:
-  static const size_t kCheapPrepend = 8;
+  static const size_t kCheapPrepend = 8;    // 头部预留
   static const size_t kInitialSize = 1024;
 
   explicit Buffer(size_t initialSize = kInitialSize)
@@ -74,10 +74,10 @@ class Buffer : public muduo::copyable
   size_t prependableBytes() const
   { return readerIndex_; }
 
-  const char* peek() const
+  const char* peek() const  // 获取可读位置地址
   { return begin() + readerIndex_; }
 
-  const char* findCRLF() const
+  const char* findCRLF() const  // 在缓冲区可读内容断中查找kCRLF位置
   {
     // FIXME: replace with memmem()?
     const char* crlf = std::search(peek(), beginWrite(), kCRLF, kCRLF+2);
@@ -93,7 +93,7 @@ class Buffer : public muduo::copyable
     return crlf == beginWrite() ? NULL : crlf;
   }
 
-  const char* findEOL() const
+  const char* findEOL() const // 查找'\n'位置
   {
     const void* eol = memchr(peek(), '\n', readableBytes());
     return static_cast<const char*>(eol);
@@ -193,7 +193,7 @@ class Buffer : public muduo::copyable
 
   void ensureWritableBytes(size_t len)
   {
-    if (writableBytes() < len)
+    if (writableBytes() < len) // 可写空间不够
     {
       makeSpace(len);
     }
@@ -389,17 +389,20 @@ class Buffer : public muduo::copyable
 
   void makeSpace(size_t len)
   {
+    // 腾挪数据空间都不足
     if (writableBytes() + prependableBytes() < len + kCheapPrepend)
     {
       // FIXME: move readable data
-      buffer_.resize(writerIndex_+len);
+      buffer_.resize(writerIndex_+len); // 重新分配空间并拷贝数据
     }
     else
     {
       // move readable data to the front, make space inside buffer
       assert(kCheapPrepend < readerIndex_);
       size_t readable = readableBytes();
+      // 腾挪数据
       std::copy(begin()+readerIndex_, begin()+writerIndex_, begin()+kCheapPrepend);
+      // 改变位置
       readerIndex_ = kCheapPrepend;
       writerIndex_ = readerIndex_ + readable;
       assert(readable == readableBytes());
@@ -408,8 +411,8 @@ class Buffer : public muduo::copyable
 
  private:
   std::vector<char> buffer_;
-  size_t readerIndex_;
-  size_t writerIndex_;
+  size_t readerIndex_;      // 可读起始位置 
+  size_t writerIndex_;      // 可写起始位置
 
   static const char kCRLF[];
 };

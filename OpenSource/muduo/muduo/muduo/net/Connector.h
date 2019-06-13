@@ -26,6 +26,7 @@ namespace net
 class Channel;
 class EventLoop;
 
+// 连接器
 class Connector : boost::noncopyable,
                   public boost::enable_shared_from_this<Connector>
 {
@@ -65,7 +66,9 @@ class Connector : boost::noncopyable,
   bool connect_; // atomic
   States state_;  // FIXME: use atomic variable
   boost::scoped_ptr<Channel> channel_;
+
   NewConnectionCallback newConnectionCallback_;
+  
   int retryDelayMs_;
 };
 

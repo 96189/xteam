@@ -108,15 +108,19 @@
 ## 服务器模式 ##
     类似ACE的Acceptor-Connector模式
 
-* Acceptor
+* Acceptor接收器
 
-    TCP连接接收器,持有acceptSocket_对象,acceptChannel_通道,reactor处理框架loop_以及提供外部注册新连接处理函数newConnectionCallback_.
+    TCP Server连接接收器,持有acceptSocket_对象,acceptChannel_通道,reactor处理框架loop_以及提供外部注册新连接处理函数newConnectionCallback_.
+
+* Connector连接器
+
+    Tcp Client发起连接的连接器,持有连接channel,reactor处理框架loop_以及外部注册的连接成功回调newConnectionCallback_.
 
 * TcpConnection
 
     TCP连接对象,持有socket_对象,channel_连接通道,reactor处理框架loop_,输入输出缓冲区inputBuffer_/outputBuffer_,连接建立回调connectionCallback_,消息到达回调messageCallback_,写完成回调writeCompleteCallback_,到达高水位标记回调highWaterMarkCallback_,连接关闭回调closeCallback_.
 
-* TcpServer
+## TcpServer ##
 
     持有连接接收器acceptor_和std::map<string, TcpConnectionPtr> connections_已建立连接的表.由外部提供的loop_,提供连接建立,消息到达,写完成回调设置接口,外部设置成功后,由TcpServer内部在建立新连接的时候将这些回调设置给TcpConnection.
 
@@ -153,6 +157,19 @@
     loop_ = NULL;
     }
     ```
+
+## TcpClient ## 
+    持有reactor事件循环loop_,连机器connector_,连接对象connection_,对外提供接口设置connection_的连接建立 消息到达 写完成回调.
+
+* Connector
+
+    connector的核心在于Connector::startInLoop()函数,外部调用TcpClient::connect(){Connector::startInLoop()} 连接器尝试连接.
+    连接成功执行外部注册的回调newConnectionCallback_{TcpClient::newConnection}创建connection_连接对象
+    连接失败执行重试Connector::retry{Connector::startInLoop()} 重新尝试连接
+
+* connection
+
+    连接成功后由外部设置的连接的连接建立 消息到达 写完成回调各自处理.
 
 ## 应用实例 ##
     ChargenServer
