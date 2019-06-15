@@ -23,11 +23,10 @@ class Session : boost::noncopyable
 {
  public:
   explicit Session(const TcpConnectionPtr& conn)
-    : codec_(boost::bind(&Session::onMessage, this, _1, _2, _3)),
+    : codec_(boost::bind(&Session::onMessage, this, _1, _2, _3)), /* 完整的消息处理逻辑 */
       file_(getFileName(conn))
   {
-    conn->setMessageCallback(
-        boost::bind(&Codec::onMessage, &codec_, _1, _2, _3));
+    conn->setMessageCallback(boost::bind(&Codec::onMessage, &codec_, _1, _2, _3));  // 拆包-分包-反序列化-调用注册的完整消息处理逻辑
   }
 
  private:
@@ -55,9 +54,7 @@ class Session : boost::noncopyable
     return filename;
   }
 
-  void onMessage(const TcpConnectionPtr& conn,
-                 const MessagePtr& message,
-                 Timestamp time)
+  void onMessage(const TcpConnectionPtr& conn, const MessagePtr& message, Timestamp time)
   {
     LogRecord* logRecord = muduo::down_cast<LogRecord*>(message.get());
     if (logRecord->has_heartbeat())
@@ -86,8 +83,7 @@ class LogServer : boost::noncopyable
     : loop_(loop),
       server_(loop_, listenAddr, "AceLoggingServer")
   {
-    server_.setConnectionCallback(
-        boost::bind(&LogServer::onConnection, this, _1));
+    server_.setConnectionCallback(boost::bind(&LogServer::onConnection, this, _1));
     if (numThreads > 1)
     {
       server_.setThreadNum(numThreads);

@@ -31,10 +31,8 @@ class LogClient : boost::noncopyable
     : client_(loop, serverAddr, "LogClient"),
       codec_(boost::bind(&LogClient::onMessage, this, _1, _2, _3))
   {
-    client_.setConnectionCallback(
-        boost::bind(&LogClient::onConnection, this, _1));
-    client_.setMessageCallback(
-        boost::bind(&Codec::onMessage, &codec_, _1, _2, _3));
+    client_.setConnectionCallback(boost::bind(&LogClient::onConnection, this, _1));
+    client_.setMessageCallback(boost::bind(&Codec::onMessage, &codec_, _1, _2, _3));  /* 拆包-分包-反序列化-调用注册的完整消息处理 */
     client_.enableRetry();
   }
 
@@ -65,9 +63,7 @@ class LogClient : boost::noncopyable
  private:
   void onConnection(const TcpConnectionPtr& conn)
   {
-    LOG_INFO << conn->localAddress().toIpPort() << " -> "
-             << conn->peerAddress().toIpPort() << " is "
-             << (conn->connected() ? "UP" : "DOWN");
+    LOG_INFO << conn->localAddress().toIpPort() << " -> " << conn->peerAddress().toIpPort() << " is " << (conn->connected() ? "UP" : "DOWN");
 
     MutexLockGuard lock(mutex_);
     if (conn->connected())
@@ -90,9 +86,7 @@ class LogClient : boost::noncopyable
     }
   }
 
-  void onMessage(const TcpConnectionPtr&,
-                 const MessagePtr& message,
-                 Timestamp)
+  void onMessage(const TcpConnectionPtr&, const MessagePtr& message, Timestamp)
   {
     // SHOULD NOT HAPPEN
     LogRecord* logRecord = muduo::down_cast<LogRecord*>(message.get());

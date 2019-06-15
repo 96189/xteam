@@ -30,8 +30,7 @@ namespace
   int __attribute__ ((unused)) dummy = ProtobufVersionCheck();
 }
 
-void ProtobufCodecLite::send(const TcpConnectionPtr& conn,
-                             const ::google::protobuf::Message& message)
+void ProtobufCodecLite::send(const TcpConnectionPtr& conn, const ::google::protobuf::Message& message)
 {
   // FIXME: serialize to TcpConnection::outputBuffer()
   muduo::net::Buffer buf;
@@ -39,8 +38,8 @@ void ProtobufCodecLite::send(const TcpConnectionPtr& conn,
   conn->send(&buf);
 }
 
-void ProtobufCodecLite::fillEmptyBuffer(muduo::net::Buffer* buf,
-                                        const google::protobuf::Message& message)
+// 序列化并打包
+void ProtobufCodecLite::fillEmptyBuffer(muduo::net::Buffer* buf, const google::protobuf::Message& message)
 {
   assert(buf->readableBytes() == 0);
   // FIXME: can we move serialization & checksum to other thread?
@@ -55,9 +54,8 @@ void ProtobufCodecLite::fillEmptyBuffer(muduo::net::Buffer* buf,
   buf->prepend(&len, sizeof len);
 }
 
-void ProtobufCodecLite::onMessage(const TcpConnectionPtr& conn,
-                                  Buffer* buf,
-                                  Timestamp receiveTime)
+// 拆包-分包-构成完成的消息反序列化
+void ProtobufCodecLite::onMessage(const TcpConnectionPtr& conn, Buffer* buf, Timestamp receiveTime)
 {
   while (buf->readableBytes() >= static_cast<uint32_t>(kMinMessageLen+kHeaderLen))
   {
@@ -96,11 +94,13 @@ void ProtobufCodecLite::onMessage(const TcpConnectionPtr& conn,
   }
 }
 
+// 反序列化
 bool ProtobufCodecLite::parseFromBuffer(StringPiece buf, google::protobuf::Message* message)
 {
   return message->ParseFromArray(buf.data(), buf.size());
 }
 
+// 序列化
 int ProtobufCodecLite::serializeToBuffer(const google::protobuf::Message& message, Buffer* buf)
 {
   // TODO: use BufferOutputStream
@@ -156,10 +156,7 @@ const string& ProtobufCodecLite::errorCodeToString(ErrorCode errorCode)
   }
 }
 
-void ProtobufCodecLite::defaultErrorCallback(const TcpConnectionPtr& conn,
-                                             Buffer* buf,
-                                             Timestamp,
-                                             ErrorCode errorCode)
+void ProtobufCodecLite::defaultErrorCallback(const TcpConnectionPtr& conn, Buffer* buf, Timestamp, ErrorCode errorCode)
 {
   LOG_ERROR << "ProtobufCodecLite::defaultErrorCallback - " << errorCodeToString(errorCode);
   if (conn && conn->connected())
@@ -177,8 +174,7 @@ int32_t ProtobufCodecLite::asInt32(const char* buf)
 
 int32_t ProtobufCodecLite::checksum(const void* buf, int len)
 {
-  return static_cast<int32_t>(
-      ::adler32(1, static_cast<const Bytef*>(buf), len));
+  return static_cast<int32_t>(::adler32(1, static_cast<const Bytef*>(buf), len));
 }
 
 bool ProtobufCodecLite::validateChecksum(const char* buf, int len)
@@ -189,9 +185,7 @@ bool ProtobufCodecLite::validateChecksum(const char* buf, int len)
   return checkSum == expectedCheckSum;
 }
 
-ProtobufCodecLite::ErrorCode ProtobufCodecLite::parse(const char* buf,
-                                                      int len,
-                                                      ::google::protobuf::Message* message)
+ProtobufCodecLite::ErrorCode ProtobufCodecLite::parse(const char* buf, int len, ::google::protobuf::Message* message)
 {
   ErrorCode error = kNoError;
 

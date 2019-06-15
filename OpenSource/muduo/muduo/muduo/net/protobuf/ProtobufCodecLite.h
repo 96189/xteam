@@ -76,18 +76,11 @@ class ProtobufCodecLite : boost::noncopyable
   };
 
   // return false to stop parsing protobuf message
-  typedef boost::function<bool (const TcpConnectionPtr&,
-                                StringPiece,
-                                Timestamp)> RawMessageCallback;
+  typedef boost::function<bool (const TcpConnectionPtr&, StringPiece, Timestamp)> RawMessageCallback;
 
-  typedef boost::function<void (const TcpConnectionPtr&,
-                                const MessagePtr&,
-                                Timestamp)> ProtobufMessageCallback;
+  typedef boost::function<void (const TcpConnectionPtr&, const MessagePtr&, Timestamp)> ProtobufMessageCallback;
 
-  typedef boost::function<void (const TcpConnectionPtr&,
-                                Buffer*,
-                                Timestamp,
-                                ErrorCode)> ErrorCallback;
+  typedef boost::function<void (const TcpConnectionPtr&, Buffer*, Timestamp, ErrorCode)> ErrorCallback;
 
   ProtobufCodecLite(const ::google::protobuf::Message* prototype,
                     StringPiece tagArg,
@@ -107,12 +100,9 @@ class ProtobufCodecLite : boost::noncopyable
 
   const string& tag() const { return tag_; }
 
-  void send(const TcpConnectionPtr& conn,
-            const ::google::protobuf::Message& message);
+  void send(const TcpConnectionPtr& conn, const ::google::protobuf::Message& message);
 
-  void onMessage(const TcpConnectionPtr& conn,
-                 Buffer* buf,
-                 Timestamp receiveTime);
+  void onMessage(const TcpConnectionPtr& conn, Buffer* buf, Timestamp receiveTime);
 
   virtual bool parseFromBuffer(StringPiece buf, google::protobuf::Message* message);
   virtual int serializeToBuffer(const google::protobuf::Message& message, Buffer* buf);
@@ -126,10 +116,7 @@ class ProtobufCodecLite : boost::noncopyable
   static int32_t checksum(const void* buf, int len);
   static bool validateChecksum(const char* buf, int len);
   static int32_t asInt32(const char* buf);
-  static void defaultErrorCallback(const TcpConnectionPtr&,
-                                   Buffer*,
-                                   Timestamp,
-                                   ErrorCode);
+  static void defaultErrorCallback(const TcpConnectionPtr&, Buffer*, Timestamp, ErrorCode);
 
  private:
   const ::google::protobuf::Message* prototype_;
@@ -140,6 +127,8 @@ class ProtobufCodecLite : boost::noncopyable
   const int kMinMessageLen;
 };
 
+
+// 内部操作通过ProtobufCodecLite的实现转调用
 template<typename MSG, const char* TAG, typename CODEC=ProtobufCodecLite>  // TAG must be a variable with external linkage, not a string literal
 class ProtobufCodecLiteT
 {
@@ -148,9 +137,7 @@ class ProtobufCodecLiteT
 #endif
  public:
   typedef boost::shared_ptr<MSG> ConcreteMessagePtr;
-  typedef boost::function<void (const TcpConnectionPtr&,
-                                const ConcreteMessagePtr&,
-                                Timestamp)> ProtobufMessageCallback;
+  typedef boost::function<void (const TcpConnectionPtr&, const ConcreteMessagePtr&, Timestamp)> ProtobufMessageCallback;
   typedef ProtobufCodecLite::RawMessageCallback RawMessageCallback;
   typedef ProtobufCodecLite::ErrorCallback ErrorCallback;
 
@@ -158,33 +145,25 @@ class ProtobufCodecLiteT
                               const RawMessageCallback& rawCb = RawMessageCallback(),
                               const ErrorCallback& errorCb = ProtobufCodecLite::defaultErrorCallback)
     : messageCallback_(messageCb),
-      codec_(&MSG::default_instance(),
-             TAG,
-             boost::bind(&ProtobufCodecLiteT::onRpcMessage, this, _1, _2, _3),
-             rawCb,
-             errorCb)
+      codec_(&MSG::default_instance(), TAG, boost::bind(&ProtobufCodecLiteT::onRpcMessage, this, _1, _2, _3), rawCb, errorCb)
   {
+
   }
 
   const string& tag() const { return codec_.tag(); }
 
-  void send(const TcpConnectionPtr& conn,
-            const MSG& message)
+  void send(const TcpConnectionPtr& conn, const MSG& message)
   {
     codec_.send(conn, message);
   }
 
-  void onMessage(const TcpConnectionPtr& conn,
-                 Buffer* buf,
-                 Timestamp receiveTime)
+  void onMessage(const TcpConnectionPtr& conn, Buffer* buf, Timestamp receiveTime)
   {
     codec_.onMessage(conn, buf, receiveTime);
   }
 
   // internal
-  void onRpcMessage(const TcpConnectionPtr& conn,
-                    const MessagePtr& message,
-                    Timestamp receiveTime)
+  void onRpcMessage(const TcpConnectionPtr& conn, const MessagePtr& message, Timestamp receiveTime)
   {
     messageCallback_(conn, ::muduo::down_pointer_cast<MSG>(message), receiveTime);
   }

@@ -401,3 +401,5 @@ void ProtobufCodec::fillEmptyBuffer(Buffer* buf, const google::protobuf::Message
 * ProtobufDispatcher消息分发(预先注册/运行时查表)
 
     typedef std::map<const google::protobuf::Descriptor*, boost::shared_ptr<Callback> > CallbackMap
+
+* protobuf消息codec模板化ProtobufCodecLite/ProtobufCodecLiteT
