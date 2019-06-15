@@ -19,6 +19,7 @@
 using namespace muduo;
 using namespace muduo::net;
 
+// 序列化消息并打包
 void ProtobufCodec::fillEmptyBuffer(Buffer* buf, const google::protobuf::Message& message)
 {
   // buf->retrieveAll();
@@ -36,6 +37,7 @@ void ProtobufCodec::fillEmptyBuffer(Buffer* buf, const google::protobuf::Message
   buf->ensureWritableBytes(byte_size);
 
   uint8_t* start = reinterpret_cast<uint8_t*>(buf->beginWrite());
+  // protobuf序列化数据
   uint8_t* end = message.SerializeWithCachedSizesToArray(start);
   if (end - start != byte_size)
   {
@@ -43,10 +45,7 @@ void ProtobufCodec::fillEmptyBuffer(Buffer* buf, const google::protobuf::Message
   }
   buf->hasWritten(byte_size);
 
-  int32_t checkSum = static_cast<int32_t>(
-      ::adler32(1,
-                reinterpret_cast<const Bytef*>(buf->peek()),
-                static_cast<int>(buf->readableBytes())));
+  int32_t checkSum = static_cast<int32_t>(::adler32(1, reinterpret_cast<const Bytef*>(buf->peek()), static_cast<int>(buf->readableBytes())));
   buf->appendInt32(checkSum);
   assert(buf->readableBytes() == sizeof nameLen + nameLen + byte_size + sizeof checkSum);
   int32_t len = sockets::hostToNetwork32(static_cast<int32_t>(buf->readableBytes()));
@@ -93,10 +92,7 @@ const string& ProtobufCodec::errorCodeToString(ErrorCode errorCode)
   }
 }
 
-void ProtobufCodec::defaultErrorCallback(const muduo::net::TcpConnectionPtr& conn,
-                                         muduo::net::Buffer* buf,
-                                         muduo::Timestamp,
-                                         ErrorCode errorCode)
+void ProtobufCodec::defaultErrorCallback(const muduo::net::TcpConnectionPtr& conn, muduo::net::Buffer* buf, muduo::Timestamp, ErrorCode errorCode)
 {
   LOG_ERROR << "ProtobufCodec::defaultErrorCallback - " << errorCodeToString(errorCode);
   if (conn && conn->connected())
@@ -112,27 +108,30 @@ int32_t asInt32(const char* buf)
   return sockets::networkToHost32(be32);
 }
 
-void ProtobufCodec::onMessage(const TcpConnectionPtr& conn,
-                              Buffer* buf,
-                              Timestamp receiveTime)
+// 反序列化 数据解析为一个消息 不够一个消息不回调业务层处理
+void ProtobufCodec::onMessage(const TcpConnectionPtr& conn, Buffer* buf, Timestamp receiveTime)
 {
   while (buf->readableBytes() >= kMinMessageLen + kHeaderLen)
   {
     const int32_t len = buf->peekInt32();
+    // 数据长度 大于限定的最大消息长度 或者 小于限定的最小消息长度
     if (len > kMaxMessageLen || len < kMinMessageLen)
     {
       errorCallback_(conn, buf, receiveTime, kInvalidLength);
       break;
     }
+    // 缓冲区中的数据 >= 一个消息长度
     else if (buf->readableBytes() >= implicit_cast<size_t>(len + kHeaderLen))
     {
       ErrorCode errorCode = kNoError;
       MessagePtr message = parse(buf->peek()+kHeaderLen, len, &errorCode);
+      // 解析成功 通知业务层处理
       if (errorCode == kNoError && message)
       {
         messageCallback_(conn, message, receiveTime);
         buf->retrieve(kHeaderLen+len);
       }
+      // 解析失败
       else
       {
         errorCallback_(conn, buf, receiveTime, errorCode);
@@ -146,15 +145,14 @@ void ProtobufCodec::onMessage(const TcpConnectionPtr& conn,
   }
 }
 
+// google protobuf reflect 根据消息类型获取消息实体
 google::protobuf::Message* ProtobufCodec::createMessage(const std::string& typeName)
 {
   google::protobuf::Message* message = NULL;
-  const google::protobuf::Descriptor* descriptor =
-    google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(typeName);
+  const google::protobuf::Descriptor* descriptor = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(typeName);
   if (descriptor)
   {
-    const google::protobuf::Message* prototype =
-      google::protobuf::MessageFactory::generated_factory()->GetPrototype(descriptor);
+    const google::protobuf::Message* prototype = google::protobuf::MessageFactory::generated_factory()->GetPrototype(descriptor);
     if (prototype)
     {
       message = prototype->New();
@@ -163,16 +161,14 @@ google::protobuf::Message* ProtobufCodec::createMessage(const std::string& typeN
   return message;
 }
 
+// 消息解析(拆包)
 MessagePtr ProtobufCodec::parse(const char* buf, int len, ErrorCode* error)
 {
   MessagePtr message;
 
   // check sum
   int32_t expectedCheckSum = asInt32(buf + len - kHeaderLen);
-  int32_t checkSum = static_cast<int32_t>(
-      ::adler32(1,
-                reinterpret_cast<const Bytef*>(buf),
-                static_cast<int>(len - kHeaderLen)));
+  int32_t checkSum = static_cast<int32_t>(::adler32(1, reinterpret_cast<const Bytef*>(buf), static_cast<int>(len - kHeaderLen)));
   if (checkSum == expectedCheckSum)
   {
     // get message type name
@@ -181,31 +177,38 @@ MessagePtr ProtobufCodec::parse(const char* buf, int len, ErrorCode* error)
     {
       std::string typeName(buf + kHeaderLen, buf + kHeaderLen + nameLen - 1);
       // create message object
+      // google protobuf消息反射
       message.reset(createMessage(typeName));
+      // 反射消息成功
       if (message)
       {
         // parse from buffer
         const char* data = buf + kHeaderLen + nameLen;
         int32_t dataLen = len - nameLen - 2*kHeaderLen;
+        // 数据解析成功
         if (message->ParseFromArray(data, dataLen))
         {
           *error = kNoError;
         }
+        // 数据解析失败
         else
         {
           *error = kParseError;
         }
       }
+      // 反射消息失败
       else
       {
         *error = kUnknownMessageType;
       }
     }
+    // 消息类型无效
     else
     {
       *error = kInvalidNameLen;
     }
   }
+  // 数据校验失败
   else
   {
     *error = kCheckSumError;

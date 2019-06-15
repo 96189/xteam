@@ -46,14 +46,9 @@ class ProtobufCodec : boost::noncopyable
     kParseError,
   };
 
-  typedef boost::function<void (const muduo::net::TcpConnectionPtr&,
-                                const MessagePtr&,
-                                muduo::Timestamp)> ProtobufMessageCallback;
+  typedef boost::function<void (const muduo::net::TcpConnectionPtr&, const MessagePtr&, muduo::Timestamp)> ProtobufMessageCallback;
 
-  typedef boost::function<void (const muduo::net::TcpConnectionPtr&,
-                                muduo::net::Buffer*,
-                                muduo::Timestamp,
-                                ErrorCode)> ErrorCallback;
+  typedef boost::function<void (const muduo::net::TcpConnectionPtr&, muduo::net::Buffer*, muduo::Timestamp, ErrorCode)> ErrorCallback;
 
   explicit ProtobufCodec(const ProtobufMessageCallback& messageCb)
     : messageCallback_(messageCb),
@@ -67,12 +62,11 @@ class ProtobufCodec : boost::noncopyable
   {
   }
 
-  void onMessage(const muduo::net::TcpConnectionPtr& conn,
-                 muduo::net::Buffer* buf,
-                 muduo::Timestamp receiveTime);
+  // 反序列化
+  void onMessage(const muduo::net::TcpConnectionPtr& conn, muduo::net::Buffer* buf, muduo::Timestamp receiveTime);
 
-  void send(const muduo::net::TcpConnectionPtr& conn,
-            const google::protobuf::Message& message)
+  // 序列化
+  void send(const muduo::net::TcpConnectionPtr& conn, const google::protobuf::Message& message)
   {
     // FIXME: serialize to TcpConnection::outputBuffer()
     muduo::net::Buffer buf;
@@ -86,10 +80,7 @@ class ProtobufCodec : boost::noncopyable
   static MessagePtr parse(const char* buf, int len, ErrorCode* errorCode);
 
  private:
-  static void defaultErrorCallback(const muduo::net::TcpConnectionPtr&,
-                                   muduo::net::Buffer*,
-                                   muduo::Timestamp,
-                                   ErrorCode);
+  static void defaultErrorCallback(const muduo::net::TcpConnectionPtr&, muduo::net::Buffer*, muduo::Timestamp, ErrorCode);
 
   ProtobufMessageCallback messageCallback_;
   ErrorCallback errorCallback_;

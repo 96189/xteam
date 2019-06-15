@@ -350,3 +350,54 @@
 * epoll的et和lt与read EAGAIN
 
     https://blog.csdn.net/Al_xin/article/details/39047047
+
+
+## 消息编解码与消息分发 ##
+
+* ProtobufCodec编码-序列化与解码-反序列化(protobuf反射)
+
+```
+反序列化
+google::protobuf::Message* ProtobufCodec::createMessage(const std::string& typeName)
+{
+    google::protobuf::Message* message = NULL;
+    const google::protobuf::Descriptor* descriptor = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(typeName);
+    if (descriptor)
+    {
+        const google::protobuf::Message* prototype = google::protobuf::MessageFactory::generated_factory()->GetPrototype(descriptor);
+        if (prototype)
+        {
+            message = prototype->New();
+        }
+    }
+    return message;
+}
+```
+```
+序列化消息并打包
+void ProtobufCodec::fillEmptyBuffer(Buffer* buf, const google::protobuf::Message& message)
+{
+    const std::string& typeName = message.GetTypeName();
+    int32_t nameLen = static_cast<int32_t>(typeName.size()+1);
+    buf->appendInt32(nameLen);
+    buf->append(typeName.c_str(), nameLen);
+
+    int byte_size = message.ByteSize();
+    buf->ensureWritableBytes(byte_size);
+
+    uint8_t* start = reinterpret_cast<uint8_t*>(buf->beginWrite());
+    // protobuf序列化数据
+    uint8_t* end = message.SerializeWithCachedSizesToArray(start);
+    buf->hasWritten(byte_size);
+
+    int32_t checkSum = static_cast<int32_t>(::adler32(1, reinterpret_cast<const Bytef*>(buf->peek()), static_cast<int>(buf->readableBytes())));
+    buf->appendInt32(checkSum);
+    assert(buf->readableBytes() == sizeof nameLen + nameLen + byte_size + sizeof checkSum);
+    int32_t len = sockets::hostToNetwork32(static_cast<int32_t>(buf->readableBytes()));
+    buf->prepend(&len, sizeof len);
+}
+```
+
+* ProtobufDispatcher消息分发(预先注册/运行时查表)
+
+    typedef std::map<const google::protobuf::Descriptor*, boost::shared_ptr<Callback> > CallbackMap

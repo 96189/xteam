@@ -27,20 +27,16 @@ class QueryClient : boost::noncopyable
               const InetAddress& serverAddr)
   : loop_(loop),
     client_(loop, serverAddr, "QueryClient"),
-    dispatcher_(boost::bind(&QueryClient::onUnknownMessage, this, _1, _2, _3)), /* 默认的业务消息处理逻辑 */
-    codec_(boost::bind(&ProtobufDispatcher::onProtobufMessage, &dispatcher_, _1, _2, _3))   /* 业务消息处理逻辑 */
+    dispatcher_(boost::bind(&QueryClient::onUnknownMessage, this, _1, _2, _3)), /* 未知的业务消息处理逻辑 */
+    codec_(boost::bind(&ProtobufDispatcher::onProtobufMessage, &dispatcher_, _1, _2, _3))   /* 业务消息分发 */
   {
     // 注册业务消息处理逻辑
-    dispatcher_.registerMessageCallback<muduo::Answer>(
-        boost::bind(&QueryClient::onAnswer, this, _1, _2, _3));
-    dispatcher_.registerMessageCallback<muduo::Empty>(
-        boost::bind(&QueryClient::onEmpty, this, _1, _2, _3));
+    dispatcher_.registerMessageCallback<muduo::Answer>(boost::bind(&QueryClient::onAnswer, this, _1, _2, _3));
+    dispatcher_.registerMessageCallback<muduo::Empty>(boost::bind(&QueryClient::onEmpty, this, _1, _2, _3));
     // 连接建立回调
-    client_.setConnectionCallback(
-        boost::bind(&QueryClient::onConnection, this, _1));
+    client_.setConnectionCallback(boost::bind(&QueryClient::onConnection, this, _1));
     // 消息到达回调
-    client_.setMessageCallback(
-        boost::bind(&ProtobufCodec::onMessage, &codec_, _1, _2, _3));
+    client_.setMessageCallback(boost::bind(&ProtobufCodec::onMessage, &codec_, _1, _2, _3));
   }
 
   void connect()
@@ -52,9 +48,7 @@ class QueryClient : boost::noncopyable
 
   void onConnection(const TcpConnectionPtr& conn)
   {
-    LOG_INFO << conn->localAddress().toIpPort() << " -> "
-        << conn->peerAddress().toIpPort() << " is "
-        << (conn->connected() ? "UP" : "DOWN");
+    LOG_INFO << conn->localAddress().toIpPort() << " -> " << conn->peerAddress().toIpPort() << " is " << (conn->connected() ? "UP" : "DOWN");
 
     if (conn->connected())
     {
@@ -66,23 +60,17 @@ class QueryClient : boost::noncopyable
     }
   }
 
-  void onUnknownMessage(const TcpConnectionPtr&,
-                        const MessagePtr& message,
-                        Timestamp)
+  void onUnknownMessage(const TcpConnectionPtr&, const MessagePtr& message, Timestamp)
   {
     LOG_INFO << "onUnknownMessage: " << message->GetTypeName();
   }
 
-  void onAnswer(const muduo::net::TcpConnectionPtr&,
-                const AnswerPtr& message,
-                muduo::Timestamp)
+  void onAnswer(const muduo::net::TcpConnectionPtr&, const AnswerPtr& message, muduo::Timestamp)
   {
     LOG_INFO << "onAnswer:\n" << message->GetTypeName() << message->DebugString();
   }
 
-  void onEmpty(const muduo::net::TcpConnectionPtr&,
-               const EmptyPtr& message,
-               muduo::Timestamp)
+  void onEmpty(const muduo::net::TcpConnectionPtr&, const EmptyPtr& message, muduo::Timestamp)
   {
     LOG_INFO << "onEmpty: " << message->GetTypeName();
   }

@@ -21,23 +21,18 @@ typedef boost::shared_ptr<muduo::Answer> AnswerPtr;
 class QueryServer : boost::noncopyable
 {
  public:
-  QueryServer(EventLoop* loop,
-              const InetAddress& listenAddr)
+  QueryServer(EventLoop* loop, const InetAddress& listenAddr)
   : server_(loop, listenAddr, "QueryServer"),
-    dispatcher_(boost::bind(&QueryServer::onUnknownMessage, this, _1, _2, _3)),             /* 消息处理 */
+    dispatcher_(boost::bind(&QueryServer::onUnknownMessage, this, _1, _2, _3)),             /* 未知消息处理 */
     codec_(boost::bind(&ProtobufDispatcher::onProtobufMessage, &dispatcher_, _1, _2, _3))   /* 业务逻辑处理(消息分发) */
   {
     // 注册业务消息处理逻辑
-    dispatcher_.registerMessageCallback<muduo::Query>(
-        boost::bind(&QueryServer::onQuery, this, _1, _2, _3));
-    dispatcher_.registerMessageCallback<muduo::Answer>(
-        boost::bind(&QueryServer::onAnswer, this, _1, _2, _3));
+    dispatcher_.registerMessageCallback<muduo::Query>(boost::bind(&QueryServer::onQuery, this, _1, _2, _3));
+    dispatcher_.registerMessageCallback<muduo::Answer>(boost::bind(&QueryServer::onAnswer, this, _1, _2, _3));
     // 连接建立回调
-    server_.setConnectionCallback(
-        boost::bind(&QueryServer::onConnection, this, _1));
+    server_.setConnectionCallback(boost::bind(&QueryServer::onConnection, this, _1));
     // 消息到达回调
-    server_.setMessageCallback(
-        boost::bind(&ProtobufCodec::onMessage, &codec_, _1, _2, _3));
+    server_.setMessageCallback(boost::bind(&ProtobufCodec::onMessage, &codec_, _1, _2, _3));
   }
 
   void start()
@@ -48,22 +43,16 @@ class QueryServer : boost::noncopyable
  private:
   void onConnection(const TcpConnectionPtr& conn)
   {
-    LOG_INFO << conn->localAddress().toIpPort() << " -> "
-        << conn->peerAddress().toIpPort() << " is "
-        << (conn->connected() ? "UP" : "DOWN");
+    LOG_INFO << conn->localAddress().toIpPort() << " -> " << conn->peerAddress().toIpPort() << " is " << (conn->connected() ? "UP" : "DOWN");
   }
 
-  void onUnknownMessage(const TcpConnectionPtr& conn,
-                        const MessagePtr& message,
-                        Timestamp)
+  void onUnknownMessage(const TcpConnectionPtr& conn, const MessagePtr& message, Timestamp)
   {
     LOG_INFO << "onUnknownMessage: " << message->GetTypeName();
     conn->shutdown();
   }
 
-  void onQuery(const muduo::net::TcpConnectionPtr& conn,
-               const QueryPtr& message,
-               muduo::Timestamp)
+  void onQuery(const muduo::net::TcpConnectionPtr& conn, const QueryPtr& message, muduo::Timestamp)
   {
     LOG_INFO << "onQuery:\n" << message->GetTypeName() << message->DebugString();
     Answer answer;
@@ -77,9 +66,7 @@ class QueryServer : boost::noncopyable
     conn->shutdown();
   }
 
-  void onAnswer(const muduo::net::TcpConnectionPtr& conn,
-                const AnswerPtr& message,
-                muduo::Timestamp)
+  void onAnswer(const muduo::net::TcpConnectionPtr& conn, const AnswerPtr& message, muduo::Timestamp)
   {
     LOG_INFO << "onAnswer: " << message->GetTypeName();
     conn->shutdown();
@@ -87,7 +74,7 @@ class QueryServer : boost::noncopyable
 
   TcpServer server_;
   ProtobufDispatcher dispatcher_;   // 消息分发
-  ProtobufCodec codec_;             // 消息编解码 - 消息拦截器(分包打包)
+  ProtobufCodec codec_;             // 消息编解码 - 消息拦截器(分包-反序列化 序列化-打包)
 };
 
 int main(int argc, char* argv[])

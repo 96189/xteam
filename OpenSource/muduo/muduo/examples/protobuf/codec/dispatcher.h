@@ -30,9 +30,7 @@ class Callback : boost::noncopyable
 {
  public:
   virtual ~Callback() {};
-  virtual void onMessage(const muduo::net::TcpConnectionPtr&,
-                         const MessagePtr& message,
-                         muduo::Timestamp) const = 0;
+  virtual void onMessage(const muduo::net::TcpConnectionPtr&, const MessagePtr& message, muduo::Timestamp) const = 0;
 };
 
 template <typename T>
@@ -42,19 +40,16 @@ class CallbackT : public Callback
   BOOST_STATIC_ASSERT((boost::is_base_of<google::protobuf::Message, T>::value));
 #endif
  public:
-  typedef boost::function<void (const muduo::net::TcpConnectionPtr&,
-                                const boost::shared_ptr<T>& message,
-                                muduo::Timestamp)> ProtobufMessageTCallback;
+  typedef boost::function<void (const muduo::net::TcpConnectionPtr&, const boost::shared_ptr<T>& message, muduo::Timestamp)> ProtobufMessageTCallback;
 
   CallbackT(const ProtobufMessageTCallback& callback)
     : callback_(callback)
   {
   }
 
-  virtual void onMessage(const muduo::net::TcpConnectionPtr& conn,
-                         const MessagePtr& message,
-                         muduo::Timestamp receiveTime) const
+  virtual void onMessage(const muduo::net::TcpConnectionPtr& conn, const MessagePtr& message, muduo::Timestamp receiveTime) const
   {
+    // protobuf message向下转型到具体的类型
     boost::shared_ptr<T> concrete = muduo::down_pointer_cast<T>(message);
     assert(concrete != NULL);
     callback_(conn, concrete, receiveTime);
@@ -67,22 +62,18 @@ class CallbackT : public Callback
 class ProtobufDispatcher
 {
  public:
-  typedef boost::function<void (const muduo::net::TcpConnectionPtr&,
-                                const MessagePtr& message,
-                                muduo::Timestamp)> ProtobufMessageCallback;
+  typedef boost::function<void (const muduo::net::TcpConnectionPtr&, const MessagePtr& message, muduo::Timestamp)> ProtobufMessageCallback;
 
   explicit ProtobufDispatcher(const ProtobufMessageCallback& defaultCb)
     : defaultCallback_(defaultCb)
   {
   }
 
-  void onProtobufMessage(const muduo::net::TcpConnectionPtr& conn,
-                         const MessagePtr& message,
-                         muduo::Timestamp receiveTime) const
+  void onProtobufMessage(const muduo::net::TcpConnectionPtr& conn, const MessagePtr& message, muduo::Timestamp receiveTime) const
   {
     // 查表
     CallbackMap::const_iterator it = callbacks_.find(message->GetDescriptor());
-    // 调用对应的处理逻辑
+    // 消息分发
     if (it != callbacks_.end())
     {
       it->second->onMessage(conn, message, receiveTime);
@@ -94,6 +85,7 @@ class ProtobufDispatcher
     }
   }
 
+  // 注册消息处理回调
   template<typename T>
   void registerMessageCallback(const typename CallbackT<T>::ProtobufMessageTCallback& callback)
   {
@@ -104,7 +96,7 @@ class ProtobufDispatcher
  private:
   typedef std::map<const google::protobuf::Descriptor*, boost::shared_ptr<Callback> > CallbackMap;
 
-  CallbackMap callbacks_;                       // 消息类型 - 消息处理逻辑 表
+  CallbackMap callbacks_;                       // 消息类型 - 消息处理回调 表
   ProtobufMessageCallback defaultCallback_;     // 默认的消息处理逻辑
 };
 #endif  // MUDUO_EXAMPLES_PROTOBUF_CODEC_DISPATCHER_H
