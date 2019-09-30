@@ -640,7 +640,7 @@ vector<_Tp, _Alloc>::_M_insert_aux(iterator __position, const _Tp& __x)
     copy_backward(__position, _M_finish - 2, _M_finish - 1);
     *__position = __x_copy;
   }
-  else {
+  else {  // 旧空间被填满 以2倍策略申请更大的内存 将旧地址的数据拷贝到新地址 重新设定地址
     const size_type __old_size = size();
     const size_type __len = __old_size != 0 ? 2 * __old_size : 1;
     iterator __new_start = _M_allocate(__len);
@@ -671,7 +671,7 @@ vector<_Tp, _Alloc>::_M_insert_aux(iterator __position)
     copy_backward(__position, _M_finish - 2, _M_finish - 1);
     *__position = _Tp();
   }
-  else {
+  else {  // 旧空间被填满 以2倍策略申请更大的内存 将旧地址的数据拷贝到新地址 重新设定地址
     const size_type __old_size = size();
     const size_type __len = __old_size != 0 ? 2 * __old_size : 1;
     iterator __new_start = _M_allocate(__len);
