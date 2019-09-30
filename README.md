@@ -132,6 +132,37 @@
 
 ## 八、设计模式
 
+    参考<<c++API设计>>
+
++   创建型模式
+    *   [抽象工厂模式](https://github.com/96189/xteam/tree/master/designPatterns/%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F/Factory/AbstractFactory)
+    *   建造者模式
+    *   [工厂方法模式](https://github.com/96189/xteam/tree/master/designPatterns/%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F/Factory/FactoryMethod)
+    *   原型模式
+    *   [单例模式](https://github.com/96189/xteam/blob/master/designPatterns/%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F/Singleton/singleton.hpp)
+
++   结构性模式
+    *   [适配器模式](https://github.com/96189/xteam/tree/master/designPatterns/%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/Adapter)
+    *   桥接模式
+    *   组合模式
+    *   装饰模式
+    *   [外观模式](https://github.com/96189/xteam/tree/master/designPatterns/%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/Facade)
+    *   享元模式
+    *   [代理模式](https://github.com/96189/xteam/tree/master/designPatterns/%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/Proxy)
+
++   行为模式
+    *   职责链模式
+    *   命令模式
+    *   解释器模式
+    *   迭代器模式
+    *   中介者模式
+    *   备忘录模式
+    *   [观察者模式](https://github.com/96189/xteam/tree/master/designPatterns/%E8%A1%8C%E4%B8%BA%E6%A8%A1%E5%BC%8F/Observer)
+    *   状态模式
+    *   策略模式
+    *   模板方法模式
+    *   访问者模式
+
 ## 九、系统设计
 + 游戏排行榜(桶排序、跳跃表)
 + 游戏匹配
