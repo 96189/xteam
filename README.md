@@ -6,8 +6,18 @@
     *  [vector写满以后底层如何处理? (x2)](https://github.com/96189/xteam/blob/master/OpenSource/STL/stl_vector.h)
     *  [STL第二级空间适配器 (数组+自由链表)](https://github.com/96189/xteam/blob/master/OpenSource/STL/stl_alloc.h)
 
-+   虚函数与虚表
-    *  是否能在构造函数中调用memset(this, sizeof(this), 0)将对象清零?
++   对象模型
+    *  是否能在构造函数中调用memset(this, sizeof(this), 0)将对象清零?(虚函数与虚表)
+
++   指针指针
+    *   auto_ptr
+    *   unique_ptr
+    *   shared_ptr
+    *   weak_ptr
+    *   boost::scoped_ptr
++   bind & function & lambd
++   c++11
++   boost
 
 ### GO
 +   语法
@@ -72,11 +82,13 @@
 
 ## 三、数据结构
 +   跳跃表
-    *   如何加快查询以及在redis中的引用?
+    *   如何加快查询以及在redis中的应用?
 +   红黑树
     *   epoll对于事件的管理方式,nginx对于定时器的管理方式,STL中map和set的底层实现
 +   最大/小堆
     *   top N问题
+
++   bitmap
 
 ## 四、协议
 ### 网络协议
@@ -224,6 +236,15 @@
 ## 十二、开发工具
 +   版本控制工具
     *   GIT
+    *   SVN
++   VIM
+    * 配置
+
+## 十三、操作系统
++   进程
++   线程
++   协程
++   系统调度算法
 
 ## 其他
 +   无锁队列、环形缓冲区
