@@ -3,10 +3,10 @@
 +   快速排序
 +   归并排序
 +   堆排序
-+   选择排序
-+   插入排序
-+   冒泡排序
-+   二分查找
++   [选择排序](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95/go/sort.go)
++   [插入排序](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95/go/sort.go)
++   [冒泡排序](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95/go/sort.go)
++   [二分查找](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95/go/search.go)
 
 ## 图算法
 +   DFS
