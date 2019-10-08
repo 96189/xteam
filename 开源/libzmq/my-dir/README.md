@@ -2,31 +2,31 @@
 ### 0x01 Request-Reply
     Socket-type:
         ZMQ_REQ ZMQ_REP
-![request-reply](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/request-reply.png)
+![request-reply](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/request-reply.png)
 
     实际应用:mtserver.cc hwclient.cc
-![multithreaded-server](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/multithreaded-server.png)
+![multithreaded-server](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/multithreaded-server.png)
 
 ### 0x02 Publish-Subscribe
     Socket-type:
         ZMQ_PUB ZMQ_SUB
-![publish-subscribe](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/publish-subscribe.png)
+![publish-subscribe](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/publish-subscribe.png)
 
     实际应用:wuserver.cc wuproxy.cc wuclient.cc
-![pub-sub-forwarder-proxy](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/pub-sub-forwarder-proxy.png)
+![pub-sub-forwarder-proxy](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/pub-sub-forwarder-proxy.png)
 
 ### 0x03 Parallel Pipeline
     Socket-type:
         ZMQ_PUSH ZMQ_PULL
-![parallel-pipeline](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/parallel-pipeline.png)
+![parallel-pipeline](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/parallel-pipeline.png)
     
     实际应用:taskvent.cc taskwork.cc tasksink.cc
-![prarllel-pipeline-with-kill-signal](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/prarllel-pipeline-with-kill-signal.png)
+![prarllel-pipeline-with-kill-signal](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/prarllel-pipeline-with-kill-signal.png)
 
 #### 1、负载均衡(上半部)
 
 #### 2、公平队列(下半部)
-![fair-queuing](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/fair-queuing.png)
+![fair-queuing](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/fair-queuing.png)
 
 ### 0x04 Exclusive pair
 
@@ -34,7 +34,7 @@
 ## 二、合法的套接字连接-绑定对
 ### 0X01 REQ-REP
 #### 1、Request Distribution   
-![request-distribution](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/request-distribution.png)
+![request-distribution](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/request-distribution.png)
     
     n(clients) : n(services)
     n个客户端连接到REQ套接字,由REQ套接字做负载均衡,将请求均匀的分摊到后端services.
@@ -42,18 +42,18 @@
     缺:客户端需要需要知道service拓扑,若新增后端service则需要客户端重启,以便新的service可以生效
 
 #### 2、Request-Reply Broker
-![request-reply-broker](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/request-reply-broker.png)
+![request-reply-broker](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/request-reply-broker.png)
     
     n(clients) : n(services)
 
 ### 0x02 PUB-SUB
 #### 1、Small-Scale Pub-Sub Network
-![small-scale-pub-sub-network](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/small-scale-pub-sub-network.png)
+![small-scale-pub-sub-network](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/small-scale-pub-sub-network.png)
     
     1(publisher) -> n(subscriber)
 
 #### 2、Pub-Sub Network with a Proxy
-![pub-sub-network-with-a-proxy](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/pub-sub-network-with-a-proxy.png)
+![pub-sub-network-with-a-proxy](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/pub-sub-network-with-a-proxy.png)
     
     n(publisher) -> n(subscriber)
 
@@ -89,7 +89,7 @@
 
     Routing Envelope for REQ
         | address | empty | data |
-![routing-envelope-for-req](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/routing-envelope-for-req.png)
+![routing-envelope-for-req](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/routing-envelope-for-req.png)
 
     应用实例:
         mtserver.cc 同时与多个REQ客户端通信的异步服务器
@@ -127,7 +127,7 @@
     workers. Remembering this will help you design better ZeroMQ architectures.
 
 ### clients(REQ) - [ROUTER-frontend | broker | ROUTER-backend] - workers(REQ)
-![load-balancing-broker](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/load-balancing-broker.png)
+![load-balancing-broker](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/load-balancing-broker.png)
 
     lbbroker.cc
     由REQ发出的包会自动加上empty-delimiter frame
@@ -149,7 +149,7 @@
     asyncsrv.cc
     异步套接字模式 DEALER
 
-![detail-of-asynchronous-server](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/detail-of-asynchronous-server.png)
+![detail-of-asynchronous-server](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/detail-of-asynchronous-server.png)
 
         clients与server(n:1)之间采用DEALER to ROUTER的模式
 
@@ -222,7 +222,7 @@
     发起连接.
     lpclient.cc lpserver.cc
 
-![lazy-pirate-pattern](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/lazy-pirate-pattern.png)
+![lazy-pirate-pattern](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/lazy-pirate-pattern.png)
 
 ### Basic Reliable Queuing (Simple Pirate Pattern)
     REQ-[ROUTER-lruqueue-ROUTER]-REQ
@@ -231,7 +231,7 @@
 
     spqueue.cc spworker.cc lpclient.cc
 
-![simple-pirate-pattern](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/simple-pirate-pattern.png)
+![simple-pirate-pattern](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/simple-pirate-pattern.png)
 
 ### Robust Reliable Queuing (Paranoid Pirate Pattern)
     REQ-[ROUTER-lruqueue-ROUTER]-DEALTER
@@ -244,7 +244,7 @@
 
     ppqueue.cc ppworker.cc lpclient.cc
 
-![paranoid-pirate-pattern](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/paranoid-pirate-pattern.png)
+![paranoid-pirate-pattern](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/paranoid-pirate-pattern.png)
 
     通过心跳解决了broker和worker之间无法知道对方是否存活的问题,一旦broker检测到worker死亡,则在lruqueue中删除该worker对
 象;worker检测到broker死亡,由于只存在一个worker,则留给worker的选择只有重连.
@@ -328,7 +328,7 @@ broker同时实现了服务查询功能
     单点故障分析
 
 ### 主备模式-HA
-![primary-backup](https://github.com/96189/xteam/blob/master/OpenSource/libzmq/my-dir/primary-backup.png)    
+![primary-backup](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/libzmq/my-dir/primary-backup.png)    
 
     bstarsrv.hpp bstarsrv.cc bstarcli.hpp bstarcli.cc
     主机
