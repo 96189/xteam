@@ -9,7 +9,7 @@
 +   对象模型
     *  是否能在构造函数中调用memset(this, sizeof(this), 0)将对象清零?(虚函数与虚表)
 
-+   智能指针
++   [智能指针](https://github.com/96189/xteam/blob/master/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/cpp/README.md)
     *   [auto_ptr](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/STL/4.8.2/backward/auto_ptr.h)
 
     *   [unique_ptr](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/STL/4.8.2/bits/unique_ptr.h)
@@ -30,60 +30,20 @@
 +   语法
     *  make和new的区别
 
-## 二、算法
-+   排序与查找
-    *   快速排序
-    *   归并排序
-    *   堆排序
-    *   选择排序
-    *   插入排序
-    *   冒泡排序
-    *   二分查找
+## 二、[算法](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95)
++   [排序与查找](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95)
 
-+ 图算法
-    *   DFS
-    *   BFS
-+ 递归与分治策略
-    *   [汉诺塔](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/recursive.go)
-    *   [斐波那契数列](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/recursive.go)
-    *   [字符串全排列](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/recursive.go)
-    *   [二分查找](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/recursive.go)
-    *   [归并排序](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/recursive.go)
-    *   [快速排序](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/recursive.go)
-    *   [线性选择](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/recursive.go)
-    *   [最接近点对](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/recursive.go)
++   [图算法](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95)
 
-+ 动态规划
-    *   [斐波那契数列](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/dp.go)
-    *   [硬币组合-不限硬币个数](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/dp.go)
-    *   [最长非降序子序列](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/dp.go)
-    *   [最大连续子序列和](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/dp.go)
-    *   [最长公共子序列](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/dp.go)
-    *   [0-1背包](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/dp.go)
++   [递归与分治策略](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95)
 
++   [动态规划](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95)
 
-+   贪心策略
-    *   [硬币组合-不限硬币个数](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/greedy.go)
-    *   [硬币组合-限定每种硬币个数](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/greedy.go)
-    *   [活动安排](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/greedy.go)
-    *   [BestCowLine](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/greedy.go)
-    *   [均分纸牌](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/greedy.go)
-    *   [最大整数](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/greedy.go)
-    *   [最优装载](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/greedy.go)
-    *   背包问题
-    *   旅行商问题
-    *   哈夫曼编码
-    *   最小生成树
-    *   最短路径
++   [贪心策略](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95)
 
-+   回溯
-    *   [n皇后问题](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/backtracking.go)
-    *   [全排列问题](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/backtracking.go)
-    *   [电话号码的字母组合](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/backtracking.go)
++   [回溯](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95)
 
-+   其他
-    *   shuffle实现(随机化)
-    *   红包分配算法m元钱n个人分完,分得的数值随机
++   [其他](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95)
 
 
 ## 三、数据结构
