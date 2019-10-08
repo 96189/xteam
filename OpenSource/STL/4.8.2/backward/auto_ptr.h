@@ -106,6 +106,8 @@ namespace std _GLIBCXX_VISIBILITY(default)
        *  This object now @e owns the object previously owned by @a __a,
        *  which has given up ownership.
        */
+	  	// 拷贝构造 解除旧的对象与所占用的资源的绑定关系 将旧的资源由新的对象管理 资源的所有权转移 
+		// 旧的智能指针不在可用 如果误用将导致程序异常
 		auto_ptr(auto_ptr &__a) throw() : _M_ptr(__a.release()) {}
 
 		/**
@@ -118,6 +120,8 @@ namespace std _GLIBCXX_VISIBILITY(default)
        *  This object now @e owns the object previously owned by @a __a,
        *  which has given up ownership.
        */
+	  	// 拷贝构造 解除旧的对象与所占用的资源的绑定关系 将旧的资源由新的对象管理 资源的所有权转移 
+		// 旧的智能指针不在可用 如果误用将导致程序异常
 		template <typename _Tp1>
 		auto_ptr(auto_ptr<_Tp1> &__a) throw() : _M_ptr(__a.release()) {}
 
@@ -129,6 +133,8 @@ namespace std _GLIBCXX_VISIBILITY(default)
        *  which has given up ownership.  The object that this one @e
        *  used to own and track has been deleted.
        */
+	  	// 赋值运算符重载 解除旧的对象与所占用的资源的绑定关系 将旧的资源由新的对象管理 资源的所有权转移 
+		// 旧的智能指针不在可用 如果误用将导致程序异常
 		auto_ptr &
 		operator=(auto_ptr &__a) throw()
 		{
@@ -146,6 +152,8 @@ namespace std _GLIBCXX_VISIBILITY(default)
        *  which has given up ownership.  The object that this one @e
        *  used to own and track has been deleted.
        */
+	  	// 赋值运算符重载 解除旧的对象与所占用的资源的绑定关系 将旧的资源由新的对象管理 资源的所有权转移 
+		// 旧的智能指针不在可用 如果误用将导致程序异常
 		template <typename _Tp1>
 		auto_ptr &
 		operator=(auto_ptr<_Tp1> &__a) throw()
@@ -174,6 +182,7 @@ namespace std _GLIBCXX_VISIBILITY(default)
        *  anything</em> is the same as being a null pointer, and you know
        *  what happens when you dereference one of those...)
        */
+	  	// 解引用返回对象
 		element_type &
 		operator*() const throw()
 		{
@@ -187,6 +196,7 @@ namespace std _GLIBCXX_VISIBILITY(default)
        *  This returns the pointer itself, which the language then will
        *  automatically cause to be dereferenced.
        */
+	  	// 取原始指针
 		element_type *
 		operator->() const throw()
 		{
@@ -218,6 +228,7 @@ namespace std _GLIBCXX_VISIBILITY(default)
        *  @note  This %auto_ptr no longer owns the memory.  When this object
        *  goes out of scope, nothing will happen.
        */
+	    // 解除对象与资源的绑定关系 并返回资源的地址 给新的对象
 		element_type *
 		release() throw()
 		{
@@ -233,6 +244,7 @@ namespace std _GLIBCXX_VISIBILITY(default)
        *  This object now @e owns the object pointed to by @a __p.  The
        *  previous object has been deleted.
        */
+	  	// 为当前对象设置与资源的绑定关系
 		void
 		reset(element_type *__p = 0) throw()
 		{
