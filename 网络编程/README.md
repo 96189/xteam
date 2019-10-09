@@ -1,12 +1,16 @@
 
 ##   I/O复用
 +   select(查询式)
-    *   内核源码剖析
+    *   [内核源码剖析](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/linux/3.10.0-957.el7/fs/select.c)
 
-    调用链
+        调用链
+        
+        ```
         select
             ->  core_sys_select
                         ->  do_select
+        ```
+
 +   epoll(触发式)
     *   ET与LT区别及编程注意事项
 
@@ -15,7 +19,7 @@
         LT模式当事件就绪时发出通知后,若数据未处理完,则会反复通知.
         
         ET模式事件就绪时只通知一次,不管数据是否处理完成,本次触发的事件只通知一次,需要程序员循环处理数据直到完成.
-    *   内核源码剖析
+    *   [内核源码剖析](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/linux/3.10.0-957.el7/fs/eventpoll.c)
         
         调用链
             
