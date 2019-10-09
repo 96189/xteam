@@ -77,11 +77,10 @@
 ## 五、网络编程
 +   阻塞、非阻塞、同步、异步
 
-+   I/O复用
-    *   select(查询式)
-    *   epoll(启发式)
-        *   ET与LT区别及编程注意事项
-    *   对比
++   [I/O复用](https://github.com/96189/xteam/blob/master/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/README.md)
+    *   [select](https://github.com/96189/xteam/blob/master/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/README.md)
+    *   [epoll](https://github.com/96189/xteam/blob/master/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/README.md)
+    *   [对比](https://github.com/96189/xteam/blob/master/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/README.md)
 
 +   事件驱动Reactor
 
