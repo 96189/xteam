@@ -48,3 +48,48 @@ func TestInsertSort(t *testing.T) {
 		useAssert.Equal(d, seq, "sortSuccess")
 	}
 }
+
+func TestHeapSort(t *testing.T) {
+	useAssert := assert.New(t)
+	s := [][]int{
+		{5,8,5,2,9},
+		{5,5,8,2,9},
+		{2,5,5,8,9},	
+		{9,8,5,5,2},	
+	}
+	d := []int{2,5,5,8,9}
+	for _, seq := range s {
+		HeapSort(seq)
+		useAssert.Equal(d, seq, "sortSuccess")
+	}
+}
+
+func TestMergeSort(t *testing.T) {
+	useAssert := assert.New(t)
+	s := [][]int{
+		{5,8,5,2,9},
+		{5,5,8,2,9},
+		{2,5,5,8,9},	
+		{9,8,5,5,2},	
+	}
+	d := []int{2,5,5,8,9}
+	for _, seq := range s {
+		MergeSort(seq)
+		useAssert.Equal(d, seq, "sortSuccess")
+	}
+}
+
+func TestQuickSort(t *testing.T) {
+	useAssert := assert.New(t)
+	s := [][]int{
+		{5,8,5,2,9},
+		{5,5,8,2,9},
+		{2,5,5,8,9},	
+		{9,8,5,5,2},	
+	}
+	d := []int{2,5,5,8,9}
+	for _, seq := range s {
+		QuickSort(seq)
+		useAssert.Equal(d, seq, "sortSuccess")
+	}
+}
