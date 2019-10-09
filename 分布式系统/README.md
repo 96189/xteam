@@ -62,3 +62,4 @@
 +   [分布式系统核心问题](https://blog.csdn.net/zyhlwzy/article/details/78658002)
 +   [分布式系统高可用设计](https://blog.csdn.net/zxp_cpinfo/article/details/53869654)
 +   [分布式系统设计](https://blog.csdn.net/zhengchao1991/article/details/81071725)
++   [分布式系统设计系列 -- 基本原理及高可用策略](https://www.cnblogs.com/zhengzhamn/articles/5322023.html)
