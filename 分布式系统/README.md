@@ -39,6 +39,10 @@
         *   Paxos
         *   Raft
 
+    *   一致性协议
+        *   gossip
+        *   zab
+
 ## 分布式系统中具体的细节
 +   [常见负载均衡算法及应用场景](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/Nginx/src/ngx_load_balance.md)
 
