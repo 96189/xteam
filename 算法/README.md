@@ -6,6 +6,10 @@
 +   [选择排序](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95/go/sort.go)
 +   [插入排序](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95/go/sort.go)
 +   [冒泡排序](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95/go/sort.go)
++   [希尔排序](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/cpp/sort/sort.h)
++   [计数排序](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/cpp/sort/sort.h)
++   [桶排序](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/cpp/sort/sort.h)
++   [基数排序](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/cpp/sort/sort.h)
 +   [二分查找](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95/go/search.go)
 
 ## 图算法
