@@ -10,12 +10,12 @@ void Swap(T &t1, T &t2)
 	t2 = tmp;
 }
 
-// 冒泡排序
+// 选择排序
 // n次 每次从序列种找出一个最小的元素下标，最后交换
 // O(n^2)
 // 交换语义
 template <typename T>
-void SortBubble(vector<T> &arr)
+void SortSelect(vector<T> &arr)
 {
 	int len = arr.size();
 	for (int i = 0; i < len - 1; ++i)
