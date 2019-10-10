@@ -56,6 +56,20 @@
 
 +   bitmap
 
+    *   Bloom filter
+
++   [B-树](https://github.com/96189/xteam/blob/master/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/README.md)
+
+    *   MongoDB存储引擎索引
+
++   [B+树](https://github.com/96189/xteam/blob/master/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/README.md)
+
+    *   [为什么mysql存储引擎索引使用B+树](https://github.com/96189/xteam/blob/master/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/README.md)
+
++   LSM树
+    
+    *   MongoDB的存储引擎索引
+
 ## 四、协议
 ### 网络协议
 +   TCP
