@@ -37,7 +37,7 @@
 
     *   共识算法
         *   Paxos
-        *   Raft
+        *   [Raft](http://thesecretlivesofdata.com/raft/)
 
     *   一致性协议
         *   gossip
@@ -79,6 +79,7 @@
 ## 分布式系统的常用组件
 +   消息中间件
     *   [zmq](https://github.com/96189/xteam/tree/master/%E5%BC%80%E6%BA%90/libzmq/my-dir)
+        *   [zmq中文文档](https://github.com/anjuke/zguide-cn/blob/master/chapter1.md)
 
 +   服务注册与发现
 

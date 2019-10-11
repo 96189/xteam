@@ -65,3 +65,37 @@
     epoll解决了上面的3个问题,得益于内核数据结构的设计应用RB-tree和双向链表来管理事件,通过mmap使得内核空间和用户空间共享一块内存空间,减少数据拷贝.
 
     并发量大,但同时活跃连接少的情况下,epoll更高效.并发小同时活跃连接较多的情况下,select更高效.(此情况下epoll的回调机制带来一部分损耗)
+
+## Java NIO与Netty
++   javaNIO核心
+    * Channels
+    
+            在NIO编程模型中,所有的I/O以Channel的形式,Channel是一种I/O通道类似与stream.应用程序从Channel中读请求取数据到Buffer,将Buffer中的响应数据写入Channel返回给客户端.
+
+        *   java中的Channel
+                
+                DatagramChannel -> UDP
+                ServerSocketChannel -> TCP -> listen
+                SocketChannel -> TCP -> connection
+                FileChannel -> local
+
+
+
+    * Selectors
+
+            每线程一个reactor事件循环,I/O多路复用(select,kqueue,epoll)高级别封装,可以将多个Channel注册到指定的selector中监听(epoll_wait).若已注册Channel事件就绪,则分发事件处理.
+
+    * Buffers
+
+            内存缓冲区封装
++   Netty核心组件
+
+        注册回调事件驱动
+
+    * channel
+
+    * callback
+
+    * event & channelHandler
+
+    * future

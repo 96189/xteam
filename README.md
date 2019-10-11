@@ -202,3 +202,9 @@
 +   无锁队列、环形缓冲区
 
 +   进程间通信
+
++   [后端架构师技术图谱](https://github.com/xingshaocheng/architect-awesome)
++   [系统设计入门](https://github.com/donnemartin/system-design-primer/blob/master/README-zh-Hans.md)
++   [远程工作](https://github.com/greatghoul/remote-working)
++   [distribute_crawler](https://github.com/gnemoug/distribute_crawler)
++   [free-programming-books](https://github.com/EbookFoundation/free-programming-books/blob/master/free-programming-books-zh.md)
