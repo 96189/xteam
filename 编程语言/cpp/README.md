@@ -24,3 +24,14 @@
     观察资源是否已被释放,引入__weak_count
 
 +   boost::scoped_ptr
+
+##  Q&A
++   模板类中可以使用虚函数吗?模板成员函数可以是虚函数吗?
+
+## 相关资料
++   [C/C++ 开源库及示例代码](https://github.com/programthink/opensource/blob/master/libs/cpp.wiki)
++   [孟岩谈《C++程序设计原理与实践》](https://blog.csdn.net/hzbooks/article/details/5767169)
++   [C++0X的三件好东西（零）](https://blog.csdn.net/myan/article/details/5877305)
++   [回复几个问题](https://blog.csdn.net/myan/article/details/5884695)
++   [function/bind的救赎（上）](https://blog.csdn.net/myan/article/details/5928531)
+
