@@ -46,6 +46,16 @@
 ##  图结构
 
 
+##  哈希表
++   哈希表结构
++   常见的哈希函数
++   哈希冲突的解决方法
++   哈希表的应用
+    *   mysql的自适应哈希索引
+    *   redis的dict的实现
+
+##  堆
+
 ## 相关文章
 +   [MySQL索引背后的数据结构及算法原理](http://blog.codinglabs.org/articles/theory-of-mysql-index.html)
 +   [从 MongoDB 及 Mysql 谈B/B+树](https://blog.csdn.net/wwh578867817/article/details/50493940)
