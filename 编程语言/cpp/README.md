@@ -25,6 +25,45 @@
 
 +   boost::scoped_ptr
 
+## 继承
++   实现一个不能被继承的类(FinalClass)
+
+    virtual继承的特性虚基类构造函数被优先调用一次
+    
+    友元特性不会被子类s继承
+
+    模板可以实现任何类型的FinalClass,否则要手动实现多份
+
+    ```
+    template <typename T>
+    class Base
+    {
+        friend T;
+    private:
+        Base() {}
+        ~Base() {}
+    };
+
+    class FinalClass : virtual Base<FinalClass>
+    {
+    public:
+        FinalClass() {}
+        ~FinalClass() {}
+    };
+
+    // 无法继承 
+    class ErrorClass : public FinalClass
+    {
+
+    };
+
+    int main(int argc, char *argv[]) 
+    {
+        FinalClass f;
+        // ErrorClass e;    // 编译错误
+    }
+    ```
+
 ##  Q&A
 +   模板类中可以使用虚函数吗?模板成员函数可以是虚函数吗?
 

@@ -8,6 +8,7 @@
 
 +   对象模型
     *  是否能在构造函数中调用memset(this, sizeof(this), 0)将对象清零?(虚函数与虚表)
+    *  如何实现一个不能被继承的类(FinalClass)
 
 +   [智能指针](https://github.com/96189/xteam/blob/master/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/cpp/README.md)
     *   [auto_ptr](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/STL/4.8.2/backward/auto_ptr.h)
