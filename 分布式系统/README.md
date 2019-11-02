@@ -22,9 +22,14 @@
     *   避免单点故障
         *   冗余
         *   自动故障转移
+
+            服务多进程部署,leader-follower模式选举,zookeeper或etcd协调
     *   故障监控自动预警
     *   服务降级、限流自我保护
     *   数据量(数据分片、读写分离)
+    *   健康检查
+
+        tcp连接 定期ping 多次超时删除
 +   一致性
     *   强一致性
     *   弱一致性
@@ -78,13 +83,41 @@
 
 ## 分布式系统的常用组件
 +   消息中间件
+
+    *   优势
+
+        异步通信、解耦、数据缓冲、多种消息推送模型、强顺序、持久化消息、支持分布式
     *   [zmq](https://github.com/96189/xteam/tree/master/%E5%BC%80%E6%BA%90/libzmq/my-dir)
         *   [zmq中文文档](https://github.com/anjuke/zguide-cn/blob/master/chapter1.md)
 
-+   服务注册与发现
++   分布式监控
 
+    *   consul | zookeeper
 
 ##  微服务
++   非功能性需求
+
+    *   事务
+
+    *   服务治理
+
+        *   注册
+        *   发现
+        *   负载
+        *   路由
+        *   认证授权
+        *   隔离
+
+    *   监控
+        
+        *   日志
+        *   性能监控
+        *   告警
+        *   调用链路
+    *   部署
+
+    *   测试
+
 
 ## 相关文章
 +   [什么是分布式系统,如何学习分布式系统](https://www.cnblogs.com/xybaby/p/7787034.html)
