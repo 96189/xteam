@@ -87,6 +87,16 @@
 
 ### 应用协议
 +   Protobuff
+    
+    *   [数据编码](https://www.jianshu.com/p/73c9ed3a4877)
+
+        Tag - [Length] - Value编码结构,当Value 采用 Varints 编码时,不需要Length变为Tag - Value编码结构.Tag 由 field_number 和 wire_type 两个部分组成,field_number: message 定义字段时指定的字段编号,wire_type:ProtoBuf 编码类型，根据这个类型选择不同的 Value 编码方案。
+
+        TLV编码结构的数据类型:string、bytes、EmbeddedMessage、repeated
+
+        TV编码结构的数据类型:int32、int64、uint32、uint64、bool、enum、fixed64、sfixed64、double(Varints 编码)、sint32、sint64(ZigZag 编码)
+
+        Varints编码:在每个字节开头的 bit 设置了 msb(most significant bit ),标识是否需要继续读取下一个字节
 
 
 ## 五、网络编程
