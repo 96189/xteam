@@ -1,5 +1,6 @@
 # sentinel系统(redis高可用方案)
-    分布式Raft算法
++    分布式系统一致性Raft算法
+    
     http://thesecretlivesofdata.com/raft/
     https://raft.github.io/
     https://github.com/maemual/raft-zh_cn/blob/master/raft-zh_cn.md
