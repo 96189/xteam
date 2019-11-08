@@ -35,6 +35,8 @@
 +   对象模型
     *  是否能在构造函数中调用memset(this, sizeof(this), 0)将对象清零?(虚函数与虚表)
     *  如何实现一个不能被继承的类(FinalClass)
+    *  c++中空对象占多大空间?为什么空对象要占空间?(1byte 两个不一样的对象要有不一样的地址 类对象可作为数组元素 如果是0没法存储)
+    *   一个类中最多只允许一个虚函数表吗?
 
 +   [智能指针](https://github.com/96189/xteam/blob/master/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/cpp/README.md)
     *   [auto_ptr](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/STL/4.8.2/backward/auto_ptr.h)
@@ -100,16 +102,38 @@
 ## 四、协议
 ### 网络协议
 +   TCP
-    *  三次握手
-    *  四次挥手
+    *  连接建立(三次握手)的过程及状态转移
+
+        ```
+        C:syn    -> S:ack+syn          -> C:ack
+        C:SYN-SENT  S:LISTEN  S:SYN_RECV  C:ESTABLISH  S:ESTABLISH
+        ```
+    *  为什么建立连接需要3次,2次行不行?
+
+        2次可能形成死锁,假设2次就建立连接,S:ack后认为连接成功建立.此时该ack丢失C没有收到.从此刻开始S发数据到C,等待C收到数据后发来ack,此时C还在等待握手的ack,C和S由于丢失了S的ack以后互相等待.
+
+    *  连接断开(四次挥手)的过程及状态转移
+
+        ```
+        C:fin     -> S:ack                  -> S:fin   -> C:ack
+        C:FIN_WAIT_1 S:CLOSE_WAIT C:FIN_WAIT_2 S:LAST_ACK C:TIME_WAIT S:CLOSED C:CLOSED
+        ```
+    *  为什么连接断开需要4次,和连接建立相比多了哪一次?
+
+        断开连接的4次和建立连接的3次对比,多1次是因为建立连接时服务器将ack+syn在一个数据包中发送,但是断开连接时ack和fin是分两次发送的.之所以分两次是因为tcp是全双工的,一方主动关闭,需要给对方一段时间发送剩余数据,然后对方发fin再关闭,ack和fin之间的时间间隔就是等待被动关闭一方发送最后数据的时间.主动断开的一方发fin并收到对端回复的ack后进入半关闭状态.
+
     *  TIME_WAIT与2MSL
-    *  SO_LINGER、SOL_SOCKET、SO_KEEPALIVE选项
+
+        主动关闭的一方进入TIME_WAIT状态,TIME_WAIT的存在是为了防止主动关闭的一方最后发送的ack丢失,如果丢失那么会再次收到被动关闭的一方发来的fin,重新计时2MSL,如果登录2MSL还没收到对方的FIN发过来那么就假设ack被对方收到,主动断开的一方进入关闭状态.
+
+    *  SO_LINGER、SO_REUSEADDR、SO_KEEPALIVE选项
     *  netstat、ss命令
 
 +   UDP
 +   HTTP
     *   session和cookie的区别
 +   HTTPS
+    *   https密钥协商过程
 
 ### 应用协议
 +   Protobuff
@@ -208,6 +232,13 @@
 + 架构设计
     *   [nginx的master-slave模型]()
 
++   常用命令
+
+    *   top
+    *   free
+    *   ss
+    *   netstat
+
 ## 十一、测试调试及优化
 +   测试
     *   单元测试
@@ -236,6 +267,8 @@
         分页机制与页面替换
 
     *   进程内存区域分布模型
+
+        ![Linux进程在虚拟内存中的标准内存段布局](./%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/img/linux-process-space.jpg)
 
     *   进程内存的分配与回收
 
