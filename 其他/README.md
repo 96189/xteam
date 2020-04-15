@@ -13,7 +13,19 @@
 * mesa3d
 
 ### opengl api
-* https://www.khronos.org/opengl/wiki/Category:Core_API_Reference
+* 官方API列表
+
+    https://www.khronos.org/opengl/wiki/Category:Core_API_Reference
+
+* 常见错误
+
+    https://www.khronos.org/opengl/wiki/Common_Mistakes
+
+    https://www.khronos.org/opengl/wiki/Common_Mistakes:_Deprecated
+
+* 旧版本的OPENGL
+
+    https://www.khronos.org/opengl/wiki/Legacy_OpenGL
 
 * 缓冲区对象
     
