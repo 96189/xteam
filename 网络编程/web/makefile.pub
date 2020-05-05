@@ -1,5 +1,0 @@
-ROOT=$(LocaleWebBuildRoot)
-LIB_ROOT=$(ROOT)
-PUB_LIB_PATH=-L$(LIB_ROOT)/lib 
-PUB_LIB=-lpthread
-PUB_INCLUDE=-I$(LIB_ROOT)/include -I$(LIB_ROOT)/third
