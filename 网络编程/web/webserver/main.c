@@ -61,6 +61,13 @@ static void Init_Https()
 }
 #endif 
 
+// test for gprof
+static void handler_signal(int sig_no) {
+    if (SIGUSR1 & sig_no) {
+        exit(0);
+    }
+}
+
 int main(int argc, char *argv[])
 {
 	int listenfd;
@@ -87,6 +94,8 @@ int main(int argc, char *argv[])
 		return -2;
 	}
 
+    // test for gprof
+    signal(SIGUSR1, handler_signal);
 #ifdef HTTPS
     listenfd = Open_listenfd(my_conf.https_port);
 #else	
