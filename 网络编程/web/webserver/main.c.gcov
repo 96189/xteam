@@ -1,0 +1,200 @@
+        -:    0:Source:main.c
+        -:    0:Programs:4
+        -:    1:#include "web.h"
+        -:    2:#include "parse_conf.h"
+        -:    3:#include <string.h>
+        -:    4:
+        -:    5:
+        -:    6://#define DIGIT_CERT "server.crt"
+        -:    7://#define USER_PRIVATE_KEY "server.key"
+        -:    8:
+        -:    9:extern Conf my_conf;
+        -:   10:
+        -:   11:int rc = 0;
+        -:   12:zlog_category_t *c = NULL;
+        -:   13:
+        -:   14:#ifdef HTTPS
+        -:   15:#include <openssl/ssl.h>
+        -:   16:#include <openssl/err.h>
+        -:   17:
+        -:   18:#define DIGIT_CERT "./security/cacert.pem"
+        -:   19:#define USER_PRIVATE_KEY "./security/privkey.pem"
+        -:   20://ssl
+        -:   21:SSL_CTX *g_ctx = NULL;
+        -:   22:SSL *g_ssl = NULL;
+        -:   23:
+        -:   24:
+function Init_Https called 1 returned 100% blocks executed 62%
+        1:   25:static void Init_Https()
+        1:   25-block  0
+        -:   26:{
+        -:   27:    /* SSL 库初始化*/
+        1:   28:    SSL_library_init();
+        1:   28-block  0
+call    0 returned 1
+        -:   29:    /* 载入所有SSL 算法*/
+        1:   30:    OpenSSL_add_all_algorithms();
+call    0 returned 1
+        -:   31:    /* 载入所有SSL 错误消息*/
+        1:   32:    SSL_load_error_strings();
+call    0 returned 1
+        -:   33:    /* 以SSL V2 和V3 标准兼容方式产生一个SSL_CTX ，即SSL Content Text */
+        1:   34:    g_ctx = SSL_CTX_new(SSLv23_server_method());
+call    0 returned 1
+call    1 returned 1
+        -:   35:    /* 
+        -:   36:    也可以用SSLv2_server_method() 或SSLv3_server_method() 单独表示V2 或V3标准
+        -:   37:    */
+        1:   38:    if (g_ctx == NULL) 
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:   39:    {
+    #####:   40:        ERR_print_errors_fp(stdout);
+    $$$$$:   40-block  0
+call    0 never executed
+    #####:   41:        exit(1);
+call    0 never executed
+        -:   42:    }
+        -:   43:    /* 载入用户的数字证书， 此证书用来发送给客户端。证书里包含有公钥*/
+        1:   44:    if (SSL_CTX_use_certificate_file(g_ctx, DIGIT_CERT, SSL_FILETYPE_PEM) <= 0) 
+        1:   44-block  0
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+        -:   45:    {
+    #####:   46:        ERR_print_errors_fp(stdout);
+    $$$$$:   46-block  0
+call    0 never executed
+    #####:   47:        exit(1);
+call    0 never executed
+        -:   48:    }
+        -:   49:    /* 载入用户私钥*/
+        1:   50:    if (SSL_CTX_use_PrivateKey_file(g_ctx, USER_PRIVATE_KEY, SSL_FILETYPE_PEM) <= 0) 
+        1:   50-block  0
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+        -:   51:    {
+    #####:   52:        ERR_print_errors_fp(stdout);
+    $$$$$:   52-block  0
+call    0 never executed
+    #####:   53:        exit(1);
+call    0 never executed
+        -:   54:    }
+        -:   55:    /* 检查用户私钥是否正确*/
+        1:   56:    if (!SSL_CTX_check_private_key(g_ctx)) 
+        1:   56-block  0
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+        -:   57:    {
+    #####:   58:        ERR_print_errors_fp(stdout);
+    $$$$$:   58-block  0
+call    0 never executed
+    #####:   59:        exit(1);
+call    0 never executed
+        -:   60:    }
+        1:   61:}
+        -:   62:#endif 
+        -:   63:
+        -:   64:// test for gprof
+function handler_signal called 1 returned 0% blocks executed 100%
+        1:   65:static void handler_signal(int sig_no) {
+        1:   65-block  0
+        1:   66:    if (SIGUSR1 & sig_no) {
+        1:   66-block  0
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+        1:   67:         __gcov_flush();
+        1:   67-block  0
+call    0 returned 1
+        1:   68:        exit(0);
+call    0 returned 0
+        -:   69:    }
+    #####:   70:}
+        -:   71:
+function main called 1 returned 0% blocks executed 48%
+        1:   72:int main(int argc, char *argv[])
+        1:   72-block  0
+        -:   73:{
+        -:   74:	int listenfd;
+        -:   75:	int connfd;
+        -:   76:	int clientlen;
+        -:   77:	struct sockaddr_in clientaddr;
+        -:   78:        	
+        1:   79:        InitConf();
+        1:   79-block  0
+call    0 returned 1
+        -:   80:#ifdef HTTPS	
+        1:   81:        Init_Https();
+call    0 returned 1
+        -:   82:#endif
+        1:   83:	rc = zlog_init(my_conf.logfile);
+call    0 returned 1
+        1:   84:	if (rc)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:   85:	{
+    #####:   86:		printf("zlog_init failed\n");
+    $$$$$:   86-block  0
+call    0 never executed
+    #####:   87:		return -1;
+    $$$$$:   87-block  0
+        -:   88:	}
+        -:   89:
+        1:   90:	c = zlog_get_category(my_conf.category);
+        1:   90-block  0
+call    0 returned 1
+        1:   91:	if (!c)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:   92:	{
+    #####:   93:		printf("get cat fail\n");
+    $$$$$:   93-block  0
+call    0 never executed
+    #####:   94:		zlog_fini();
+call    0 never executed
+    #####:   95:		return -2;
+        -:   96:	}
+        -:   97:
+        -:   98:    // test for gprof
+        1:   99:    signal(SIGUSR1, handler_signal);
+        1:   99-block  0
+call    0 returned 1
+        -:  100:#ifdef HTTPS
+        1:  101:    listenfd = Open_listenfd(my_conf.https_port);
+call    0 returned 1
+        -:  102:#else	
+        -:  103:	listenfd = Open_listenfd(my_conf.http_port);
+        -:  104:#endif
+        -:  105:	
+        -:  106:	while (1)
+        -:  107:	{
+    #####:  108:		clientlen = sizeof(clientaddr);
+        1:  109:		connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
+        1:  109-block  0
+call    0 returned 0
+        -:  110:
+    #####:  111:		if (connfd > 0)		
+branch  0 never executed
+branch  1 never executed
+        -:  112:		{
+    #####:  113:			zlog_info(c, "connfd=%d", connfd);
+    $$$$$:  113-block  0
+call    0 never executed
+    #####:  114:			doit(connfd);
+call    0 never executed
+        -:  115:		}
+        -:  116:
+    #####:  117:		Close(connfd);
+    $$$$$:  117-block  0
+call    0 never executed
+    #####:  118:		connfd = -1;
+        -:  119:	}
+        -:  120:	close(listenfd);
+        -:  121:	
+        -:  122:#ifdef HTTPS
+        -:  123:	SSL_CTX_free(g_ctx);
+        -:  124:#endif
+        -:  125:	zlog_fini();
+        -:  126:}

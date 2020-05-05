@@ -1,5 +1,5 @@
-CFLAGS = -pg -g -Wall 
-LIBRARY = -lpthread -lm -lssl -lcrypto 
+CFLAGS = -pg -g -Wall -fprofile-arcs -ftest-coverage 
+LIBRARY = -lpthread -lm -lssl -lcrypto -lgcov
 THRID_LIBS = ../third
 INC = -I../include -I./ -I$(THRID_LIBS)/cJSON
 MY_LIB = -lzlog

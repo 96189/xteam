@@ -1,0 +1,39 @@
+        -:    0:Source:parse_conf.c
+        -:    0:Programs:4
+        -:    1:#include "parse_conf.h"
+        -:    2:
+function InitConf called 1 returned 100% blocks executed 100%
+        1:    3:int InitConf()
+        1:    3-block  0
+        -:    4:{
+        1:    5:    char buf[MAXLEN] = { 0 };
+        -:    6:
+        1:    7:    int fd = open(CONF_PATH, O_RDONLY);
+        1:    7-block  0
+call    0 returned 1
+        -:    8:    if (fd < 0)
+        -:    9:    {
+        -:   10:        //
+        -:   11:        //printf("fd < 0\n");
+        -:   12:    }
+        1:   13:    read(fd, buf, MAXLEN);
+call    0 returned 1
+        1:   14:    close(fd);
+call    0 returned 1
+        1:   15:    cJSON *root = cJSON_Parse(buf);
+call    0 returned 1
+        1:   16:    my_conf.http_port = cJSON_GetObjectItem(root, "http_port")->valueint;
+call    0 returned 1
+        1:   17:    my_conf.https_port = cJSON_GetObjectItem(root, "https_port")->valueint;
+call    0 returned 1
+        1:   18:    my_conf.logfile = cJSON_GetObjectItem(root, "logfile")->valuestring;
+call    0 returned 1
+        1:   19:    my_conf.category = cJSON_GetObjectItem(root, "category")->valuestring;
+call    0 returned 1
+        -:   20:    //printf("port=%d  logfile=%s\n",my_conf.port, my_conf.logfile);   
+        1:   21:}
+        -:   22:
+        -:   23://int main()
+        -:   24://{
+        -:   25://    InitConf();
+        -:   26://}

@@ -64,6 +64,7 @@ static void Init_Https()
 // test for gprof
 static void handler_signal(int sig_no) {
     if (SIGUSR1 & sig_no) {
+         __gcov_flush();
         exit(0);
     }
 }
