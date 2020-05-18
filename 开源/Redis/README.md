@@ -81,3 +81,16 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
 +    3、Redis哈希槽的概念？
 
 ##  [我能想到关于redis的事情](https://blog.csdn.net/a1290123825/article/details/89008067#%E5%A6%82%E6%9E%9C%E6%9C%89%E5%A4%A7%E9%87%8F%E7%9A%84-key-%E9%9C%80%E8%A6%81%E8%AE%BE%E7%BD%AE%E5%90%8C%E4%B8%80%E6%97%B6%E9%97%B4%E8%BF%87%E6%9C%9F%EF%BC%8C%E4%B8%80%E8%88%AC%E9%9C%80%E8%A6%81%E6%B3%A8%E6%84%8F%E4%BB%80%E4%B9%88%EF%BC%9F)
+
+## redis不停机在线数据迁移
+* 适用于直接连接redis实例，redis无proxy的情况
+
+    redis-cli -h {ip} -p {port} --pipe < appendonly.aof
+
+* 适用于redis proxy twemproxy的情况
+
+    https://github.com/vipshop/redis-migrate-tool
+
+* 其他工具
+
+    https://blog.csdn.net/cron_zzx/article/details/87362171
