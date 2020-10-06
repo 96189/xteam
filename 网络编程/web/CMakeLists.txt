@@ -1,6 +1,5 @@
-
 cmake_minimum_required(VERSION 3.5)
-project(web)
+project(webserver)
 
 set(CXX_FLAGS
     -pg 
@@ -10,21 +9,35 @@ set(CXX_FLAGS
     -ftest-coverage 
 )
 
+
+file(GLOB SRC_LIST ./src/*.c* ./third/cJSON/*.c*)
+file(GLOB TEST_SRC_LIST ./unittest/*)
+
+include_directories(./third/cJSON ${ZLOG_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_executable(${PROJECT_NAME} ${SRC_LIST})
+
+
+# depend
 find_path(ZLOG_INCLUDE_DIR zlog.h)
+target_link_libraries(${PROJECT_NAME} pthread m ssl crypto zlog gcov)
 
-file(GLOB SRC_LIST ./src/*.c ./third/cJSON/*.c)
+# testing
+#find_package(GTest)
+#if(GTEST_FOUND)
+#    add_executable(unit_tests ${SRC_LIST} ${TEST_SRC_LIST})
+#    target_compile_definitions(unit_tests PUBLIC UNIT_TESTS)
+#    set_target_properties(${PROJECT_NAME} PROPERTIES ENABLE_EXPORTS on)
+#    target_link_libraries(unit_tests PUBLIC ${GTEST_BOTH_LIBRARIES} ${PROJECT_NAME})
+#endif()
 
-include_directories(./third/cJSON ${ZLOG_INCLUDE_DIR})
-add_executable(webserver ${SRC_LIST})
-target_link_libraries(webserver pthread m ssl crypto zlog gcov)
-
+# pack 
+file(GLOB publish_config_files src/conf/*.*)
 set(CMAKE_INSTALL_PREFIX ../output)
-install(TARGETS webserver 
+install(TARGETS ${PROJECT_NAME} 
 	RUNTIME DESTINATION bin
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib/static)
 
-file(GLOB publish_config_files src/conf/*.*)
 install(FILES ${publish_config_files} DESTINATION conf)
 install(DIRECTORY src/htdocs/ DESTINATION htdocs)
 install(DIRECTORY DESTINATION log)
