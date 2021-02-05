@@ -25,11 +25,11 @@
 
 * 2、重试配置
 
-    proxy_next_upstream_tries 重试的最大次数(包含第一次和之后重试次数之和)
+    proxy_next_upstream_tries 重试的最大次数(包含当前请求，不配置默认值为0)
 
     proxy_next_upstream_timeout 重试的最大超时时间
     
-    proxy_next_upstream 什么情况下重试或者是否开启此功能
+    proxy_next_upstream 什么情况下重试或者是否开启此功能(默认为error timeout)
 
 * 3、重试的问题与取舍
 
@@ -41,8 +41,8 @@
 ## 协议相关
 * tcp
 
-    tcp_nopush;
+    tcp_nopush
 
-    tcp_nodelay;
+    tcp_nodelay
 
-    keepalive_timeout;
+    keepalive_timeout
