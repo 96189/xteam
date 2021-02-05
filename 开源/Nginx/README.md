@@ -25,7 +25,7 @@
 
 * 2、重试配置
 
-    proxy_next_upstream_tries 重试的最大次数(包含当前请求，不配置默认值为0)
+    proxy_next_upstream_tries 重试的最大次数(包含当前请求，不配置默认值为0，表示不限制次数)
 
     proxy_next_upstream_timeout 重试的最大超时时间
     
