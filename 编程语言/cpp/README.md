@@ -11,13 +11,21 @@
 
 +   [unique_ptr](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/STL/4.8.2/bits/unique_ptr.h)
 
+    资源独占(ownership独占)
+
     资源所有权的唯一性,同一时刻只有一个对象可以管理资源.类实现时将拷贝构造函数和赋值运算符重载函数标记为delete,禁止资源所有权转移.引入右值引用和完美转发,实现移动构造函数和移动赋值运算符重载.unique_ptr实现了可管理数组资源的版本
 
     如果误用,同一时刻将两个智能指针对象管理同一个资源,unique_ptr依然会导致程序异常.
 
+    malloc free需要配对，中间其他代码若异常，造成内存泄露。考虑使用unique_ptr，使用make_unique(value)，即RAII
+
 +   [shared_ptr](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/STL/4.8.2/bits/shared_ptr_base.h)
 
+    共享资源(ownership共享)
+
     共享资源声明周期,引入__shared_count
+
+    使用make_shared(value)创建
 
 +   [weak_ptr](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/STL/4.8.2/bits/shared_ptr_base.h)
 

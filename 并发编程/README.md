@@ -57,6 +57,45 @@
 
     https://www.modernescpp.com/images/stories/pdfs/ConcurrencyWithModernC++.pdf
 
+* 程序乱序执行的原因
+
+    1、编译器优化,指令重排
+
+    2、CPU优化(执行顺序),避免CPU处于闲置状态
+
+    3、 存储系统(一致性缓存)
+
+    4、 片上网络(处理器总线)
+
+* SC-DRF(c++11默认)
+
+    避免竞争race(避免访问共享变量或者访问共享变量时做同步机制)
+
+* acquire(lock)(load) release(unlock)(sotre)语义
+
+    acquire后面的指令一定在本指令之后
+    
+    release前面的指令一定在本指令前面
+
+    内部实现，memory barrier，编译器对此指令不做相关优化，
+    CPU遇到此指令，堵住流水线，后续指令不再进入
+
+    ld.acq  st.rel指令
+
+    acquire release不保证全局性，原因是片上网络传播的快慢
+
+    sc(强一致性)保障片上网络传播的全局性
+
+    std::atomic 原子性 顺序性
+
+    std::memory_order_seq_cst强一致性 原子性顺序性
+    std::memory_order_release弱一致性 原子性
+
+* volatile
+
+    mutex、atomics、memory barriers控制对内存的访问(原子性和顺序)
+
+    volatile 控制对I/O的访问，不保证原子性，标明编译器不优化，生成汇编指令
 
 
 * keyword
