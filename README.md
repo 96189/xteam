@@ -232,13 +232,6 @@
 + 架构设计
     *   [nginx的master-slave模型]()
 
-+   常用命令
-
-    *   top
-    *   free
-    *   ss
-    *   netstat
-
 ## 十一、测试调试及优化
 +   测试
     *   单元测试
