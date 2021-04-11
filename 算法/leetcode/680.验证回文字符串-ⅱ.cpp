@@ -3,27 +3,32 @@
  *
  * [680] 验证回文字符串 Ⅱ
  */
+
+// @lc code=start
 class Solution {
 public:
-    bool validPalindrome(string s) {
-        if (s.empty())
-            return true;
-
-        int start = 0;
-        int end = s.size() - 1;
-        int cnt = 0;
-        while (start <= end)
-        {
-            if (s[start] != s[end])
-            {
-                ++cnt;
+    bool isValid(string s, int l, int r) {
+        while (l < r) {
+            if (s[l] != s[r]) {
+                return false;
             }
-            ++start;
-            --end;
+            ++l;
+            --r;
         }
-        if (s.size() == 3)
-            return cnt == 0;
-        return cnt <= 1;
+        return true;
+    }
+    bool validPalindrome(string s) {
+        int l = 0;
+        int r = s.length() - 1;
+        while (l < r) {
+            if (s[l] != s[r]) {
+                return isValid(s, l, r-1) || isValid(s, l+1, r);
+            }
+            ++l;
+            --r;
+        }
+        return true;
     }
 };
+// @lc code=end
 

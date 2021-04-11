@@ -3,30 +3,33 @@
  *
  * [599] 两个列表的最小索引总和
  */
+
+// @lc code=start
 class Solution {
 public:
     vector<string> findRestaurant(vector<string>& list1, vector<string>& list2) {
-        vector<string> same;
-        if (list1.empty() || list2.empty())
-            return same;
-        vector<pair<int, string>> vec;
-        // 建表
-        unordered_map<string, int> hash;
-        for (size_t i = 0; i < list1.size(); ++i)
-        {
-            hash[list1[i]] = i + 1;
+        map<string, int> name2index;
+        for (size_t i = 0; i < list1.size(); ++i) {
+            name2index[list1[i]] = i;
         }
-        // 查表
-        for (size_t j = 0; j < list2.size(); ++j)
-        {
-            if (hash[list2[j]] != 0)
-                vec.push_back(make_pair(j + hash[list2[j]], list2[j]));
-            // same.push_back(val);
+        map<int, vector<string>> result;
+        for (size_t i = 0; i < list2.size(); ++i) {
+            auto it = name2index.find(list2[i]);
+            if (it == name2index.end()) {
+                continue;
+            }
+            size_t sum = i + it->second;
+            result[sum].push_back(list2[i]);
         }
-        // 排序
-        sort(vec.begin(), vec.end(), [](const pair<int, string> &a, const pair<int, string> &b) { return a.first < b.first; });
-        same.push_back(vec[0].second);
-        return same;
+        size_t sum = result.begin()->first;
+        for (auto it = result.begin(); it != result.end(); ++it) {
+            if (it->first < sum) {
+                sum = it->first;
+            }
+        }
+        auto & vec = result.find(sum)->second;
+        return vec;
     }
 };
+// @lc code=end
 
