@@ -139,8 +139,13 @@ http {
 ```
 proxy.conf
 proxy_redirect          off;
+# 重新定义或添加字段传递给代理服务器的请求头
+# $host将请求中所带的域名作为头信息带给下游
+# $server_addr将服务器ip作为头信息带给下游
 proxy_set_header        Host            $host;
+# 记录用户真实ip
 proxy_set_header        X-Real-IP       $remote_addr;
+# 存在多级代理时真实ip向后传递
 proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
 client_max_body_size    10m;
 client_body_buffer_size 128k;
@@ -239,6 +244,12 @@ types {
         ~ 匹配uri大小写敏感
         ~* 匹配uri忽略大小写
         ^~ 最佳匹配，前半部分与uri匹配即可
+
+    location重新匹配
+    # redirect : 返回302临时重定向，地址栏会显示跳转后的地址
+    # permanent : 返回301永久重定向，地址栏会显示跳转后的地址
+    # last : 直接匹配新location执行并返回结果
+    rewrite / /xxx redirect;
 
 ## nginx重试机制
 [官方文档](http://nginx.org/en/docs/http/ngx_http_proxy_module.html)
