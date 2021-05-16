@@ -13,8 +13,18 @@
 +   [二分查找](https://github.com/96189/xteam/tree/master/%E7%AE%97%E6%B3%95/go/search.go)
 
 ## 图算法
+
+[图的遍历](https://courses.edx.org/assets/courseware/v1/b68421ea372cc549ba276471d4d5726a/c4x/PekingX/04830050x/asset/7-3.pdf)
+
+[路径规划](https://bbs.huaweicloud.com/blogs/246828)
+
 +   DFS
+
+    [路径总和](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/leetcode/112.路径总和.cpp)
 +   BFS
+
+    [对称二叉树](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/leetcode/101.对称二叉树.cpp)
+
 ## 递归与分治策略
 +   [汉诺塔](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/recursive.go)
 +   [斐波那契数列](https://github.com/96189/xteam/blob/master/%E7%AE%97%E6%B3%95/go/recursive.go)
