@@ -48,7 +48,14 @@
     *   [weak_ptr](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/STL/4.8.2/bits/shared_ptr_base.h)
 
     *   boost::scoped_ptr
-+   bind & function & lambd
++   bind & function & lambda
+
+    c函数指针(回调) -> c++ std::function
+
+    std::bind函数适配器,生成一个新的可调用对象来“适应”原对象的参数列表
+
+    lambda 匿名函数 =按值传递 &按引用传递
+
 +   c++11
     *   右值引用
     *   移动语义
