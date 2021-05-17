@@ -1,102 +1,86 @@
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
-class Node
-{
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
+#include <cstring>
+#include <iostream>
+
+class Node {
 public:
 	int val_;
 	Node* next_;
 
-	Node()
-	{
-
-	}
-	Node(int val) : val_(val)
-	{
-		next_ = NULL;
+	Node() = default;
+	Node(int val) 
+    : val_(val), next_(NULL) {
+		
 	}
 };
+
 // 单链表快慢指针判断是否存在环
-bool IsCircle(Node* head, Node** pMeetPoint)
-{
+bool IsCircle(Node* head, Node** pMeetPoint) {
 	bool bcircle = false;
 	Node* fast = head->next_;
 	assert(fast);
 	Node* slow = head->next_;
 	assert(slow);
-	while (fast && fast->next_ != NULL)
-	{
+	while (fast && fast->next_ != NULL) {
 		fast = fast->next_->next_;
 		slow = slow->next_;
-		if (fast == slow)
-		{
+		if (fast == slow) {
 			break;
 		}
 	}
-	if (fast && fast->next_ != NULL)
-	{
+	if (fast && fast->next_ != NULL) {
 		*pMeetPoint = fast;
 		bcircle = true;
 	}
 	return bcircle;
 }
 // 可证明
-static Node* JoinPoint(Node* head, Node** end)
-{
+static Node* JoinPoint(Node* head, Node** end) {
 	Node* start = head->next_;
-	while (start != *end)
-	{
+	while (start != *end) {
 		start = start->next_;
-		(*end) = (*end)->next_;
+		*end = (*end)->next_;
 	}
 	return start;
 }
 // 查找单链表环的进入点
-Node* FindJoinCircleStart(Node* head)
-{
+Node* FindJoinCircleStart(Node* head) {
 	Node* joinPoint = NULL;
 	Node* pMeetPoint = NULL;
 	bool bCircle = IsCircle(head, &pMeetPoint);
-	if (bCircle)
-	{
+	if (bCircle) {
 		joinPoint = JoinPoint(head, &pMeetPoint);
 	}
 	return joinPoint;
 }
 
-Node* CreateList(int n)
-{
+Node* CreateList(int n) {
 	Node* head = new Node(n);
-	for (int i = 1; i < n; ++i)
-	{
+	for (int i = 1; i < n; ++i) {
 		Node* pCur = new Node(i);
 		pCur->next_ = head->next_;
 		head->next_ = pCur;
 	}
 	return head;
 }
-void IteratorList(Node* head)
-{
+void IteratorList(Node* head) {
 	Node* pCur = head;
-	while (pCur != NULL)
-	{
-		printf("%d\n", pCur->val_);
+	while (pCur != NULL) {
+		std::cout << pCur->val_ << " ";
 		pCur = pCur->next_;
 	}
+   std::cout << std::endl;
 }
-void MakeCircle(Node* head)
-{
+void MakeCircle(Node* head) {
 	Node* point = NULL;
 	Node* pCur = head->next_;
-	for (int i = 0; i < 3; ++i)
-	{
+	for (int i = 0; i < 3; ++i) {
 		point = pCur;
 		pCur = point->next_;
 	}
-	while (pCur->next_ != NULL)
-	{
+	while (pCur->next_ != NULL) {
 		pCur = pCur->next_;
 	}
 	pCur->next_ = point;
@@ -111,8 +95,7 @@ Node* Reverse(Node* pNode)
 	prev->next_ = NULL;
 	
 	Node* pNext = NULL;
-	while (pCur != NULL)
-	{
+	while (pCur != NULL) {
 		// 保存下一个要处理的节点
 		pNext = pCur->next_;
 		// 改变当前节点的指向
@@ -121,11 +104,6 @@ Node* Reverse(Node* pNode)
 		// 3个节点步进
 		prev = pCur;
 		pCur = pNext;
-		// pNext可能为NULL
-		if (pNext)
-		{
-			pNext = pNext->next_;
-		}
 	}
 
 	return prev;
