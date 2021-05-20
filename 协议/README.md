@@ -3,6 +3,10 @@
 ## tcp
 +   [三次握手与四次挥手](https://blog.csdn.net/qq_38950316/article/details/81087809)
 
++ [TIME_WAIT的相关问题](https://www.cioage.com/art/202008/623158.htm)
+
++ [服务端和客户端最大支持的连接数](https://time.geekbang.org/comment/nice/146729)
+
 ## websocket
 +   [全双工通信的 WebSocket](https://halfrost.com/websocket/)
 
