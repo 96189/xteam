@@ -71,7 +71,7 @@ http {
     set_real_ip_from 10.0.0.0/8;
     # request header field 用于替换客户端地址
     real_ip_header CLIENTIP;
-    # 设置用于代理的HTTP协议版本
+    # HTTP协议中对长连接的支持是从1.1版本之后才有的，因此最好通过proxy_http_version指令设置为"1.1"
     proxy_http_version 1.1;
 
     # TODO
@@ -80,8 +80,7 @@ http {
     tcp_nopush   on;
     # TCP_NODELAY选项 默认on
     tcp_nodelay on;
-    # tcp连接keep alive保活定时器超时时间
-    # 默认75s
+    # 打开长连接(减少服务端TIME_WAIT) 0为禁用长连接
     keepalive_timeout 75s;
     server_names_hash_bucket_size 128; # this seems to be required for some vhosts
 
@@ -122,6 +121,9 @@ http {
         server 127.0.0.3:8001 weight=5;
         server 192.168.0.1:8000;
         server 192.168.0.1:8001;
+
+        // 开启到后端服务的长连接
+        keepalive 300;
     }
 
     server { # simple load balancing
@@ -234,6 +236,9 @@ types {
     proxy_connect_timeout 与下游的连接超时时间(tcp握手时间)
     proxy_read_timeout 从下游读取响应的超时时间(tcp established后下游响应以及处理的时间)
     proxy_send_timeout 往下游发送请求的超时时间
+
+
+* [长链接配置](https://skyao.gitbooks.io/learning-nginx/content/documentation/keep_alive.html)
 
 ### location匹配
 
