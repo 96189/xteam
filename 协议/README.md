@@ -43,7 +43,8 @@
 ## https
 
 # 数据交换协议(序列化、反序列化)
+* xml
 * json
-* jsonp
+    * [json的一种使用模式jsonp](https://zh.wikipedia.org/wiki/JSONP)
 * protobuf
 * 自定义协议
