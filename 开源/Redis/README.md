@@ -1,6 +1,8 @@
 redis源码版本:
 Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
 
+[redis为什么要设计成单线程](https://www.modb.pro/db/32089)
+
 ## redis常见问题
 +    &radic;1、[假如Redis里面有1亿个key，其中有10w个key是以某个固定的已知的前缀开头的，如果将它们全部找出来？](http://doc.redisfans.com/key/scan.html)
 
