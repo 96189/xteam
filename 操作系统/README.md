@@ -1,6 +1,6 @@
 
 ## 进程 ##
-+   进程间通信机制
++   [进程间同步机制](https://www.acwing.com/blog/content/7275/)
     
     *   套接字
     *   管道
@@ -10,7 +10,7 @@
     *   信号量
 
 ## 线程 ##
-+   线程同步机制
++   [线程同步机制](https://www.acwing.com/blog/content/7275/)
 
     *   锁
         *   互斥锁
