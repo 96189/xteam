@@ -58,6 +58,10 @@
 
     查询中统计或分组统计的字段
 
++ PRIMARY KEY 和 UNIQUE KEY 的区别
+
+    PRIMARY KEYs（主键） 和 UNIQUE KEYs（唯一键约束） 是类似的， PRIMARY KEY 通常是一列，也有可能多列，通常由他来决定一行数据 (row)。 一张表只能有一个 PRIMARY KEY，但可以有很多 UNIQUE KEY。 当给一列设置为 UNIQUE KEY 之后，不能有两行在该列上有相同的数据。 PRIMARY KEY 不允许有 NULL 值，但是 UNIQUE KEY 可以。
+
 ##   相关文章
 +   [mysql索引的新手入门详解](https://blog.csdn.net/u012954706/article/details/81241049)
 +   [MySQL索引背后的数据结构及算法原理](http://blog.codinglabs.org/articles/theory-of-mysql-index.html)

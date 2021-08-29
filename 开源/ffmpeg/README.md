@@ -4,7 +4,35 @@
 *   [官方github地址](https://github.com/FFmpeg/FFmpeg/tree/master/doc/examples)
 
 ## ffmpeg基础
+### 基本概念
 
+    封装 解封装 转码 I帧 P帧 B帧
+
+    采样率
+
+### 文件格式
+
+* MP4
+
+* FLV
+
+* 查看某格式的muxer和demuxer
+
+    ffmpeg -h muxer=mp4
+
+    截取部分信息如下，mp4默认的视频流是h264编码，音频流是aac编码。遇到的问题是mp4和mp3合并为mp4视频后，发现安卓和chrome浏览器播放正常，在Apple系设备播放异常，原因与此有关。
+    ```
+    Muxer mp4 [MP4 (MPEG-4 Part 14)]:
+        Common extensions: mp4.
+        Mime type: video/mp4.
+        Default video codec: h264.
+        Default audio codec: aac.
+    ```
+
+
+    ffmpeg -h demuxer=mp4
+
+### 资料
 * [视频处理入门教程](https://www.ruanyifeng.com/blog/2020/01/ffmpeg.html)
 
 * 入门
@@ -17,18 +45,39 @@
 
     https://cloud.tencent.com/developer/article/1409507
 
+    https://wenku.baidu.com/view/f4e48c087fd5360cba1adbba.html
+
 # 命令行使用ffmpeg
-## 合成视频
+## 常用参数
 
-### 使用图片合成视频
-*   [文档1](https://www.cnblogs.com/Finley/p/8646711.html#%E5%B0%86%E5%9B%BE%E7%89%87%E5%90%88%E5%B9%B6%E4%B8%BA%E8%A7%86%E9%A2%91)
+```
+-r 指定输入、输出视频的帧率(每s播放的图片数)，影响视频时长和质量。
+-an 去除音频
+-vn 去除视频
+-vcodec 视频编码方式 如libx264
+-acodec 音频编码方式 如aac
+-threads 限制CPU使用率
 
-*   [文档2](http://einverne.github.io/post/2015/12/ffmpeg-first.html)
+```
 
-### 对视频添加文字
+## 常用操作
+* 格式转换
 
-*   [文档1](https://stackoverflow.com/questions/17623676/text-on-video-ffmpeg)
 
+* 合成视频
+
+* 使用图片合成视频
+    *   [文档1](https://www.cnblogs.com/Finley/p/8646711.html#%E5%B0%86%E5%9B%BE%E7%89%87%E5%90%88%E5%B9%B6%E4%B8%BA%E8%A7%86%E9%A2%91)
+
+    *   [文档2](http://einverne.github.io/post/2015/12/ffmpeg-first.html)
+
+* 对视频添加文字
+
+    *   [文档1](https://stackoverflow.com/questions/17623676/text-on-video-ffmpeg)
+
+* 提取视频里的图片
+
+    ffmpeg -i {input_file} {out_path/%0{n}d.jpg}
 
 # 通过API处理音频和视频
 

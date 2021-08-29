@@ -1,6 +1,8 @@
 redis源码版本:
 Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
 
+[redis为什么要设计成单线程](https://www.modb.pro/db/32089)
+
 ## redis常见问题
 +    &radic;1、[假如Redis里面有1亿个key，其中有10w个key是以某个固定的已知的前缀开头的，如果将它们全部找出来？](http://doc.redisfans.com/key/scan.html)
 
@@ -63,6 +65,34 @@ Redis server v=4.0.10 sha=00000000:0 malloc=libc bits=64 build=d68c5d3f7b8aefc2
         定时任务    扫描并处理过期消息.
 
 +    &radic;7、[redis如何做持久化(RDB AOF)?](http://doc.redisfans.com/topic/persistence.html#redis)
+
+## 场景应用
+* [并发操作同一个redis key](https://cloud.tencent.com/developer/article/1536305)
+
+    * 乐观锁 
+
+        watch 监听key
+
+        multi 开启事务
+
+        ... 执行命令
+        
+        exec 提交事务 (提交事务时，watch监听的key若被修改过，本次提交不生效)
+
+    
+    * 分布式锁
+
+        SETNX key value     // 『SET if Not eXists』(如果不存在，则 SET)
+
+        SET key value EX seconds NX (key不存在时设置value并且设置过期时间为ex秒)
+
+    * 时间戳(适合有序场景)
+
+        存储时带上时间戳
+
+    * 消息队列(适合分布式系统环境)
+
+        利用消息中间件串行化
 
 
 ## sentinel

@@ -1,5 +1,16 @@
 
 ##   I/O复用
+
+[彻底理解I/O复用](https://juejin.cn/post/6882984260672847879)
+
++ 问题
+
+    * 什么是I/O复用？为什么有I/O复用？I/O复用解决什么问题？
+
+    * I/O复用的实现方式？主流I/O复用实现对比
+
+    * 开源软件中对I/O复用的使用？
+
 +   select(查询式)
     *   [内核源码剖析](https://github.com/96189/xteam/blob/master/%E5%BC%80%E6%BA%90/linux/3.10.0-957.el7/fs/select.c)
 
